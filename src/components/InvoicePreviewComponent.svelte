@@ -30,6 +30,15 @@
 		</div>
 	{/if}
 
+	<div>
+		{#if invoice.invoiceNumber}
+			<div class="invoice-number">
+				<strong>Invoice #:</strong>
+				{invoice.invoiceNumber}
+			</div>
+		{/if}
+	</div>
+
 	<div class="addresses">
 		<div><strong>From:</strong> {invoice.invoiceFrom}</div>
 		<div><strong>To:</strong> {invoice.invoiceTo}</div>
@@ -118,5 +127,11 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+	}
+	.invoice-number {
+		text-align: right;
+		font-weight: bold;
+		font-size: 1.2rem;
+		margin-bottom: 1rem;
 	}
 </style>
