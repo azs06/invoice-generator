@@ -31,6 +31,18 @@
 	const saveAsPDF = async () => {
 		if (typeof window === 'undefined' || !previewRef) return;
 
+		// Wait for all images inside previewRef to fully load
+		const images = previewRef.querySelectorAll('img');
+		await Promise.all(
+			Array.from(images).map((img) => {
+				if (img.complete) return Promise.resolve();
+				return new Promise((resolve) => {
+					img.onload = resolve;
+					img.onerror = resolve;
+				});
+			})
+		);
+
 		const html2pdf = (await import('html2pdf.js')).default;
 
 		html2pdf()
@@ -38,7 +50,8 @@
 			.set({
 				margin: 0.5,
 				filename: `invoice-${invoice.invoiceTo || 'unknown'}.pdf`,
-				html2canvas: { scale: 2 },
+                image: { type: 'jpeg', quality: 0.98 },
+				html2canvas: { scale: 1 },
 				jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
 			})
 			.save();
