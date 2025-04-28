@@ -100,7 +100,7 @@
 		<div class="form-section">
 			<div class="form-header">
 				<h1>Edit Invoice</h1>
-				<button class="new-invoice-btn" on:click={startNewInvoice}>New Invoice</button>
+				<button class="new-invoice-btn inline-block p-2 bg-blue-600 text-white rounded mb-6" on:click={startNewInvoice}>New Invoice</button>
 			</div>
 
 			<InvoiceFormComponent bind:invoice />
@@ -109,7 +109,7 @@
 		<div class="preview-section">
 			<div class="preview-header">
 				<h1>Preview Invoice</h1>
-				<button class="save-pdf-btn" on:click={saveAsPDF} disabled={isGeneratingPDF}>
+				<button class="save-pdf-btn inline p-2 mb-6 bg-blue-600 text-white rounded" on:click={saveAsPDF} disabled={isGeneratingPDF}>
 					{#if isGeneratingPDF}
 						⏳ Downloading...
 					{:else}
