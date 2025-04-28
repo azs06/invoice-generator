@@ -3,6 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { getAllInvoices, deleteInvoice, clearAllInvoices } from '$lib/db.js';
 
+	export const prerender = true;
+	
 	let savedInvoices = [];
 	let search = '';
 

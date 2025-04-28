@@ -5,6 +5,7 @@
 	import { getInvoice } from '$lib/db.js';
 	import { goto } from '$app/navigation';
 
+    export const prerender = true;
 	let invoice = null;
 
 	$: id = $page.params.id;

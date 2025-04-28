@@ -5,6 +5,8 @@
 	import { saveInvoice, getAllInvoices } from '$lib/db.js';
 	import { v4 as uuidv4 } from 'uuid';
 
+    export const prerender = true;
+
 	let invoice = null;
 	let previewRef;
 
