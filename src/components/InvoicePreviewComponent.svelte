@@ -11,7 +11,9 @@
 		notes: '',
 		discount: { type: 'flat', rate: 0 },
 		tax: { type: 'flat', rate: 0 },
-		shipping: { amount: 0 }
+		shipping: { amount: 0 },
+		invoiceNumber: '',
+		paid: false
 	};
 
 	const formatCurrency = (value) => {
@@ -38,6 +40,11 @@
 			</div>
 		{/if}
 	</div>
+	{#if invoice.paid !== undefined}
+		<div class="paid-badge {invoice.paid ? 'paid' : 'unpaid'}">
+			{invoice.paid ? 'PAID' : 'UNPAID'}
+		</div>
+	{/if}
 
 	<div class="addresses">
 		<div><strong>From:</strong> {invoice.invoiceFrom}</div>
@@ -133,5 +140,21 @@
 		font-weight: bold;
 		font-size: 1.2rem;
 		margin-bottom: 1rem;
+	}
+	.paid-badge {
+		display: inline-block;
+		padding: 0.4rem 1rem;
+		border-radius: 9999px;
+		font-weight: bold;
+		font-size: 1rem;
+		margin-bottom: 1rem;
+	}
+	.paid {
+		background-color: #10b981; /* green for paid */
+		color: white;
+	}
+	.unpaid {
+		background-color: #f97316; /* orange for unpaid */
+		color: white;
 	}
 </style>

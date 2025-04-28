@@ -25,7 +25,8 @@
 		notes: '',
 		discount: { type: 'flat', rate: 0 },
 		tax: { type: 'flat', rate: 0 },
-		shipping: { amount: 0 }
+		shipping: { amount: 0 },
+        paid: false,
 	});
 
 	const startNewInvoice = () => {
