@@ -51,7 +51,7 @@
 				margin: 0.5,
 				filename: `invoice-${invoice.invoiceTo || 'unknown'}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-				html2canvas: { scale: 1 },
+				html2canvas: { scale: 3, useCORS: true },
 				jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
 			})
 			.save();
