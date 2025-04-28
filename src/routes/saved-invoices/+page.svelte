@@ -13,10 +13,17 @@
 
 	let savedInvoices = [];
 	let search = '';
+	let showInvoiceDeleteModal = false;
+	let invoiceToDelete = null;
+	let showArchived = false;
 
 	const loadInvoices = async () => {
 		const invoices = await getAllInvoices();
-		savedInvoices = invoices.filter(({ archived }) => !archived);
+		if (showArchived) {
+			savedInvoices = invoices.filter(({ invoice }) => invoice?.archived);
+		} else {
+			savedInvoices = invoices.filter(({ invoice }) => !invoice?.archived);
+		}
 	};
 
 	const searchItems = async () => {
@@ -30,7 +37,8 @@
 		}
 	};
 
-	const removeInvoice = async (id) => {
+	const removeInvoice = async (id = invoiceToDelete) => {
+		if (!id) return;
 		await deleteInvoice(id);
 		await loadInvoices();
 	};
@@ -48,6 +56,24 @@
 			await loadInvoices();
 		}
 	};
+	const unarchiveInvoice = async (id) => {
+		const data = await getInvoice(id);
+		if (data) {
+			data.archived = false;
+			await saveInvoice(id, data);
+			await loadInvoices();
+		}
+	};
+
+	const confirmDeleteInvoice = (id) => {
+		invoiceToDelete = id;
+		showInvoiceDeleteModal = true;
+	};
+
+	const cancelDelete = () => {
+		invoiceToDelete = null;
+		showInvoiceDeleteModal = false;
+	};
 
 	onMount(() => {
 		loadInvoices();
@@ -63,7 +89,26 @@
 			<p class="has-text-centered weAutomatically">
 				We automatically save your invoice drafts to your device.
 			</p>
-
+			<div class="filter-toggle">
+				<button
+					class:active={!showArchived}
+					on:click={() => {
+						showArchived = false;
+						loadInvoices();
+					}}
+				>
+					Active Invoices
+				</button>
+				<button
+					class:active={showArchived}
+					on:click={() => {
+						showArchived = true;
+						loadInvoices();
+					}}
+				>
+					Archived Invoices
+				</button>
+			</div>
 			<nav class="field navPart">
 				<div class="control has-icons-right inputPart">
 					<input
@@ -108,18 +153,20 @@
 								<div class="removeIconButton actions">
 									<button
 										class="iconButton delete-btn"
-										on:click={() => removeInvoice(invoice.id)}
+										on:click={() => confirmDeleteInvoice(invoice.id)}
 										aria-label="Remove Invoice"
 									>
 										<i class="fas fa-times"></i>
 									</button>
-									<button
-										class="iconButton archive-btn"
-										on:click={() => archiveInvoice(invoice.id)}
-										aria-label="Archive Invoice"
-									>
-										<i class="fas fa-book"></i>
-									</button>
+									{#if showArchived}
+										<button class="unarchive-btn" on:click={() => unarchiveInvoice(invoice.id)}
+											>Unarchive</button
+										>
+									{:else}
+										<button class="archive-btn" on:click={() => archiveInvoice(invoice.id)}
+											>Archive</button
+										>
+									{/if}
 								</div>
 							</div>
 						</div>
@@ -139,6 +186,17 @@
 			</div>
 		</div>
 	</div>
+	{#if showInvoiceDeleteModal}
+		<div class="modal-backdrop">
+			<div class="modal">
+				<p>Are you sure you want to delete this invoice?</p>
+				<div class="modal-actions">
+					<button class="confirm-btn" on:click={removeInvoice}>Yes, Delete</button>
+					<button class="cancel-btn" on:click={cancelDelete}>Cancel</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </section>
 
 <style>
@@ -280,5 +338,79 @@
 	}
 	.delete-btn:hover {
 		background-color: #dc2626;
+	}
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 50;
+	}
+	.modal {
+		background: white;
+		padding: 2rem;
+		border-radius: 0.5rem;
+		text-align: center;
+		max-width: 400px;
+		width: 90%;
+	}
+	.modal-actions {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 1.5rem;
+	}
+	.confirm-btn {
+		background-color: #ef4444;
+		color: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 0.375rem;
+		cursor: pointer;
+	}
+	.confirm-btn:hover {
+		background-color: #dc2626;
+	}
+	.cancel-btn {
+		background-color: #9ca3af;
+		color: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 0.375rem;
+		cursor: pointer;
+	}
+	.cancel-btn:hover {
+		background-color: #6b7280;
+	}
+	.filter-toggle {
+		display: flex;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		justify-content: center;
+	}
+	.filter-toggle button {
+		padding: 0.5rem 1rem;
+		border: 1px solid #d1d5db;
+		background-color: white;
+		color: #374151;
+		cursor: pointer;
+		border-radius: 0.375rem;
+	}
+	.filter-toggle button.active {
+		background-color: #3b82f6;
+		color: white;
+		border-color: #3b82f6;
+	}
+	.unarchive-btn {
+		background-color: #10b981;
+		color: white;
+		border: none;
+		padding: 0.3rem 0.8rem;
+		border-radius: 0.375rem;
+		cursor: pointer;
+	}
+	.unarchive-btn:hover {
+		background-color: #059669;
 	}
 </style>
