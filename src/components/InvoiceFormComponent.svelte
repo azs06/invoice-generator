@@ -21,6 +21,7 @@
 		invoiceNumber: '',
 		paid: false
 	};
+  let userEditedDueDate = false;
 
 	const handleFileChange = (e) => {
 		const file = e.target.files[0];
@@ -42,6 +43,20 @@
 	const updateNotes = (newNotes) => {
 		invoice.notes = newNotes;
 	};
+
+	const handleInvoiceDateChange = (e) => {
+		invoice.date = e.target.value;
+		if (!userEditedDueDate) {
+			const newDueDate = new Date(invoice.date);
+			newDueDate.setDate(newDueDate.getDate() + 30);
+			invoice.dueDate = newDueDate.toISOString().split('T')[0];
+		}
+	};
+
+	const handleDueDateChange = (e) => {
+		invoice.dueDate = e.target.value;
+		userEditedDueDate = true; // 👈 once user edits manually, stop auto-updating
+	};
 </script>
 
 <form class="invoice-form" on:submit|preventDefault>
@@ -57,17 +72,18 @@
 
 	<div class="form-section">
 		<label>Invoice Date</label>
-		<input type="date" bind:value={invoice.date} />
+		<input type="date" bind:value={invoice.date} on:input={handleInvoiceDateChange} />
 	</div>
 
 	<div class="form-section">
 		<label>Due Date</label>
-		<input type="date" bind:value={invoice.dueDate} />
+		<input type="date" bind:value={invoice.dueDate} on:input={handleDueDateChange}  />
+    <small>If you change Invoice Date, Due Date will auto-adjust (+30 days) unless you edit manually.</small>
 	</div>
 
 	<div class="form-section">
 		<label>Upload Logo</label>
-		<input type="file" accept="image/*" on:change={handleFileChange} />
+		<input type="file" accept="image/*" on:change={handleFileChange}  />
 		{#if invoice.logo}
 			<FilePreviewComponent file={invoice.logo} />
 		{/if}

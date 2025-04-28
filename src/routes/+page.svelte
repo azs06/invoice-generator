@@ -13,12 +13,12 @@
 
 	const createNewInvoice = () => ({
 		id: uuidv4(),
-        invoiceNumber: `INV-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.floor(1000 + Math.random() * 9000)}`,
+		invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
 		logo: null,
 		invoiceFrom: '',
 		invoiceTo: '',
-        date: new Date().toISOString().split('T')[0],
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+		date: new Date().toISOString().split('T')[0],
+		dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
 		items: [{ name: '', quantity: 1, price: 0, amount: 0 }],
 		amountPaid: 0,
 		terms: '',
@@ -26,7 +26,7 @@
 		discount: { type: 'flat', rate: 0 },
 		tax: { type: 'flat', rate: 0 },
 		shipping: { amount: 0 },
-        paid: false,
+		paid: false
 	});
 
 	const startNewInvoice = () => {
@@ -75,6 +75,8 @@
 			isGeneratingPDF = false; // 👈 stop loading
 		}
 	};
+
+
 
 	onMount(async () => {
 		const invoices = await getAllInvoices();
