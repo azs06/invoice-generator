@@ -26,7 +26,8 @@
 		discount: { type: 'flat', rate: 0 },
 		tax: { type: 'flat', rate: 0 },
 		shipping: { amount: 0 },
-		paid: false
+		paid: false,
+        archived: false,
 	});
 
 	const startNewInvoice = () => {

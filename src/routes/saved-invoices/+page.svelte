@@ -1,16 +1,22 @@
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { getAllInvoices, deleteInvoice, clearAllInvoices } from '$lib/db.js';
+	import {
+		getAllInvoices,
+		deleteInvoice,
+		clearAllInvoices,
+		saveInvoice,
+		getInvoice
+	} from '$lib/db.js';
 
 	export const prerender = true;
-	
+
 	let savedInvoices = [];
 	let search = '';
 
 	const loadInvoices = async () => {
 		const invoices = await getAllInvoices();
-		savedInvoices = invoices;
+		savedInvoices = invoices.filter(({ archived }) => !archived);
 	};
 
 	const searchItems = async () => {
@@ -32,6 +38,15 @@
 	const clearData = async () => {
 		await clearAllInvoices();
 		savedInvoices = [];
+	};
+
+	const archiveInvoice = async (id) => {
+		const data = await getInvoice(id);
+		if (data) {
+			data.archived = true;
+			await saveInvoice(id, data);
+			await loadInvoices();
+		}
 	};
 
 	onMount(() => {
@@ -90,10 +105,21 @@
 										</div>
 									</a>
 								</div>
-								<div class="removeIconButton">
-									<span class="iconButton" on:click={() => removeInvoice(key)}>
+								<div class="removeIconButton actions">
+									<button
+										class="iconButton delete-btn"
+										on:click={() => removeInvoice(invoice.id)}
+										aria-label="Remove Invoice"
+									>
 										<i class="fas fa-times"></i>
-									</span>
+									</button>
+									<button
+										class="iconButton archive-btn"
+										on:click={() => archiveInvoice(invoice.id)}
+										aria-label="Archive Invoice"
+									>
+										<i class="fas fa-book"></i>
+									</button>
 								</div>
 							</div>
 						</div>
@@ -227,5 +253,32 @@
 	}
 	.itemPartBlock {
 		width: 100%;
+	}
+	.actions {
+		display: flex;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+	}
+	.archive-btn,
+	.delete-btn {
+		padding: 0.3rem 0.8rem;
+		font-size: 0.875rem;
+		border-radius: 0.375rem;
+		border: none;
+		cursor: pointer;
+	}
+	.archive-btn {
+		background-color: #3b82f6; /* Blue */
+		color: white;
+	}
+	.archive-btn:hover {
+		background-color: #2563eb;
+	}
+	.delete-btn {
+		background-color: #ef4444; /* Red */
+		color: white;
+	}
+	.delete-btn:hover {
+		background-color: #dc2626;
 	}
 </style>
