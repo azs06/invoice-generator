@@ -5,10 +5,11 @@
 	import { saveInvoice, getAllInvoices } from '$lib/db.js';
 	import { v4 as uuidv4 } from 'uuid';
 
-    export const prerender = true;
+	export const prerender = true;
 
 	let invoice = null;
 	let previewRef;
+	let isGeneratingPDF = false;
 
 	const createNewInvoice = () => ({
 		id: uuidv4(),
@@ -33,30 +34,44 @@
 	const saveAsPDF = async () => {
 		if (typeof window === 'undefined' || !previewRef) return;
 
-		// Wait for all images inside previewRef to fully load
-		const images = previewRef.querySelectorAll('img');
-		await Promise.all(
-			Array.from(images).map((img) => {
-				if (img.complete) return Promise.resolve();
-				return new Promise((resolve) => {
-					img.onload = resolve;
-					img.onerror = resolve;
-				});
-			})
-		);
+		isGeneratingPDF = true; // 👈 start loading
 
-		const html2pdf = (await import('html2pdf.js')).default;
+		try {
+			// Wait for images to load
+			const images = previewRef.querySelectorAll('img');
+			await Promise.all(
+				Array.from(images).map((img) => {
+					if (img.complete) return Promise.resolve();
+					return new Promise((resolve) => {
+						img.onload = resolve;
+						img.onerror = resolve;
+					});
+				})
+			);
 
-		html2pdf()
-			.from(previewRef)
-			.set({
-				margin: 0.5,
-				filename: `invoice-${invoice.invoiceTo || 'unknown'}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-				html2canvas: { scale: 3, useCORS: true },
-				jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-			})
-			.save();
+			const html2pdf = (await import('html2pdf.js')).default;
+
+			await html2pdf()
+				.from(previewRef)
+				.set({
+					margin: 0.5,
+					filename: `invoice-${invoice.invoiceTo || 'unknown'}.pdf`,
+					html2canvas: {
+						scale: 3,
+						useCORS: true
+					},
+					jsPDF: {
+						unit: 'in',
+						format: 'letter',
+						orientation: 'portrait'
+					}
+				})
+				.save();
+		} catch (error) {
+			console.error('Failed to export PDF:', error);
+		} finally {
+			isGeneratingPDF = false; // 👈 stop loading
+		}
 	};
 
 	onMount(async () => {
@@ -89,9 +104,13 @@
 		<div class="preview-section">
 			<div class="preview-header">
 				<h1>Preview Invoice</h1>
-				<button class="save-pdf-btn" on:click={saveAsPDF} disabled={typeof window === 'undefined'}
-					>Save as PDF</button
-				>
+				<button class="save-pdf-btn" on:click={saveAsPDF} disabled={isGeneratingPDF}>
+					{#if isGeneratingPDF}
+						⏳ Downloading...
+					{:else}
+						Save as PDF
+					{/if}
+				</button>
 			</div>
 
 			<div bind:this={previewRef}>
