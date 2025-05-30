@@ -37,7 +37,7 @@
 					<option value="flat">Flat</option>
 					<option value="percent">%</option>
 				</select>
-				<input type="number" bind:value={invoice.discount.rate} min="0" step="0.01" />
+				<input type="number" bind:value={invoice.discount.rate} min="0" step="1" />
 			</label>
 		</div>
 		<div class="control">
@@ -47,7 +47,7 @@
 					<option value="flat">Flat</option>
 					<option value="percent">%</option>
 				</select>
-				<input type="number" bind:value={invoice.tax.rate} min="0" step="0.01" />
+				<input type="number" bind:value={invoice.tax.rate} min="0" step="1" />
 			</label>
 		</div>
 	</div>
@@ -135,6 +135,6 @@
   .invoice-summary-controls {
     display: flex;
     margin-bottom: 1rem;
-    flex-direction: column;
+    flex-direction: row;
   }
 </style>
