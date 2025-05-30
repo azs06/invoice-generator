@@ -20,6 +20,8 @@
 		invoiceTo: '',
 		invoiceNumber: '',
 		paid: false,
+		total: 0,
+		subTotal: 0,
 	};
   let userEditedDueDate = false;
 

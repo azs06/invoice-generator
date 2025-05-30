@@ -7,7 +7,9 @@
 		discount: { type: 'flat', rate: 0 },
 		tax: { type: 'flat', rate: 0 },
 		shipping: { amount: 0 },
-		amountPaid: 0
+		amountPaid: 0,
+    total: 0,
+    subTotal: 0,
 	};
 
 	const subTotal = () =>
@@ -21,6 +23,9 @@
 	};
 
 	const totalAmount = () => totalAmounts(invoice, subTotal());
+  $: invoice.total = totalAmount() || 0;
+  $: invoice.subTotal = subTotal() || 0;
+
 
 	$: balanceDue = (totalAmount() || 0) - (Number(invoice.amountPaid) || 0);
 </script>
@@ -48,6 +53,12 @@
 					<option value="percent">%</option>
 				</select>
 				<input type="number" bind:value={invoice.tax.rate} min="0" step="1" />
+			</label>
+		</div>
+		<div class="control">
+			<label>
+				Shipping:
+				<input type="number" bind:value={invoice.shipping.amount} min="0" step="1" />
 			</label>
 		</div>
 	</div>
@@ -132,9 +143,9 @@
 		margin-top: 0.5rem;
 		color: #dc2626;
 	}
-  .invoice-summary-controls {
-    display: flex;
-    margin-bottom: 1rem;
-    flex-direction: row;
-  }
+	.invoice-summary-controls {
+		display: flex;
+		margin-bottom: 1rem;
+		flex-direction: row;
+	}
 </style>

@@ -28,6 +28,8 @@
 		shipping: { amount: 0 },
 		paid: false,
         archived: false,
+		total: 0,
+		subTotal: 0,
 	});
 
 	const startNewInvoice = () => {

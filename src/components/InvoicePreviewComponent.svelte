@@ -13,12 +13,16 @@
 		tax: { type: 'flat', rate: 0 },
 		shipping: { amount: 0 },
 		invoiceNumber: '',
-		paid: false
+		paid: false,
+		total: 0,
+		subTotal: 0
 	};
-
+	$: totalAmount = invoice.total || 0;
+	$: subTotal = invoice.subTotal || 0;
 	const formatCurrency = (value) => {
 		return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
 	};
+	$: balanceDue = (invoice.total || 0) - (Number(invoice.amountPaid) || 0);
 </script>
 
 <div class="invoice-preview">
@@ -78,7 +82,13 @@
 	</table>
 
 	<div class="summary">
+		<div><strong>Subtotal:</strong> {formatCurrency(subTotal)}</div>
+		<div><strong>Tax:</strong> {formatCurrency(invoice.tax.rate)}</div>
+		<div><strong>Total:</strong> {formatCurrency(totalAmount)}</div>
 		<div><strong>Amount Paid:</strong> {formatCurrency(invoice.amountPaid)}</div>
+		<div><strong>Balance Due:</strong> {formatCurrency(balanceDue)}</div>
+	</div>
+	<div class="terms">
 		<div><strong>Terms:</strong> {invoice.terms}</div>
 		<div><strong>Notes:</strong> {invoice.notes}</div>
 	</div>
@@ -133,7 +143,15 @@
 		margin-top: 2rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.25rem;
+		margin-bottom: 2rem;
+		align-items: flex-end;
+	}
+	.terms {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin-top: 2rem;
 	}
 	.invoice-number {
 		text-align: right;

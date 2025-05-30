@@ -31,8 +31,7 @@
       invoice.notes = newNotes;
     };
     const updatePaidAmount = (amountPaid) => {
-      console.log('Updating amount paid:', amountPaid);
-      //invoice.amountPaid = amountPaid
+      invoice.amountPaid = amountPaid
     };
   </script>
   
