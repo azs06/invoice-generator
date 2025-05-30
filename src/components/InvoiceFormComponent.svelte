@@ -19,7 +19,7 @@
 		invoiceFrom: '',
 		invoiceTo: '',
 		invoiceNumber: '',
-		paid: false
+		paid: false,
 	};
   let userEditedDueDate = false;
 
@@ -56,6 +56,9 @@
 	const handleDueDateChange = (e) => {
 		invoice.dueDate = e.target.value;
 		userEditedDueDate = true; // 👈 once user edits manually, stop auto-updating
+	};
+	const updatePaidAmount = (amountPaid) => {
+		invoice.amountPaid = amountPaid;
 	};
 </script>
 
@@ -103,7 +106,7 @@
 		onUpdateNotes={updateNotes}
 	/>
 
-	<AmountPaidComponent amountPaid={invoice.amountPaid} />
+	<AmountPaidComponent updatePaidAmount={updatePaidAmount} amountPaid={invoice.amountPaid} />
 
 	<TotalComponent {invoice} />
 	<div class="paid-status">

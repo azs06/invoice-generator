@@ -11,7 +11,8 @@
       notes: '',
       discount: { type: 'flat', rate: 0 },
       tax: { type: 'flat', rate: 0 },
-      shipping: { amount: 0 }
+      shipping: { amount: 0 },
+      totalPaid: 0,
     };
   
     const updateItem = (index, updatedItem) => {
@@ -28,6 +29,10 @@
   
     const updateNotes = (newNotes) => {
       invoice.notes = newNotes;
+    };
+    const updatePaidAmount = (amountPaid) => {
+      console.log('Updating amount paid:', amountPaid);
+      //invoice.amountPaid = amountPaid
     };
   </script>
   
@@ -54,7 +59,7 @@
       onUpdateNotes={updateNotes}
     />
   
-    <AmountPaidComponent amountPaid={invoice.amountPaid} />
+    <AmountPaidComponent updatePaidAmount={updatePaidAmount} amountPaid={invoice.amountPaid} />
   
     <TotalComponent {invoice} />
   </div>
