@@ -1,5 +1,5 @@
 <script>
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	// onMount is no longer needed for this data loading pattern with runes
 	import { getInvoice } from '$lib/db.js';
 	import { goto } from '$app/navigation';
@@ -8,7 +8,7 @@
 	export const prerender = true;
 	let invoice = $state(null); // Use $state for reactive invoice data
 
-	const id = $derived(() => $page.params.id);
+	const id = $derived(() => page.params.id);
 
 	// This effect will run when `id` changes, and also on initial mount if `id` is present.
 	$effect(() => {
