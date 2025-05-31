@@ -161,7 +161,7 @@
 	.controls {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 1.5rem;
+		gap: 1rem; /* Reduced gap between control groups */
 		margin-bottom: 1.5rem;
 	}
 
@@ -169,7 +169,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
-		min-width: 220px;
+		min-width: 180px; /* Reduced minimum width for each control group */
 	}
 	.control-label {
 		font-size: 0.875rem;
