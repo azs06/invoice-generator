@@ -45,7 +45,7 @@
 	const updatePaidAmount = (amountPaid = 0) => {
 		updateInvoicePaidAmount(amountPaid);
 	};
-	
+
 </script>
 
 <form class="invoice-form" onsubmit={(e) => e.preventDefault()}>
@@ -54,14 +54,14 @@
 		<input
 			id="invoiceFrom"
 			type="text"
-			bind:value={invoice.invoiceFrom}
+			value={invoice.invoiceFrom}
 			placeholder="Your Company"
 		/>
 	</div>
 
 	<div class="form-section">
 		<label for="invoiceTo">To</label>
-		<input id="invoiceTo" type="text" bind:value={invoice.invoiceTo} placeholder="Client Name" />
+		<input id="invoiceTo" type="text" value={invoice.invoiceTo} placeholder="Client Name" />
 	</div>
 
 	<div class="form-section">
@@ -69,14 +69,14 @@
 		<input
 			id="invoiceDate"
 			type="date"
-			bind:value={invoice.date}
+			value={invoice.date}
 			oninput={handleInvoiceDateChange}
 		/>
 	</div>
 
 	<div class="form-section">
 		<label for="dueDate">Due Date</label>
-		<input id="dueDate" type="date" bind:value={invoice.dueDate} oninput={handleDueDateChange} />
+		<input id="dueDate" type="date" value={invoice.dueDate} oninput={handleDueDateChange} />
 		<small
 			>If you change Invoice Date, Due Date will auto-adjust (+30 days) unless you edit manually.</small
 		>
