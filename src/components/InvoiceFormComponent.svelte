@@ -19,7 +19,9 @@
 		onUpdateDiscount,
 		onUpdateShipping,
 		onUpdateLogo,
-		togglePaidStatus
+		togglePaidStatus,
+		onInvoiceToInput,
+		onInvoiceFromInput,
 	} = $props();
 
 	const handleFileChange = (e) => {
@@ -57,12 +59,13 @@
 			type="text"
 			value={invoice.invoiceFrom}
 			placeholder="Your Company"
+			oninput={onInvoiceFromInput}
 		/>
 	</div>
 
 	<div class="form-section">
 		<label for="invoiceTo">To</label>
-		<input id="invoiceTo" type="text" value={invoice.invoiceTo} placeholder="Client Name" />
+		<input id="invoiceTo" type="text" oninput={onInvoiceToInput} value={invoice.invoiceTo} placeholder="Client Name" />
 	</div>
 
 	<div class="form-section">

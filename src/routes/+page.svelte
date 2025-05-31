@@ -159,6 +159,12 @@
 	const togglePaidStatus = (newStatus) => {
 		invoice.paid = Boolean(newStatus);
 	}
+	const onInvoiceToInput = (e) => {
+		invoice.invoiceTo = e.target.value;
+	};
+	const onInvoiceFromInput = (e) => {
+		invoice.invoiceFrom = e.target.value;
+	};
 
 </script>
 
@@ -187,6 +193,8 @@
 				{onUpdateShipping}
 				{onUpdateLogo}
 				{togglePaidStatus}
+				{onInvoiceToInput}
+				{onInvoiceFromInput}
 			/>
 		</div>
 
