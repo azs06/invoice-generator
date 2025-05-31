@@ -9,7 +9,7 @@
 
 	export const prerender = true;
 
-	let invoice = $state(defaultInvoice); // Initialize invoice state
+	let invoice = $state(null); // Initialize invoice state as null
 	let previewRef = $state(null); // Reference for the preview section
 	let isGeneratingPDF = $state(false); // State to track PDF generation status
 
@@ -85,12 +85,14 @@
 	};
 
 	onMount(async () => {
-		const invoices = await getAllInvoices();
-		if (invoices.length > 0) {
+		const invoicesFromDb = await getAllInvoices();
+		if (invoicesFromDb.length > 0) {
 			// Load the latest invoice by created order (simple pick last)
-			const { invoice: latestInvoice } = invoices[invoices.length - 1];
-			invoice = latestInvoice;
+			// Ensure we are getting the actual invoice data object
+			const latestInvoiceEntry = invoicesFromDb[invoicesFromDb.length - 1];
+			invoice = latestInvoiceEntry.invoice; // Assuming getAllInvoices returns {id, invoice}
 		} else {
+			// No invoices in DB, so create a new one
 			invoice = createNewInvoice();
 		}
 	});
