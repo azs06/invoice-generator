@@ -5,7 +5,7 @@
 	import { saveInvoice, getAllInvoices } from '$lib/db.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { defaultInvoice } from '$lib/index.js';
-	import { totalAmounts, calculateDiscount, calculateTax } from '../lib/InvoiceCalculator.js';
+	import { totalAmounts  } from '../lib/InvoiceCalculator.js';
 
 	export const prerender = true;
 
