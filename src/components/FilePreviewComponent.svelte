@@ -25,7 +25,7 @@
 		text-align: center;
 	}
 	.preview-image {
-		max-width: 100%;
+		max-width: 100px;
 		height: auto;
 		border-radius: 0.5rem;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

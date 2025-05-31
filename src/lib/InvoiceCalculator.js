@@ -21,7 +21,6 @@ export function calculateDiscount(discount, baseAmount) {
     if (discount.type === 'percent') {
         return (baseAmount * (Number(discount.rate) || 0)) / 100;
     }
-    // flat
     return Number(discount.rate) || 0;
 }
 

@@ -13,7 +13,7 @@
     <input
       type="text"
       placeholder="Item Name"
-      bind:value={item.name}
+      value={item.name}
       oninput={(e) => updateField('name', e.target.value)}
     />
   
@@ -21,7 +21,7 @@
       type="number"
       min="1"
       placeholder="Quantity"
-      bind:value={item.quantity}
+      value={item.quantity}
       oninput={(e) => updateField('quantity', +e.target.value)}
     />
   
@@ -30,12 +30,12 @@
       min="0"
       step="0.01"
       placeholder="Price"
-      bind:value={item.price}
+      value={item.price}
       oninput={(e) => updateField('price', +e.target.value)}
     />
   
     <p class="item-amount">
-      Amount: {item.quantity * item.price}
+      Amount: {item.amount || (item.quantity || 0) * (item.price || 0)}
     </p>
   </div>
   

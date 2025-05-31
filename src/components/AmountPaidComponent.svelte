@@ -1,5 +1,4 @@
 <script>
-	import { toUSCurrency } from '$lib/currency.js';
 	let { amountPaid, updatePaidAmount } = $props();
 
 	const handleOnChange = (event) => {
@@ -20,9 +19,6 @@
 		class="amount-input"
 		oninput={handleOnChange}
 	/>
-
-	<!-- optional: live formatted display -->
-	<p class="formatted">You’ve entered: {toUSCurrency(amountPaid)}</p>
 </div>
 
 <style>

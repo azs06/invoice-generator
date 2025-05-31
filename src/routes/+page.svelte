@@ -100,9 +100,12 @@
 			saveInvoice(invoice.id, invoice);
 		}
 		if (invoice && invoice.items) {
-			invoice.total = totalAmounts(invoice);
-			invoice.subTotal = invoice.items.reduce((sum, item) => sum + (item.amount ?? item.price * item.quantity), 0);
-			invoice.balanceDue = invoice.total - invoice.amountPaid;
+			invoice.subTotal = invoice.items.reduce(
+				(sum, item) => sum + (item.amount ?? (item.price || 0) * (item.quantity || 0)),
+				0
+			);
+			invoice.total = totalAmounts(invoice, invoice.subTotal);
+			invoice.balanceDue = invoice.total - (invoice.amountPaid || 0);
 		}
 	});
 
@@ -141,32 +144,17 @@
 		invoice.discount = newDiscount;
 	};
 
-	// Helper function to convert a File object to a Base64 Data URL
-	async function fileToDataURL(file) {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = () => resolve(reader.result);
-			reader.onerror = (error) => reject(error);
-			reader.readAsDataURL(file);
-		});
-	}
-
 	const onUpdateShipping = (newShipping) => {
 		invoice.shipping = newShipping;
 	};
-	const onUpdateLogo = async (newFile) => {
-		if (newFile instanceof File) {
-			try {
-				invoice.logo = await fileToDataURL(newFile);
-			} catch (error) {
-				console.error('Error converting logo to data URL:', error);
-				invoice.logo = null; // Or handle the error as appropriate
-			}
-		} else if (newFile === null) {
+
+	const onUpdateLogo = (newFile) => {
+		if (newFile instanceof File || newFile === null) {
+			invoice.logo = newFile;
+		} else {
 			invoice.logo = null; // Handle explicit clearing of the logo
+			console.warn('onUpdateLogo received an unexpected type for newFile:', newFile);
 		}
-		// If newFile is already a string or another type, this function might need more logic
-		// but it's primarily designed to handle File objects from an input.
 	};
 
 </script>
