@@ -1,13 +1,14 @@
 <script>
-    export let terms = '';
-    export let notes = '';
-    export let onUpdateTerms = () => {};
-    export let onUpdateNotes = () => {};
-  
+    let {
+        terms = '',
+        notes = '',
+        onUpdateTerms = () => {},
+        onUpdateNotes = () => {}
+    } = $props();
+
     const handleTermsChange = (e) => {
       onUpdateTerms(e.target.value);
     };
-  
     const handleNotesChange = (e) => {
       onUpdateNotes(e.target.value);
     };
@@ -15,21 +16,23 @@
   
   <div class="terms-notes">
     <div class="field">
-      <label>Terms</label>
+      <label for="terms-textarea">Terms</label>
       <textarea
+        id="terms-textarea"
         rows="4"
         bind:value={terms}
-        on:input={handleTermsChange}
+        oninput={handleTermsChange}
         placeholder="Enter payment terms..."
       ></textarea>
     </div>
-  
+
     <div class="field">
-      <label>Notes</label>
+      <label for="notes-textarea">Notes</label>
       <textarea
+        id="notes-textarea"
         rows="4"
         bind:value={notes}
-        on:input={handleNotesChange}
+        oninput={handleNotesChange}
         placeholder="Additional notes..."
       ></textarea>
     </div>

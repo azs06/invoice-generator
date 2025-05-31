@@ -1,24 +1,10 @@
 <script>
-	export let invoice = {
-		logo: null,
-		invoiceFrom: '',
-		invoiceTo: '',
-		date: '',
-		dueDate: '',
-		items: [],
-		amountPaid: 0,
-		terms: '',
-		notes: '',
-		discount: { type: 'flat', rate: 0 },
-		tax: { type: 'flat', rate: 0 },
-		shipping: { amount: 0 },
-		invoiceNumber: '',
-		paid: false
-	};
-
-	const formatCurrency = (value) => {
-		return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
-	};
+	import { defaultInvoice } from '$lib/index.js';
+	import { toUSCurrency } from '$lib/currency.js';
+	let { invoice = defaultInvoice } = $props();
+	const totalAmount = $derived(invoice.total || 0);
+	const subTotal = $derived(invoice.subTotal || 0);
+	const balanceDue = $derived(invoice.balanceDue || 0);
 </script>
 
 <div class="invoice-preview">
@@ -70,15 +56,21 @@
 				<tr>
 					<td>{item.name}</td>
 					<td>{item.quantity}</td>
-					<td>{formatCurrency(item.price)}</td>
-					<td>{formatCurrency(item.amount || item.price * item.quantity)}</td>
+					<td>{toUSCurrency(item.price)}</td>
+					<td>{toUSCurrency(item.amount || item.price * item.quantity)}</td>
 				</tr>
 			{/each}
 		</tbody>
 	</table>
 
 	<div class="summary">
-		<div><strong>Amount Paid:</strong> {formatCurrency(invoice.amountPaid)}</div>
+		<div><strong>Subtotal:</strong> {toUSCurrency(subTotal)}</div>
+		<div><strong>Tax:</strong> {toUSCurrency(invoice.tax.rate)}</div>
+		<div><strong>Total:</strong> {toUSCurrency(totalAmount)}</div>
+		<div><strong>Amount Paid:</strong> {toUSCurrency(invoice.amountPaid)}</div>
+		<div><strong>Balance Due:</strong> {toUSCurrency(balanceDue)}</div>
+	</div>
+	<div class="terms">
 		<div><strong>Terms:</strong> {invoice.terms}</div>
 		<div><strong>Notes:</strong> {invoice.notes}</div>
 	</div>
@@ -133,7 +125,15 @@
 		margin-top: 2rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.25rem;
+		margin-bottom: 2rem;
+		align-items: flex-end;
+	}
+	.terms {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin-top: 2rem;
 	}
 	.invoice-number {
 		text-align: right;

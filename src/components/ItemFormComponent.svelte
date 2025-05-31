@@ -1,6 +1,6 @@
 <script>
-    export let item = { name: '', quantity: 1, price: 0, amount: 0 };
-    export let onUpdate = () => {};
+  
+    let { item ={ name: '', quantity: 1, price: 0, amount: 0 }, onUpdate } = $props();
   
     const updateField = (field, value) => {
       const updatedItem = { ...item, [field]: value };
@@ -14,7 +14,7 @@
       type="text"
       placeholder="Item Name"
       bind:value={item.name}
-      on:input={(e) => updateField('name', e.target.value)}
+      oninput={(e) => updateField('name', e.target.value)}
     />
   
     <input
@@ -22,7 +22,7 @@
       min="1"
       placeholder="Quantity"
       bind:value={item.quantity}
-      on:input={(e) => updateField('quantity', +e.target.value)}
+      oninput={(e) => updateField('quantity', +e.target.value)}
     />
   
     <input
@@ -31,7 +31,7 @@
       step="0.01"
       placeholder="Price"
       bind:value={item.price}
-      on:input={(e) => updateField('price', +e.target.value)}
+      oninput={(e) => updateField('price', +e.target.value)}
     />
   
     <p class="item-amount">
