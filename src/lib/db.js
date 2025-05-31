@@ -18,14 +18,18 @@ export async function saveInvoice(id, invoiceData) {
 	// We need to convert it to a plain JavaScript object for IndexedDB.
 
 	let processedLogo = invoiceData.logo;
+	let logoFilename = invoiceData.logoFilename; // Preserve existing filename
+
 	// Handle logo: if it's a File object, convert to data URL.
 	// JSON.stringify would turn a File into {}.
 	if (invoiceData.logo instanceof File) {
 		try {
 			processedLogo = await fileToDataURL(invoiceData.logo);
+			logoFilename = invoiceData.logo.name; // Update filename from the File object
 		} catch (error) {
 			console.error('Failed to convert logo to data URL in db.js:', error);
 			processedLogo = null; // Default to null if conversion fails
+			logoFilename = null;
 		}
 	}
 
@@ -33,9 +37,9 @@ export async function saveInvoice(id, invoiceData) {
 	// and spread the rest of the invoiceData (which might have nested proxies).
 	const objectToSerialize = {
 		...invoiceData,
-		logo: processedLogo
+		logo: processedLogo,
+		logoFilename: logoFilename // Ensure logoFilename is included
 	};
-
 	// Convert the entire object (including any nested proxies) to a plain JavaScript object.
 	const plainInvoiceObject = JSON.parse(JSON.stringify(objectToSerialize));
 	return await set(INVOICE_PREFIX + id, plainInvoiceObject);

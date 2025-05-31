@@ -19,6 +19,7 @@
 		id: uuidv4(),
 		invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
 		logo: null,
+		logoFilename: null,
 		invoiceFrom: '',
 		invoiceTo: '',
 		date: new Date().toISOString().split('T')[0],
@@ -152,9 +153,12 @@
 
 	const onUpdateLogo = (newFile) => {
 		if (newFile instanceof File || newFile === null) {
+			// If newFile is null (removing logo), newFile.name would error.
 			invoice.logo = newFile;
+			invoice.logoFilename = newFile ? newFile.name : null;
 		} else {
 			invoice.logo = null; // Handle explicit clearing of the logo
+			invoice.logoFilename = null;
 			console.warn('onUpdateLogo received an unexpected type for newFile:', newFile);
 		}
 	};

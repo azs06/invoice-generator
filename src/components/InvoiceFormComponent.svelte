@@ -89,12 +89,15 @@
 	<div class="form-section">
 		<label for="logoUpload">Upload Logo</label>
 		<input id="logoUpload" type="file" accept="image/*" onchange={handleFileChange} />
+		{#if invoice.logoFilename}
+			<small class="loaded-filename">Current: {invoice.logoFilename}</small>
+		{/if}
 		{#if invoice.logo}
 			<FilePreviewComponent file={invoice.logo} />
 		{/if}
 	</div>
 
-	<h3>Invoice Items</h3>
+	<h3 class="invoice-items-header">Invoice Items</h3>
 	{#each invoice.items as item, index}
 		<ItemFormComponent {item} onUpdate={(updatedItem) => updateItem(index, updatedItem)} />
 	{/each}
@@ -167,5 +170,16 @@
 	}
 	.paid-status input {
 		transform: scale(1.5);
+	}
+	.loaded-filename {
+		font-size: 0.8rem;
+		color: #555;
+		margin-top: 0.25rem;
+	}
+	.invoice-items-header {
+		margin-top: 1.5rem;
+		font-size: 1.25rem;
+		font-weight: bold;
+		color: #111827;
 	}
 </style>
