@@ -1,20 +1,15 @@
 <script>
 	import { totalAmounts, calculateDiscount, calculateTax } from '../lib/InvoiceCalculator.js';
 	import { toUSCurrency } from '$lib/currency.js';
+	import { defaultInvoice } from '$lib/index.js';
 
-	export let invoice = {
-		items: [],
-		discount: { type: 'flat', rate: 0 },
-		tax: { type: 'flat', rate: 0 },
-		shipping: { amount: 0 },
-		amountPaid: 0,
-    total: 0,
-    subTotal: 0,
-	};
+	const { invoice = defaultInvoice, onUpdateDiscount, onUpdateTax, onUpdateShipping } = $props();
 
-	const subTotal = () =>
-		invoice.items.reduce((sum, item) => sum + (item.amount ?? item.price * item.quantity), 0);
+	let tax = $state(invoice.tax || { type: 'flat', rate: 0 });
+	let discount = $state(invoice.discount || { type: 'flat', rate: 0 });
+	let shipping = $state(invoice.shipping || { amount: 0 });
 
+	const subTotal = () => invoice.subTotal || 0;
 	const discountAmount = () => calculateDiscount(invoice.discount, subTotal());
 
 	const taxAmount = () => {
@@ -23,11 +18,18 @@
 	};
 
 	const totalAmount = () => totalAmounts(invoice, subTotal());
-  $: invoice.total = totalAmount() || 0;
-  $: invoice.subTotal = subTotal() || 0;
 
-
-	$: balanceDue = (totalAmount() || 0) - (Number(invoice.amountPaid) || 0);
+	$effect(() => {
+		if (onUpdateDiscount && discount) {
+			onUpdateDiscount(discount);
+		}
+		if (onUpdateTax && tax) {
+			onUpdateTax(tax);
+		}
+		if (onUpdateShipping && shipping) {
+			onUpdateShipping(shipping);
+		}
+	});
 </script>
 
 <div class="total-summary">
@@ -38,27 +40,27 @@
 		<div class="control">
 			<label>
 				Discount:
-				<select bind:value={invoice.discount.type}>
+				<select bind:value={discount.type}>
 					<option value="flat">Flat</option>
 					<option value="percent">%</option>
 				</select>
-				<input type="number" bind:value={invoice.discount.rate} min="0" step="1" />
+				<input type="number" bind:value={discount.rate} min="0" step="1" />
 			</label>
 		</div>
 		<div class="control">
 			<label>
 				Tax:
-				<select bind:value={invoice.tax.type}>
+				<select bind:value={tax.type}>
 					<option value="flat">Flat</option>
 					<option value="percent">%</option>
 				</select>
-				<input type="number" bind:value={invoice.tax.rate} min="0" step="1" />
+				<input type="number" bind:value={tax.rate} min="0" step="1" />
 			</label>
 		</div>
 		<div class="control">
 			<label>
 				Shipping:
-				<input type="number" bind:value={invoice.shipping.amount} min="0" step="1" />
+				<input type="number" bind:value={shipping.amount} min="0" step="1" />
 			</label>
 		</div>
 	</div>
@@ -85,7 +87,7 @@
 	</div>
 	<div class="summary-total-due">
 		<strong>Balance Due:</strong>
-		<strong>{toUSCurrency(balanceDue)}</strong>
+		<strong>{toUSCurrency(invoice.balanceDue)}</strong>
 	</div>
 </div>
 

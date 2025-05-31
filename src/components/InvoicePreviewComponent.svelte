@@ -1,28 +1,10 @@
 <script>
-	export let invoice = {
-		logo: null,
-		invoiceFrom: '',
-		invoiceTo: '',
-		date: '',
-		dueDate: '',
-		items: [],
-		amountPaid: 0,
-		terms: '',
-		notes: '',
-		discount: { type: 'flat', rate: 0 },
-		tax: { type: 'flat', rate: 0 },
-		shipping: { amount: 0 },
-		invoiceNumber: '',
-		paid: false,
-		total: 0,
-		subTotal: 0
-	};
-	$: totalAmount = invoice.total || 0;
-	$: subTotal = invoice.subTotal || 0;
-	const formatCurrency = (value) => {
-		return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
-	};
-	$: balanceDue = (invoice.total || 0) - (Number(invoice.amountPaid) || 0);
+	import { defaultInvoice } from '$lib/index.js';
+	import { toUSCurrency } from '$lib/currency.js';
+	let { invoice = defaultInvoice } = $props();
+	const totalAmount = $derived(invoice.total || 0);
+	const subTotal = $derived(invoice.subTotal || 0);
+	const balanceDue = $derived(invoice.balanceDue || 0);
 </script>
 
 <div class="invoice-preview">
@@ -74,19 +56,19 @@
 				<tr>
 					<td>{item.name}</td>
 					<td>{item.quantity}</td>
-					<td>{formatCurrency(item.price)}</td>
-					<td>{formatCurrency(item.amount || item.price * item.quantity)}</td>
+					<td>{toUSCurrency(item.price)}</td>
+					<td>{toUSCurrency(item.amount || item.price * item.quantity)}</td>
 				</tr>
 			{/each}
 		</tbody>
 	</table>
 
 	<div class="summary">
-		<div><strong>Subtotal:</strong> {formatCurrency(subTotal)}</div>
-		<div><strong>Tax:</strong> {formatCurrency(invoice.tax.rate)}</div>
-		<div><strong>Total:</strong> {formatCurrency(totalAmount)}</div>
-		<div><strong>Amount Paid:</strong> {formatCurrency(invoice.amountPaid)}</div>
-		<div><strong>Balance Due:</strong> {formatCurrency(balanceDue)}</div>
+		<div><strong>Subtotal:</strong> {toUSCurrency(subTotal)}</div>
+		<div><strong>Tax:</strong> {toUSCurrency(invoice.tax.rate)}</div>
+		<div><strong>Total:</strong> {toUSCurrency(totalAmount)}</div>
+		<div><strong>Amount Paid:</strong> {toUSCurrency(invoice.amountPaid)}</div>
+		<div><strong>Balance Due:</strong> {toUSCurrency(balanceDue)}</div>
 	</div>
 	<div class="terms">
 		<div><strong>Terms:</strong> {invoice.terms}</div>

@@ -1,6 +1,6 @@
 <script>
-	let { amountPaid, updatePaidAmount } = $props();
 	import { toUSCurrency } from '$lib/currency.js';
+	let { amountPaid, updatePaidAmount } = $props();
 
 	const handleOnChange = (event) => {
 		amountPaid = parseFloat(event.target.value);
