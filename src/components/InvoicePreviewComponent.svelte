@@ -100,7 +100,7 @@
 			<span class="summary-item-value">{toUSCurrency(invoice.amountPaid || 0)}</span>
 		</div>
 		<div class="summary-item balance-due-line">
-			<span class="summary-item-label">Balance Due:</span>
+			<span class="summary-item-label">Due:</span>
 			<span class="summary-item-value">{toUSCurrency(balanceDue)}</span>
 		</div>
 	</div>
@@ -207,7 +207,6 @@
 	.balance-due-line .summary-item-value {
 		font-weight: bold;
 		font-size: 1.05em;
-		color: #b91c1c; /* Or a theme color for due amounts */
 	}
 
 	.terms {
