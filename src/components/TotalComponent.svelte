@@ -5,61 +5,51 @@
 
 	const { invoice = defaultInvoice, onUpdateDiscount, onUpdateTax, onUpdateShipping } = $props();
 
-	// Initialize local state for tax, discount, shipping
 	let tax = $state(invoice.tax || { type: 'flat', rate: 0 });
 	let discount = $state(invoice.discount || { type: 'flat', rate: 0 });
 	let shipping = $state(invoice.shipping || { amount: 0 });
 
 	const subTotal = () => invoice.subTotal || 0;
 	const discountAmount = () => calculateDiscount(invoice.discount, subTotal());
-
 	const taxAmount = () => {
 		const afterDiscount = subTotal() - discountAmount();
 		return calculateTax(invoice.tax, afterDiscount);
 	};
-
 	const totalAmount = () => totalAmounts(invoice, subTotal());
 
-	// Whenever local discount/tax/shipping changes, fire the relevant callback
 	$effect(() => {
-		if (onUpdateDiscount && discount) {
-			onUpdateDiscount(discount);
-		}
-		if (onUpdateTax && tax) {
-			onUpdateTax(tax);
-		}
-		if (onUpdateShipping && shipping) {
-			onUpdateShipping(shipping);
-		}
+		if (onUpdateDiscount && discount) onUpdateDiscount(discount);
+		if (onUpdateTax && tax) onUpdateTax(tax);
+		if (onUpdateShipping && shipping) onUpdateShipping(shipping);
 	});
 </script>
 
 <div class="total-summary">
 	<h3>Invoice Summary</h3>
 
-	<!-- Editable controls -->
+	<!-- Puts all three controls in one row -->
 	<div class="controls invoice-summary-controls">
 		<!-- DISCOUNT CONTROL -->
 		<div class="control">
-			<label class="control-label" for="discount-rate-input">Discount</label>
+			<label class="control-label" for="discount-rate">Discount</label>
 			<div class="type-toggle">
 				<button
 					type="button"
 					class:selected={discount.type === 'flat'}
-					onclick={() => (discount.type = 'flat')}
+					on:click={() => (discount.type = 'flat')}
 				>
 					Flat
 				</button>
 				<button
 					type="button"
 					class:selected={discount.type === 'percent'}
-					onclick={() => (discount.type = 'percent')}
+					on:click={() => (discount.type = 'percent')}
 				>
 					%
 				</button>
 			</div>
 			<input
-				id="discount-rate-input"
+				id="discount-rate"
 				type="number"
 				bind:value={discount.rate}
 				min="0"
@@ -71,25 +61,25 @@
 
 		<!-- TAX CONTROL -->
 		<div class="control">
-			<label class="control-label" for="tax-rate-input">Tax</label>
+			<label class="control-label" for="tax-rate">Tax</label>
 			<div class="type-toggle">
 				<button
 					type="button"
 					class:selected={tax.type === 'flat'}
-					onclick={() => (tax.type = 'flat')}
+					on:click={() => (tax.type = 'flat')}
 				>
 					Flat
 				</button>
 				<button
 					type="button"
 					class:selected={tax.type === 'percent'}
-					onclick={() => (tax.type = 'percent')}
+					on:click={() => (tax.type = 'percent')}
 				>
 					%
 				</button>
 			</div>
 			<input
-				id="tax-rate-input"
+				id="tax-rate"
 				type="number"
 				bind:value={tax.rate}
 				min="0"
@@ -101,9 +91,9 @@
 
 		<!-- SHIPPING CONTROL -->
 		<div class="control">
-			<label class="control-label" for="shipping-amount-input">Shipping</label>
+			<label class="control-label" for="shipping-amount">Shipping</label>
 			<input
-				id="shipping-amount-input"
+				id="shipping-amount"
 				type="number"
 				bind:value={shipping.amount}
 				min="0"
@@ -129,9 +119,7 @@
 	</div>
 	<div class="summary-line">
 		<span>Shipping:</span>
-		<span class="positive">
-			+${invoice.shipping?.amount?.toFixed(2) ?? '0.00'}
-		</span>
+		<span class="positive">+${invoice.shipping?.amount?.toFixed(2) ?? '0.00'}</span>
 	</div>
 
 	<div class="summary-total">
@@ -158,18 +146,20 @@
 		color: #111827;
 	}
 
+	/* Flex container for all three controls in one row */
 	.controls {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 1rem; /* Reduced gap between control groups */
+		flex-wrap: nowrap;
+		gap: 1rem;
 		margin-bottom: 1.5rem;
 	}
 
+	/* Each control will flex equally to share the row */
 	.control {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
-		min-width: 180px; /* Reduced minimum width for each control group */
+		flex: 1 1 0;
 	}
 	.control-label {
 		font-size: 0.875rem;
@@ -183,11 +173,11 @@
 		border: 1px solid #d1d5db;
 		border-radius: 0.375rem;
 		overflow: hidden;
-		width: max-content;
+		width: 100%;
 	}
 	.type-toggle button {
 		flex: 1;
-		padding: 0.5rem 0.75rem;
+		padding: 0.5rem 0;
 		background-color: #ffffff;
 		border: none;
 		font-size: 0.875rem;
@@ -217,7 +207,6 @@
 		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 	}
 
-	/* Add a bit of spacing if you want the shipping input to be slightly narrower */
 	.shipping-input {
 		width: 100%;
 	}

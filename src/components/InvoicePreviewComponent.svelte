@@ -17,9 +17,6 @@
 		return calculateTax(invoice.tax, amountAfterDiscount);
 	});
 	const shippingDisplayValue = $derived(invoice.shipping?.amount || 0);
-	$effect(() => {
-		console.log(taxDisplayValue());
-	})
 </script>
 
 <div class="invoice-preview">
