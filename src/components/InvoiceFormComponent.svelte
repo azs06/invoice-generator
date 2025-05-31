@@ -18,7 +18,8 @@
 		onUpdateTax,
 		onUpdateDiscount,
 		onUpdateShipping,
-		onUpdateLogo
+		onUpdateLogo,
+		togglePaidStatus
 	} = $props();
 
 	const handleFileChange = (e) => {
@@ -109,7 +110,7 @@
 	<TotalComponent {invoice} {onUpdateTax} {onUpdateDiscount} {onUpdateShipping} />
 	<div class="paid-status">
 		<label>
-			<input type="checkbox" bind:checked={invoice.paid} />
+			<input type="checkbox" onchange={(e) => togglePaidStatus(e.target.checked)} checked={invoice.paid} />
 			Mark as Paid
 		</label>
 	</div>

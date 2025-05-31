@@ -156,6 +156,9 @@
 			console.warn('onUpdateLogo received an unexpected type for newFile:', newFile);
 		}
 	};
+	const togglePaidStatus = (newStatus) => {
+		invoice.paid = Boolean(newStatus);
+	}
 
 </script>
 
@@ -183,6 +186,7 @@
 				{onUpdateDiscount}
 				{onUpdateShipping}
 				{onUpdateLogo}
+				{togglePaidStatus}
 			/>
 		</div>
 
