@@ -86,12 +86,12 @@
 	.logo {
 		text-align: center;
 		margin: 0 auto;
-		margin-bottom: 2rem;
+		margin-bottom: 0.5rem;
 		max-width: 100%;
 	}
 
 	.logo img {
-		max-width: 200px; /* or 250px depending on your design */
+		max-width: 150px; /* or 250px depending on your design */
 		width: auto;
 		height: auto;
 		object-fit: contain; /* optional: forces better scaling inside the box */
