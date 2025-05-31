@@ -2,8 +2,43 @@ import { get, set, del, keys, clear } from 'idb-keyval';
 
 const INVOICE_PREFIX = 'ig.invoice.';
 
-export async function saveInvoice(id, invoice) {
-  return await set(INVOICE_PREFIX + id, invoice);
+// Helper function to convert a File object to a Base64 Data URL
+// This ensures the function is self-contained if needed, though +page.svelte also has similar logic.
+async function fileToDataURL(file) {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(reader.result);
+		reader.onerror = (error) => reject(error);
+		reader.readAsDataURL(file);
+	});
+}
+
+export async function saveInvoice(id, invoiceData) {
+	// invoiceData is likely a Svelte $state proxy.
+	// We need to convert it to a plain JavaScript object for IndexedDB.
+
+	let processedLogo = invoiceData.logo;
+	// Handle logo: if it's a File object, convert to data URL.
+	// JSON.stringify would turn a File into {}.
+	if (invoiceData.logo instanceof File) {
+		try {
+			processedLogo = await fileToDataURL(invoiceData.logo);
+		} catch (error) {
+			console.error('Failed to convert logo to data URL in db.js:', error);
+			processedLogo = null; // Default to null if conversion fails
+		}
+	}
+
+	// Create an intermediate object with the (potentially) processed logo
+	// and spread the rest of the invoiceData (which might have nested proxies).
+	const objectToSerialize = {
+		...invoiceData,
+		logo: processedLogo
+	};
+
+	// Convert the entire object (including any nested proxies) to a plain JavaScript object.
+	const plainInvoiceObject = JSON.parse(JSON.stringify(objectToSerialize));
+	return await set(INVOICE_PREFIX + id, plainInvoiceObject);
 }
 
 export async function getInvoice(id) {
