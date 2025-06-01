@@ -37,7 +37,7 @@
 			{/if}
 			{#if invoice.paid !== undefined}
 				<div class="paid-badge {invoice.paid ? 'paid' : 'unpaid'}">
-					{invoice.paid ? 'PAID' : 'UNPAID'}
+					<span>{invoice.paid ? 'PAID' : 'UNPAID'}</span>
 				</div>
 			{/if}
 		</div>
@@ -217,17 +217,13 @@
 	}
 	.paid-badge {
 		display: inline-block;
-		padding: 0.4rem 1rem;
-		border-radius: 9999px;
 		font-weight: bold;
 		font-size: 1rem;
 	}
 	.paid {
-		background-color: #10b981; /* green for paid */
-		color: white;
+		color: #10b981; /* green for paid */
 	}
 	.unpaid {
-		background-color: #f97316; /* orange for unpaid */
-		color: white;
+		color: #f97316; /* orange for unpaid */
 	}
 </style>
