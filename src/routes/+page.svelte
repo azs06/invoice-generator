@@ -1,41 +1,16 @@
 <script>
-	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
 	import { saveInvoice, getAllInvoices } from '$lib/db.js';
 	import { v4 as uuidv4 } from 'uuid';
-	import { defaultInvoice } from '$lib/index.js';
-	import { totalAmounts } from '../lib/InvoiceCalculator.js';
+	import { totalAmounts  } from '$lib/InvoiceCalculator.js';
 
 	export const prerender = true;
 
 	let invoice = $state(null); // Initialize invoice state as null
 	let previewRef = $state(null); // Reference for the preview section
 	let isGeneratingPDF = $state(false); // State to track PDF generation status
-
-	// SEO related derived values
-	const pageUrl = $derived(page.url.href);
-	const siteName = 'Free Invoice Generator';
-	const baseDescription =
-		'Easily create, customize, and manage professional invoices for free. Download as PDF and get paid faster.';
-	const ogImageUrl = $derived(() => {
-		if (invoice && invoice.logo && typeof invoice.logo === 'string') {
-			return invoice.logo; // Use invoice logo if it's a data URL
-		}
-		return `${page.url.origin}/og-image.png`; // Fallback to a generic OG image
-	});
-
-	const pageTitle = $derived(
-		invoice && invoice.id && invoice.invoiceNumber
-			? `Editing Invoice ${invoice.invoiceNumber} | ${siteName}`
-			: `${siteName} - Create & Manage Invoices`
-	);
-	const pageDescription = $derived(
-		invoice && invoice.id && invoice.invoiceTo
-			? `Editing invoice for ${invoice.invoiceTo}. ${baseDescription}`
-			: baseDescription
-	);
 
 	let userEditedDueDate = $state(false); // Track if user has edited the due date
 
@@ -177,45 +152,23 @@
 
 	const onUpdateLogo = (newFile) => {
 		if (newFile instanceof File || newFile === null) {
-			// If newFile is null (removing logo), newFile.name would error.
 			invoice.logo = newFile;
-			invoice.logoFilename = newFile ? newFile.name : null;
 		} else {
 			invoice.logo = null; // Handle explicit clearing of the logo
-			invoice.logoFilename = null;
 			console.warn('onUpdateLogo received an unexpected type for newFile:', newFile);
 		}
 	};
 	const togglePaidStatus = (newStatus) => {
 		invoice.paid = Boolean(newStatus);
-	};
+	}
 	const onInvoiceToInput = (e) => {
 		invoice.invoiceTo = e.target.value;
 	};
 	const onInvoiceFromInput = (e) => {
 		invoice.invoiceFrom = e.target.value;
 	};
+
 </script>
-
-<svelte:head>
-	<title>{pageTitle}</title>
-	<meta name="description" content={pageDescription} />
-	<link rel="canonical" href={pageUrl} />
-
-	<!-- Open Graph / Facebook -->
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content={pageUrl} />
-	<meta property="og:title" content={pageTitle} />
-	<meta property="og:description" content={pageDescription} />
-	<meta property="og:image" content={ogImageUrl()} />
-
-	<!-- Twitter -->
-	<meta property="twitter:card" content="summary_large_image" />
-	<meta property="twitter:url" content={pageUrl} />
-	<meta property="twitter:title" content={pageTitle} />
-	<meta property="twitter:description" content={pageDescription} />
-	<meta property="twitter:image" content={ogImageUrl()} />
-</svelte:head>
 {#if invoice}
 	<div class="page-layout">
 		<div class="form-section">
