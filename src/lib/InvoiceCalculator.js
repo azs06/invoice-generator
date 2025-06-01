@@ -16,22 +16,19 @@ export function totalAmounts(invoice, calculatedSubTotal) {
     return totalInvoiceAmount;
 }
 
-export function calculateDiscount(discountObj, subTotal) {
-    if (!discountObj) {
-        return 0;
-    } else if (discountObj.type === 'percentage') {
-        return parseFloat((subTotal * discountObj.rate) / 100);
-    } else {
-        return parseFloat(discountObj.rate);
+export function calculateDiscount(discount, baseAmount) {
+    if (!discount || !baseAmount) return 0;
+    if (discount.type === 'percent') {
+        return (baseAmount * (Number(discount.rate) || 0)) / 100;
     }
+    return Number(discount.rate) || 0;
 }
 
-export function calculateTax(taxObj, totalInvoiceAmount) {
-    if (!taxObj) {
-        return 0;
-    } else if (taxObj.type === 'percentage') {
-        return parseFloat((totalInvoiceAmount * taxObj.rate) / 100);
-    } else {
-        return parseFloat(taxObj.rate);
+export function calculateTax(tax, baseAmount) {
+    if (!tax || !baseAmount) return 0;
+    if (tax.type === 'percent') {
+        return (baseAmount * (Number(tax.rate) || 0)) / 100;
     }
+    // flat
+    return Number(tax.rate) || 0;
 }

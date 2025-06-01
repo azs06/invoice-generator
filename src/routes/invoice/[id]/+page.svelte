@@ -1,27 +1,32 @@
 <script>
-	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
-	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
+	import { page } from '$app/state';
+	// onMount is no longer needed for this data loading pattern with runes
 	import { getInvoice } from '$lib/db.js';
 	import { goto } from '$app/navigation';
+	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
 
-    export const prerender = true;
-	let invoice = null;
+	export const prerender = true;
+	let invoice = $state(null); // Use $state for reactive invoice data
 
-	$: id = $page.params.id;
+	const id = $derived(() => page.params.id);
 
-	const loadInvoice = async () => {
-		const data = await getInvoice(id);
+	// This effect will run when `id` changes, and also on initial mount if `id` is present.
+	$effect(() => {
+		// Ensure `id` is available and we're on the client-side before fetching
+		if (id && typeof window !== 'undefined') {
+			loadInvoiceData(id);
+		}
+	});
+
+	const loadInvoiceData = async (currentId) => {
+		const data = await getInvoice(currentId);
 		if (data) {
 			invoice = data;
 		} else {
+			// Invoice not found, or error during fetch
 			goto('/saved-invoices');
 		}
 	};
-
-	onMount(() => {
-		loadInvoice();
-	});
 </script>
 
 {#if invoice}

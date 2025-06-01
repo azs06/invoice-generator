@@ -4,17 +4,21 @@
 	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
 	import { saveInvoice, getAllInvoices } from '$lib/db.js';
 	import { v4 as uuidv4 } from 'uuid';
+	import { totalAmounts  } from '$lib/InvoiceCalculator.js';
 
 	export const prerender = true;
 
-	let invoice = null;
-	let previewRef;
-	let isGeneratingPDF = false;
+	let invoice = $state(null); // Initialize invoice state as null
+	let previewRef = $state(null); // Reference for the preview section
+	let isGeneratingPDF = $state(false); // State to track PDF generation status
+
+	let userEditedDueDate = $state(false); // Track if user has edited the due date
 
 	const createNewInvoice = () => ({
 		id: uuidv4(),
 		invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
 		logo: null,
+		logoFilename: null,
 		invoiceFrom: '',
 		invoiceTo: '',
 		date: new Date().toISOString().split('T')[0],
@@ -27,7 +31,10 @@
 		tax: { type: 'flat', rate: 0 },
 		shipping: { amount: 0 },
 		paid: false,
-        archived: false,
+		archived: false,
+		total: 0,
+		subTotal: 0,
+		balanceDue: 0
 	});
 
 	const startNewInvoice = () => {
@@ -41,7 +48,7 @@
 
 		try {
 			// Wait for images to load
-			const images = previewRef.querySelectorAll('img');
+			const images = previewRef?.querySelectorAll('img');
 			await Promise.all(
 				Array.from(images).map((img) => {
 					if (img.complete) return Promise.resolve();
@@ -77,39 +84,129 @@
 		}
 	};
 
-
-
 	onMount(async () => {
-		const invoices = await getAllInvoices();
-		if (invoices.length > 0) {
+		const invoicesFromDb = await getAllInvoices();
+		if (invoicesFromDb.length > 0) {
 			// Load the latest invoice by created order (simple pick last)
-			const { invoice: latestInvoice } = invoices[invoices.length - 1];
-			invoice = latestInvoice;
+			// Ensure we are getting the actual invoice data object
+			const latestInvoiceEntry = invoicesFromDb[invoicesFromDb.length - 1];
+			invoice = latestInvoiceEntry.invoice; // Assuming getAllInvoices returns {id, invoice}
 		} else {
+			// No invoices in DB, so create a new one
 			invoice = createNewInvoice();
 		}
 	});
 
-	$: if (invoice && invoice.id) {
-		saveInvoice(invoice.id, invoice);
-	}
-</script>
+	$effect(() => {
+		if (invoice && invoice.id) {
+			saveInvoice(invoice.id, invoice);
+		}
+		if (invoice && invoice.items) {
+			invoice.subTotal = invoice.items.reduce(
+				(sum, item) => sum + (item.amount ?? (item.price || 0) * (item.quantity || 0)),
+				0
+			);
+			invoice.total = totalAmounts(invoice, invoice.subTotal);
+			invoice.balanceDue = invoice.total - (invoice.amountPaid || 0);
+		}
+	});
 
+	const updateInvoiceItems = (index, updatedItem) => {
+		invoice.items[index] = updatedItem;
+	};
+	const addInvoiceItem = () => {
+		invoice.items = [...invoice.items, { name: '', quantity: 1, price: 0, amount: 0 }];
+	};
+	const updateInvoiceTerms = (newTerms = '') => {
+		invoice.terms = newTerms;
+	};
+	const updateInvoiceNotes = (newNotes = '') => {
+		invoice.notes = newNotes;
+	};
+	const updateInvoicePaidAmount = (amountPaid = 0) => {
+		invoice.amountPaid = amountPaid;
+	};
+	const handleInvoiceDateChange = (e) => {
+		invoice.date = e.target.value;
+		if (!userEditedDueDate) {
+			const newDueDate = new Date(invoice.date);
+			newDueDate.setDate(newDueDate.getDate() + 30);
+			invoice.dueDate = newDueDate.toISOString().split('T')[0];
+		}
+	};
+	const handleDueDateChange = (e) => {
+		invoice.dueDate = e.target.value;
+		userEditedDueDate = true;
+	};
+
+	const onUpdateTax = (newTax) => {
+		invoice.tax = newTax;
+	};
+	const onUpdateDiscount = (newDiscount) => {
+		invoice.discount = newDiscount;
+	};
+
+	const onUpdateShipping = (newShipping) => {
+		invoice.shipping = newShipping;
+	};
+
+	const onUpdateLogo = (newFile) => {
+		if (newFile instanceof File || newFile === null) {
+			invoice.logo = newFile;
+		} else {
+			invoice.logo = null; // Handle explicit clearing of the logo
+			console.warn('onUpdateLogo received an unexpected type for newFile:', newFile);
+		}
+	};
+	const togglePaidStatus = (newStatus) => {
+		invoice.paid = Boolean(newStatus);
+	}
+	const onInvoiceToInput = (e) => {
+		invoice.invoiceTo = e.target.value;
+	};
+	const onInvoiceFromInput = (e) => {
+		invoice.invoiceFrom = e.target.value;
+	};
+
+</script>
 {#if invoice}
 	<div class="page-layout">
 		<div class="form-section">
 			<div class="form-header">
 				<h1>Edit Invoice</h1>
-				<button class="new-invoice-btn inline-block p-2 bg-blue-600 text-white rounded mb-6" on:click={startNewInvoice}>New Invoice</button>
+				<button
+					class="new-invoice-btn inline-block p-2 bg-blue-600 text-white rounded mb-6"
+					onclick={startNewInvoice}>New Invoice</button
+				>
 			</div>
 
-			<InvoiceFormComponent bind:invoice />
+			<InvoiceFormComponent
+				{invoice}
+				{updateInvoiceItems}
+				{addInvoiceItem}
+				{updateInvoiceTerms}
+				{updateInvoiceNotes}
+				{updateInvoicePaidAmount}
+				{handleInvoiceDateChange}
+				{handleDueDateChange}
+				{onUpdateTax}
+				{onUpdateDiscount}
+				{onUpdateShipping}
+				{onUpdateLogo}
+				{togglePaidStatus}
+				{onInvoiceToInput}
+				{onInvoiceFromInput}
+			/>
 		</div>
 
 		<div class="preview-section">
 			<div class="preview-header">
 				<h1>Preview Invoice</h1>
-				<button class="save-pdf-btn inline p-2 mb-6 bg-blue-600 text-white rounded" on:click={saveAsPDF} disabled={isGeneratingPDF}>
+				<button
+					class="save-pdf-btn inline p-2 mb-6 bg-blue-600 text-white rounded"
+					onclick={saveAsPDF}
+					disabled={isGeneratingPDF}
+				>
 					{#if isGeneratingPDF}
 						⏳ Downloading...
 					{:else}

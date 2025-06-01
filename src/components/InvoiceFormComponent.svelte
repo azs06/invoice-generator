@@ -4,97 +4,105 @@
 	import AmountPaidComponent from './AmountPaidComponent.svelte';
 	import FilePreviewComponent from './FilePreviewComponent.svelte';
 	import TotalComponent from './TotalComponent.svelte';
+	import { defaultInvoice } from '$lib';
 
-	export let invoice = {
-		logo: null,
-		items: [],
-		amountPaid: 0,
-		terms: '',
-		notes: '',
-		discount: { type: 'flat', rate: 0 },
-		tax: { type: 'flat', rate: 0 },
-		shipping: { amount: 0 },
-		date: '',
-		dueDate: '',
-		invoiceFrom: '',
-		invoiceTo: '',
-		invoiceNumber: '',
-		paid: false
-	};
-  let userEditedDueDate = false;
+	let {
+		invoice = defaultInvoice,
+		updateInvoiceItems,
+		addInvoiceItem,
+		updateInvoiceTerms,
+		updateInvoiceNotes,
+		updateInvoicePaidAmount,
+		handleInvoiceDateChange,
+		handleDueDateChange,
+		onUpdateTax,
+		onUpdateDiscount,
+		onUpdateShipping,
+		onUpdateLogo,
+		togglePaidStatus,
+		onInvoiceToInput,
+		onInvoiceFromInput,
+	} = $props();
 
 	const handleFileChange = (e) => {
 		const file = e.target.files[0];
-		invoice.logo = file;
+		onUpdateLogo(file);
 	};
 
 	const updateItem = (index, updatedItem) => {
-		invoice.items[index] = updatedItem;
+		updateInvoiceItems(index, updatedItem);
 	};
 
 	const addItem = () => {
-		invoice.items = [...invoice.items, { name: '', quantity: 1, price: 0, amount: 0 }];
+		addInvoiceItem();
 	};
 
-	const updateTerms = (newTerms) => {
-		invoice.terms = newTerms;
+	const updateTerms = (newTerms = '') => {
+		updateInvoiceTerms(newTerms);
 	};
 
-	const updateNotes = (newNotes) => {
-		invoice.notes = newNotes;
+	const updateNotes = (newNotes = '') => {
+		updateInvoiceNotes(newNotes);
 	};
 
-	const handleInvoiceDateChange = (e) => {
-		invoice.date = e.target.value;
-		if (!userEditedDueDate) {
-			const newDueDate = new Date(invoice.date);
-			newDueDate.setDate(newDueDate.getDate() + 30);
-			invoice.dueDate = newDueDate.toISOString().split('T')[0];
-		}
+	const updatePaidAmount = (amountPaid = 0) => {
+		updateInvoicePaidAmount(amountPaid);
 	};
 
-	const handleDueDateChange = (e) => {
-		invoice.dueDate = e.target.value;
-		userEditedDueDate = true; // 👈 once user edits manually, stop auto-updating
-	};
 </script>
 
-<form class="invoice-form" on:submit|preventDefault>
+<form class="invoice-form" onsubmit={(e) => e.preventDefault()}>
 	<div class="form-section">
-		<label>From</label>
-		<input type="text" bind:value={invoice.invoiceFrom} placeholder="Your Company" />
+		<label for="invoiceFrom">From</label>
+		<input
+			id="invoiceFrom"
+			type="text"
+			value={invoice.invoiceFrom}
+			placeholder="Your Company"
+			oninput={onInvoiceFromInput}
+		/>
 	</div>
 
 	<div class="form-section">
-		<label>To</label>
-		<input type="text" bind:value={invoice.invoiceTo} placeholder="Client Name" />
+		<label for="invoiceTo">To</label>
+		<input id="invoiceTo" type="text" oninput={onInvoiceToInput} value={invoice.invoiceTo} placeholder="Client Name" />
 	</div>
 
 	<div class="form-section">
-		<label>Invoice Date</label>
-		<input type="date" bind:value={invoice.date} on:input={handleInvoiceDateChange} />
+		<label for="invoiceDate">Invoice Date</label>
+		<input
+			id="invoiceDate"
+			type="date"
+			value={invoice.date}
+			oninput={handleInvoiceDateChange}
+		/>
 	</div>
 
 	<div class="form-section">
-		<label>Due Date</label>
-		<input type="date" bind:value={invoice.dueDate} on:input={handleDueDateChange}  />
-    <small>If you change Invoice Date, Due Date will auto-adjust (+30 days) unless you edit manually.</small>
+		<label for="dueDate">Due Date</label>
+		<input id="dueDate" type="date" value={invoice.dueDate} oninput={handleDueDateChange} />
+		<small
+			>If you change Invoice Date, Due Date will auto-adjust (+30 days) unless you edit manually.</small
+		>
 	</div>
 
 	<div class="form-section">
-		<label>Upload Logo</label>
-		<input type="file" accept="image/*" on:change={handleFileChange}  />
+		<label for="logoUpload">Upload Logo</label>
+		<input id="logoUpload" type="file" accept="image/*" onchange={handleFileChange} />
+		{#if invoice.logoFilename}
+			<small class="loaded-filename">Current: {invoice.logoFilename}</small>
+		{/if}
 		{#if invoice.logo}
 			<FilePreviewComponent file={invoice.logo} />
 		{/if}
 	</div>
 
-	<h3>Invoice Items</h3>
+	<h3 class="invoice-items-header">Invoice Items</h3>
 	{#each invoice.items as item, index}
 		<ItemFormComponent {item} onUpdate={(updatedItem) => updateItem(index, updatedItem)} />
 	{/each}
 
-	<button type="button" class="add-item-btn" on:click={addItem}> Add Item </button>
+	<button type="button" class="add-item-btn" onclick={addItem}> Add Item </button>
 
 	<TermsAndNotesComponent
 		terms={invoice.terms}
@@ -103,12 +111,12 @@
 		onUpdateNotes={updateNotes}
 	/>
 
-	<AmountPaidComponent amountPaid={invoice.amountPaid} />
+	<AmountPaidComponent {updatePaidAmount} amountPaid={invoice.amountPaid} />
 
-	<TotalComponent {invoice} />
+	<TotalComponent {invoice} {onUpdateTax} {onUpdateDiscount} {onUpdateShipping} />
 	<div class="paid-status">
 		<label>
-			<input type="checkbox" bind:checked={invoice.paid} />
+			<input type="checkbox" onchange={(e) => togglePaidStatus(e.target.checked)} checked={invoice.paid} />
 			Mark as Paid
 		</label>
 	</div>
@@ -162,5 +170,16 @@
 	}
 	.paid-status input {
 		transform: scale(1.5);
+	}
+	.loaded-filename {
+		font-size: 0.8rem;
+		color: #555;
+		margin-top: 0.25rem;
+	}
+	.invoice-items-header {
+		margin-top: 1.5rem;
+		font-size: 1.25rem;
+		font-weight: bold;
+		color: #111827;
 	}
 </style>
