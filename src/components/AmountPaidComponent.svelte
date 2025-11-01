@@ -8,10 +8,13 @@
 </script>
 
 <div class="amount-paid">
-	<h3>Amount Paid</h3>
+	<label for="amount-paid-input" class="amount-label">
+		<span class="label-title">Amount Paid</span>
+		<span class="label-hint">Record any payment already received.</span>
+	</label>
 
-	<!-- editable field -->
 	<input
+		id="amount-paid-input"
 		type="number"
 		bind:value={amountPaid}
 		min="0"
@@ -23,29 +26,44 @@
 
 <style>
 	.amount-paid {
-		margin-top: 1rem;
-		padding: 1rem;
-		background-color: #f9fafb;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.55rem;
+		padding: 1.05rem;
+		background: var(--color-bg-secondary);
 	}
-	.amount-paid h3 {
-		margin-bottom: 0.5rem;
-		font-size: 1.25rem;
+
+	.amount-label {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		color: var(--color-text-primary);
+	}
+
+	.label-title {
+		font-size: 1.05rem;
+		font-weight: 600;
+	}
+
+	.label-hint {
+		font-size: 0.85rem;
+		color: var(--color-text-secondary);
 	}
 
 	.amount-input {
 		width: 100%;
-		padding: 0.5rem;
-		font-size: 1rem;
-		color: #4b5563;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.25rem;
-		margin-bottom: 0.75rem;
+		padding: 0.65rem 0.85rem;
+		font-size: 0.95rem;
+		color: var(--color-text-primary);
+		border: 1px solid var(--color-border-primary);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-primary);
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
 	}
 
-	.formatted {
-		font-size: 0.875rem;
-		color: #6b7280;
+	.amount-input:focus {
+		outline: none;
+		border-color: var(--color-accent-blue);
+		box-shadow: var(--shadow-focus);
 	}
 </style>

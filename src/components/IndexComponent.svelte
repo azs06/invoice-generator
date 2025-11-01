@@ -76,9 +76,10 @@
       background-color: #2563eb;
       color: white;
       border: none;
-      border-radius: 0.375rem;
+      border-radius: var(--radius-sm);
       font-size: 1rem;
       cursor: pointer;
+      transition: background-color 0.2s ease;
     }
     .add-item-btn:hover {
       background-color: #1d4ed8;

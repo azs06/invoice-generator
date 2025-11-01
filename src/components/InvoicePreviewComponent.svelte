@@ -5,225 +5,470 @@
 
 	let { invoice = defaultInvoice } = $props();
 
-	// These are derived from the parent's comprehensive calculations
-	const totalAmount = $derived(invoice.total || 0);
-	const subTotal = $derived(invoice.subTotal || 0);
-	const balanceDue = $derived(invoice.balanceDue || 0);
+	const DEFAULT_LOGO_PATH = '/logo.png';
 
-	// Derived values for individual display lines in the summary
-	const discountDisplayValue = $derived(calculateDiscount(invoice.discount, subTotal));
-	const taxDisplayValue = $derived(() => {
-		const amountAfterDiscount = subTotal - discountDisplayValue;
+	const totalAmount = () => invoice.total ?? 0;
+	const subTotal = () => invoice.subTotal ?? 0;
+
+	const discountDisplayValue = () => calculateDiscount(invoice.discount, subTotal());
+
+	const taxDisplayValue = () => {
+		const amountAfterDiscount = subTotal() - discountDisplayValue();
 		return calculateTax(invoice.tax, amountAfterDiscount);
-	});
-	const shippingDisplayValue = $derived(invoice.shipping?.amount || 0);
+	};
+
+	const shippingDisplayValue = () => invoice.shipping?.amount ?? 0;
+	const amountPaid = () => invoice.amountPaid ?? 0;
+
+	const balanceDue = () => {
+		if (typeof invoice.balanceDue === 'number') {
+			return invoice.balanceDue;
+		}
+
+		const fallback = totalAmount() - amountPaid();
+		return Number.isFinite(fallback) ? fallback : 0;
+	};
+
+	const balanceState = () => {
+		const balance = balanceDue();
+
+		if (balance < 0) {
+			return 'credit';
+		}
+
+		if (invoice.paid === true) {
+			return 'settled';
+		}
+
+		if (amountPaid() > 0 && balance > 0) {
+			return 'partial';
+		}
+
+		return 'due';
+	};
+
+	const statusLabel = () => {
+		switch (balanceState()) {
+			case 'credit':
+				return 'CREDIT OWED';
+			case 'settled':
+				return 'PAID';
+			case 'partial':
+				return 'PARTIALLY PAID';
+			default:
+				return 'UNPAID';
+		}
+	};
+
+	const balanceSummaryLabel = () =>
+		balanceDue() < 0 ? 'Credit balance' : 'Balance due';
 </script>
 
 <div class="invoice-preview">
-	<div class="header-section">
-		{#if invoice.logo}
-			<div class="logo">
-				{#if typeof invoice.logo === 'string'}
-					<img src={invoice.logo} alt="Logo" />
+	<header class="preview-header">
+		<div class="brand">
+			<div class="logo-shell" class:is-placeholder={!invoice.logo}>
+				{#if invoice.logo}
+					{#if typeof invoice.logo === 'string'}
+						<img src={invoice.logo} alt="Uploaded logo" />
+					{:else}
+						<img src={URL.createObjectURL(invoice.logo)} alt="Uploaded logo" />
+					{/if}
 				{:else}
-					<img src={URL.createObjectURL(invoice.logo)} alt="Logo" />
+					<img src={DEFAULT_LOGO_PATH} alt="FreeInvoice placeholder logo" />
 				{/if}
 			</div>
-		{/if}
-
-		<div class="invoice-meta-header">
-			{#if invoice.invoiceNumber}
-				<div class="invoice-number"><strong>Invoice #:</strong> {invoice.invoiceNumber}</div>
-			{/if}
-			{#if invoice.paid !== undefined}
-				<div class="paid-badge {invoice.paid ? 'paid' : 'unpaid'}">
-					<span>{invoice.paid ? 'PAID' : 'UNPAID'}</span>
-				</div>
-			{/if}
+			<div class="invoice-meta">
+				<span class="meta-label">Invoice #</span>
+				<span class="meta-value">{invoice.invoiceNumber || 'Pending'}</span>
+			</div>
 		</div>
-	</div>
 
-	<div class="addresses">
-		<div><strong>From:</strong> {invoice.invoiceFrom}</div>
-		<div><strong>To:</strong> {invoice.invoiceTo}</div>
-	</div>
+		<div class="status-stack">
+			<span class={`status-pill ${balanceState()}`}>{statusLabel()}</span>
+			<div class="balance">
+				<span class="balance-label">{balanceSummaryLabel()}</span>
+				<span class="balance-amount">
+					{toUSCurrency(Math.abs(balanceDue()))}
+				</span>
+				{#if invoice.dueDate}
+					<span class="balance-meta">Due {invoice.dueDate}</span>
+				{/if}
+			</div>
+		</div>
+	</header>
 
-	<div class="dates">
-		<div><strong>Invoice Date:</strong> {invoice.date}</div>
-		<div><strong>Due Date:</strong> {invoice.dueDate}</div>
-	</div>
+	<section class="details-grid">
+		<div class="details-block">
+			<span class="details-label">From</span>
+			<span class="details-value">{invoice.invoiceFrom || '—'}</span>
+		</div>
+		<div class="details-block">
+			<span class="details-label">To</span>
+			<span class="details-value">{invoice.invoiceTo || '—'}</span>
+		</div>
+		<div class="details-block">
+			<span class="details-label">Invoice Date</span>
+			<span class="details-value">{invoice.date || '—'}</span>
+		</div>
+		<div class="details-block">
+			<span class="details-label">Due Date</span>
+			<span class="details-value">{invoice.dueDate || '—'}</span>
+		</div>
+	</section>
 
-	<table class="items-table">
-		<thead>
-			<tr>
-				<th>Item</th>
-				<th>Quantity</th>
-				<th>Price</th>
-				<th>Amount</th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each invoice.items as item}
+	<div class="items-card">
+		<table class="items-table">
+			<thead>
 				<tr>
-					<td>{item.name}</td>
-					<td>{item.quantity}</td>
-					<td>{toUSCurrency(item.price)}</td>
-					<td>{toUSCurrency(item.amount || item.price * item.quantity)}</td>
+					<th>Item</th>
+					<th>Quantity</th>
+					<th>Price</th>
+					<th>Amount</th>
 				</tr>
-			{/each}
-		</tbody>
-	</table>
+			</thead>
+			<tbody>
+				{#if invoice.items?.length}
+					{#each invoice.items as item, index (index)}
+						<tr>
+							<td>{item.name || `Item ${index + 1}`}</td>
+							<td>{item.quantity ?? 0}</td>
+							<td>{toUSCurrency(item.price || 0)}</td>
+							<td>{toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td>
+						</tr>
+					{/each}
+				{:else}
+					<tr class="empty-row">
+						<td colspan="4">Add line items to populate your invoice.</td>
+					</tr>
+				{/if}
+			</tbody>
+		</table>
+	</div>
 
-	<div class="summary">
-		<div class="summary-item">
-			<span class="summary-item-label">Subtotal:</span>
-			<span class="summary-item-value">{toUSCurrency(subTotal)}</span>
+	<section class="summary">
+		<div class="summary-table">
+			<div class="summary-row">
+				<span>Subtotal:</span>
+				<span>{toUSCurrency(subTotal())}</span>
+			</div>
+			<div class="summary-row">
+				<span>Discount:</span>
+				<span>-{toUSCurrency(discountDisplayValue())}</span>
+			</div>
+			<div class="summary-row">
+				<span>Tax:</span>
+				<span>+{toUSCurrency(taxDisplayValue())}</span>
+			</div>
+			<div class="summary-row">
+				<span>Shipping:</span>
+				<span>+{toUSCurrency(shippingDisplayValue())}</span>
+			</div>
+			<div class="summary-row emphasize">
+				<span>Total:</span>
+				<span>{toUSCurrency(totalAmount())}</span>
+			</div>
+			<div class="summary-row">
+				<span>Amount Paid:</span>
+				<span>{toUSCurrency(amountPaid())}</span>
+			</div>
+			<div class="summary-row emphasize">
+				<span>{balanceDue() < 0 ? 'Credit:' : 'Due:'}</span>
+				<span>{toUSCurrency(Math.abs(balanceDue()))}</span>
+			</div>
 		</div>
-		<div class="summary-item">
-			<span class="summary-item-label">Discount:</span>
-			<span class="summary-item-value">-{toUSCurrency(discountDisplayValue)}</span>
+	</section>
+
+	<section class="terms">
+		<div class="terms-block">
+			<span class="details-label">Terms</span>
+			<p>{invoice.terms || '—'}</p>
 		</div>
-		<div class="summary-item">
-			<span class="summary-item-label">Tax:</span>
-			<span class="summary-item-value">+{toUSCurrency(taxDisplayValue())}</span>
+		<div class="terms-block">
+			<span class="details-label">Notes</span>
+			<p>{invoice.notes || '—'}</p>
 		</div>
-		<div class="summary-item">
-			<span class="summary-item-label">Shipping:</span>
-			<span class="summary-item-value">+{toUSCurrency(shippingDisplayValue)}</span>
-		</div>
-		<div class="summary-item total-line">
-			<span class="summary-item-label">Total:</span>
-			<span class="summary-item-value">{toUSCurrency(totalAmount)}</span>
-		</div>
-		<div class="summary-item">
-			<span class="summary-item-label">Amount Paid:</span>
-			<span class="summary-item-value">{toUSCurrency(invoice.amountPaid || 0)}</span>
-		</div>
-		<div class="summary-item balance-due-line">
-			<span class="summary-item-label">Due:</span>
-			<span class="summary-item-value">{toUSCurrency(balanceDue)}</span>
-		</div>
-	</div>
-	<div class="terms">
-		<div><strong>Terms:</strong> {invoice.terms}</div>
-		<div><strong>Notes:</strong> {invoice.notes}</div>
-	</div>
+	</section>
 </div>
 
 <style>
 	.invoice-preview {
-		padding: 2rem;
-		background: #ffffff;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.5rem;
-		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-			Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-	}
-	.logo {
-		text-align: center;
-		margin: 0 auto;
-		margin-bottom: 1.5rem; /* Increased margin for better separation */
-		max-width: 100%;
-	}
-
-
-	.logo img {
-		max-width: 150px; /* or 250px depending on your design */
-		width: auto;
-		height: auto;
-		object-fit: contain; /* optional: forces better scaling inside the box */
-	}
-	@media (max-width: 640px) {
-		.logo img {
-			max-width: 150px;
-		}
-	}
-	.invoice-meta-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1.5rem;
-	}
-
-	.addresses,
-	.dates {
-		margin-bottom: 1rem;
-		display: flex;
-		justify-content: space-between;
-	}
-	.items-table {
-		width: 100%;
-		border-collapse: collapse;
-		margin-top: 1.5rem;
-	}
-	.items-table th,
-	.items-table td {
-		border: 1px solid #d1d5db;
-		padding: 0.75rem;
-		text-align: left;
-	}
-	.items-table th {
-		background-color: #f3f4f6;
-	}
-	.summary {
-		margin-top: 2rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem; /* Increased gap for readability */
-		margin-bottom: 2rem;
-		align-items: flex-end;
-	}
-	.summary-item {
-		display: grid;
-		grid-template-columns: auto auto; /* Label and Value */
-		justify-content: end;
-		gap: 1.5em; /* Space between label and value */
-		width: auto;
-		min-width: 280px; /* Adjust as needed for content */
-		font-size: 0.9rem;
-	}
-	.summary-item-label {
-		text-align: right;
-		color: #4b5563; /* Slightly muted label color */
-	}
-	.summary-item-value {
-		text-align: right;
-		font-weight: 500;
-		color: #1f2937;
-	}
-	.summary-item-value.negative {
-		color: #ef4444; /* Red for negative values like discounts */
-	}
-	.summary-item-value.positive {
-		color: #10b981; /* Green for positive values like tax/shipping */
-	}
-	.total-line .summary-item-label,
-	.total-line .summary-item-value {
-		font-weight: bold;
-		font-size: 1.1em;
-		color: #111827;
-	}
-	.balance-due-line .summary-item-label,
-	.balance-due-line .summary-item-value {
-		font-weight: bold;
-		font-size: 1.05em;
+		gap: 1.75rem;
+		padding: 1.5rem;
+		border-radius: var(--radius-lg);
+		background: var(--color-bg-primary);
 	}
 
-	.terms {
+	.preview-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1.25rem;
+		flex-wrap: wrap;
+	}
+
+	.brand {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.logo-shell {
+		width: 64px;
+		height: 64px;
+		border-radius: var(--radius-md);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border-secondary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.logo-shell img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	.logo-shell.is-placeholder {
+		border-style: dashed;
+		border-color: rgba(59, 130, 246, 0.45);
+	}
+
+	.invoice-meta {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
-		margin-top: 2rem;
 	}
-	.paid-badge {
-		display: inline-block;
-		font-weight: bold;
-		font-size: 1rem;
+
+	.meta-label {
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: var(--color-text-secondary);
+		letter-spacing: 0.08em;
 	}
-	.paid {
-		color: #10b981; /* green for paid */
+
+	.meta-value {
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
 	}
-	.unpaid {
-		color: #f97316; /* orange for unpaid */
+
+	.status-stack {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.5rem;
+		min-width: 180px;
+	}
+
+	.status-pill {
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		padding: 0.3rem 0.75rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid transparent;
+	}
+
+	.status-pill.due {
+		background: rgba(249, 115, 22, 0.12);
+		color: #c2410c;
+		border-color: rgba(249, 115, 22, 0.22);
+	}
+
+	.status-pill.partial {
+		background: rgba(59, 130, 246, 0.12);
+		color: var(--color-accent-blue);
+		border-color: rgba(59, 130, 246, 0.22);
+	}
+
+	.status-pill.settled {
+		background: rgba(16, 185, 129, 0.12);
+		color: #047857;
+		border-color: rgba(16, 185, 129, 0.22);
+	}
+
+	.status-pill.credit {
+		background: rgba(16, 185, 129, 0.12);
+		color: #047857;
+		border-color: rgba(16, 185, 129, 0.22);
+	}
+
+	.balance {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.15rem;
+		text-align: right;
+	}
+
+	.balance-label {
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: var(--color-text-secondary);
+		letter-spacing: 0.08em;
+	}
+
+	.balance-amount {
+		font-size: 1.6rem;
+		font-weight: 700;
+		color: var(--color-text-primary);
+	}
+
+	.balance-meta {
+		font-size: 0.85rem;
+		color: var(--color-text-secondary);
+	}
+
+	.details-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 1rem;
+		padding: 1rem;
+		border-radius: var(--radius-md);
+		background: var(--color-bg-secondary);
+	}
+
+	.details-block {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.details-label {
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-secondary);
+	}
+
+	.details-value {
+		font-size: 0.95rem;
+		color: var(--color-text-primary);
+		word-break: break-word;
+	}
+
+	.items-card {
+		border-radius: var(--radius-md);
+		overflow: hidden;
+	}
+
+	.items-table {
+		width: 100%;
+		border-collapse: collapse;
+		background: var(--color-bg-primary);
+	}
+
+	.items-table th {
+		text-align: left;
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 0.75rem;
+		color: var(--color-text-secondary);
+		background: var(--color-bg-secondary);
+	}
+
+	.items-table td {
+		padding: 0.75rem;
+		font-size: 0.92rem;
+		color: var(--color-text-primary);
+	}
+
+	.items-table tbody tr:nth-child(odd):not(.empty-row) {
+		background: rgba(148, 163, 184, 0.08);
+	}
+
+	.empty-row td {
+		text-align: center;
+		font-style: italic;
+		color: var(--color-text-secondary);
+	}
+
+	.summary {
+		display: flex;
+		justify-content: stretch;
+	}
+
+	.summary-table {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		padding: 1rem;
+		border-radius: var(--radius-md);
+		background: var(--color-bg-secondary);
+	}
+
+	.summary-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.95rem;
+		color: var(--color-text-primary);
+	}
+
+	.summary-row span:first-child {
+		color: var(--color-text-secondary);
+	}
+
+	.summary-row.emphasize {
+		font-weight: 600;
+	}
+
+	.summary-row.emphasize span:first-child {
+		color: var(--color-text-primary);
+	}
+
+	.terms {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 1rem;
+	}
+
+	.terms-block {
+		padding: 1rem;
+		border-radius: var(--radius-md);
+		background: var(--color-bg-secondary);
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.terms-block p {
+		margin: 0;
+		font-size: 0.95rem;
+		color: var(--color-text-primary);
+		white-space: pre-wrap;
+		min-height: 1.2rem;
+	}
+
+	@media (max-width: 640px) {
+		.invoice-preview {
+			padding: 1.25rem;
+		}
+
+		.status-stack {
+			align-items: flex-start;
+			min-width: unset;
+			width: 100%;
+		}
+
+		.status-stack .balance {
+			align-items: flex-start;
+			text-align: left;
+		}
+
+		.summary {
+			justify-content: stretch;
+		}
 	}
 </style>

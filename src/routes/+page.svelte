@@ -174,15 +174,21 @@
 {#if invoice}
 	<div class="page-layout">
 		<div class="form-section">
-			<div class="form-header">
-				<h1 class="text-gray-900 dark:text-white">{$_('invoice.edit')}</h1>
-				<button
-					class="new-invoice-btn inline-block p-2 bg-blue-600 hover:bg-blue-700 text-white rounded mb-6 transition-colors"
-					onclick={startNewInvoice}
-				>
-					{$_('invoice.new')}
-				</button>
-			</div>
+			<button
+				class="icon-button form-action"
+				aria-label={$_('invoice.new')}
+				title={$_('invoice.new')}
+				onclick={startNewInvoice}
+			>
+				<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path
+						fill-rule="evenodd"
+						d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
+						clip-rule="evenodd"
+					/>
+				</svg>
+				<span class="sr-only">{$_('invoice.new')}</span>
+			</button>
 
 			<InvoiceFormComponent
 				{invoice}
@@ -204,20 +210,37 @@
 		</div>
 
 		<div class="preview-section" class:mobile-preview-open={showMobilePreview}>
-			<div class="preview-header">
-				<h1 class="text-gray-900 dark:text-white">{$_('invoice.preview')}</h1>
-				<button
-					class="save-pdf-btn inline p-2 mb-6 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-					onclick={saveAsPDF}
-					disabled={isGeneratingPDF}
-				>
-					{#if isGeneratingPDF}
-						⏳ {$_('invoice.downloading')}
-					{:else}
-						{$_('invoice.save_pdf')}
-					{/if}
-				</button>
-			</div>
+			<button
+				class="icon-button preview-action"
+				aria-label={$_('invoice.save_pdf')}
+				title={$_('invoice.save_pdf')}
+				onclick={saveAsPDF}
+				disabled={isGeneratingPDF}
+			>
+				{#if isGeneratingPDF}
+					<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+						<circle
+							cx="12"
+							cy="12"
+							r="9"
+							stroke-width="2"
+							stroke-dasharray="45 15"
+							stroke-dashoffset="0"
+							stroke-linecap="round"
+						/>
+					</svg>
+					<span class="sr-only">{$_('invoice.downloading')}</span>
+				{:else}
+					<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path
+							fill-rule="evenodd"
+							d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					<span class="sr-only">{$_('invoice.save_pdf')}</span>
+				{/if}
+			</button>
 
 			<div bind:this={previewRef}>
 				<InvoicePreviewComponent {invoice} />
@@ -244,24 +267,94 @@
 	.page-layout {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 2rem;
-		padding: 2rem;
+		gap: 1.1rem;
+		padding: 1.25rem;
 		position: relative;
 	}
 
 	.form-section,
 	.preview-section {
-		background: var(--color-bg-secondary);
-		padding: 1.5rem;
-		border-radius: 0.5rem;
+		--section-padding: 1rem;
+		--section-radius: var(--radius-lg);
+		background: var(--color-bg-primary);
+		padding: var(--section-padding);
 		border: 1px solid var(--color-border-primary);
 		overflow-y: auto;
 		max-height: 90vh;
+		position: relative;
 	}
 
-	h1 {
-		font-size: 1.5rem;
-		margin-bottom: 1rem;
+	.icon-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid transparent;
+		background-color: var(--color-accent, #2563eb);
+		color: var(--color-accent-contrast, #ffffff);
+		box-shadow: var(--shadow-soft);
+		cursor: pointer;
+		transition: background-color 0.2s ease, border-color 0.2s ease;
+		position: relative;
+	}
+
+	.icon-button:disabled {
+		cursor: not-allowed;
+		opacity: 0.7;
+		box-shadow: none;
+	}
+
+	.icon-button:not(:disabled):hover {
+		border-color: color-mix(in srgb, var(--color-accent, #2563eb) 30%, transparent 70%);
+	}
+
+	.icon-button:focus-visible {
+		outline: none;
+		box-shadow: var(--shadow-focus);
+	}
+
+	.icon {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	.spin {
+		animation: spin 0.9s linear infinite;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	.form-section .form-action,
+	.preview-section .preview-action {
+		position: absolute;
+		top: 0.65rem;
+		right: 0.65rem;
+		z-index: 3;
+	}
+
+	:global(.invoice-form) {
+		padding-top: 1.5rem;
+	}
+
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.mobile-preview-toggle {
@@ -272,13 +365,13 @@
 	@media (max-width: 1024px) {
 		.page-layout {
 			grid-template-columns: 2fr 3fr;
-			gap: 1rem;
-			padding: 1rem;
+			gap: 0.9rem;
+			padding: 1.1rem;
 		}
 
 		.form-section,
 		.preview-section {
-			padding: 1rem;
+			--section-padding: 0.9rem;
 		}
 	}
 
@@ -286,7 +379,11 @@
 	@media (max-width: 768px) {
 		.page-layout {
 			grid-template-columns: 1fr;
-			padding: 1rem;
+			padding: 0.85rem;
+		}
+
+		.form-section {
+			--section-padding: 0.85rem;
 		}
 
 		.preview-section {
@@ -300,6 +397,8 @@
 			transform: translateY(100%);
 			transition: transform 0.3s ease;
 			border-radius: 0;
+			--section-radius: 0;
+			--section-padding: 1.1rem;
 		}
 
 		.preview-section.mobile-preview-open {
@@ -315,15 +414,15 @@
 			padding: 0.75rem 1.5rem;
 			background: #3b82f6;
 			color: white;
-			border-radius: 9999px;
-			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+			border-radius: var(--radius-pill);
+			box-shadow: var(--shadow-soft);
 			font-weight: 500;
-			transition: all 0.2s;
+			transition: background-color 0.2s ease, box-shadow 0.2s ease;
 		}
 
 		.mobile-preview-toggle:hover {
 			background: #2563eb;
-			box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+			box-shadow: var(--shadow-soft);
 		}
 
 		.form-section {

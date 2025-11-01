@@ -41,9 +41,18 @@
 	}
 	.item-input input {
 		flex: 1;
-		padding: 0.5rem;
-		border: 1px solid #d1d5db;
-		border-radius: 0.375rem;
+		padding: 0.55rem 0.75rem;
+		border: 1px solid var(--color-border-secondary);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-secondary);
 		font-size: 1rem;
+		color: var(--color-text-primary);
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.item-input input:focus {
+		outline: none;
+		border-color: var(--color-accent-blue);
+		box-shadow: var(--shadow-focus);
 	}
 </style>

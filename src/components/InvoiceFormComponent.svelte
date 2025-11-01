@@ -52,134 +52,307 @@
 </script>
 
 <form class="invoice-form" onsubmit={(e) => e.preventDefault()}>
-	<div class="form-section">
-		<label for="invoiceFrom">From</label>
-		<input
-			id="invoiceFrom"
-			type="text"
-			value={invoice.invoiceFrom}
-			placeholder="Your Company"
-			oninput={onInvoiceFromInput}
+	<section class="panel">
+		<header class="panel-header">
+			<span class="panel-eyebrow">Basics</span>
+			<h2>Invoice Details</h2>
+			<p class="panel-subtitle">Set the sender, recipient, and important dates.</p>
+		</header>
+
+		<div class="field-grid">
+			<div class="field">
+				<label for="invoiceFrom">From</label>
+				<input
+					id="invoiceFrom"
+					type="text"
+					value={invoice.invoiceFrom}
+					placeholder="Your Company"
+					oninput={onInvoiceFromInput}
+				/>
+			</div>
+
+			<div class="field">
+				<label for="invoiceTo">To</label>
+				<input
+					id="invoiceTo"
+					type="text"
+					oninput={onInvoiceToInput}
+					value={invoice.invoiceTo}
+					placeholder="Client Name"
+				/>
+			</div>
+
+			<div class="field">
+				<label for="invoiceDate">Invoice Date</label>
+				<input id="invoiceDate" type="date" value={invoice.date} oninput={handleInvoiceDateChange} />
+			</div>
+
+			<div class="field">
+				<label for="dueDate">Due Date</label>
+				<input id="dueDate" type="date" value={invoice.dueDate} oninput={handleDueDateChange} />
+				<small class="field-hint"
+					>If you change Invoice Date, Due Date auto-adjusts (+30 days) unless you edit manually.</small
+				>
+			</div>
+		</div>
+	</section>
+
+	<section class="panel">
+		<header class="panel-header">
+			<span class="panel-eyebrow">Branding</span>
+			<h2>Logo</h2>
+			<p class="panel-subtitle">Optional logo helps your invoice feel polished.</p>
+		</header>
+
+		<div class="field">
+			<label for="logoUpload">Upload Logo</label>
+			<input id="logoUpload" type="file" accept="image/*" onchange={handleFileChange} />
+			{#if invoice.logoFilename}
+				<small class="loaded-filename">Current: {invoice.logoFilename}</small>
+			{/if}
+			{#if invoice.logo}
+				<FilePreviewComponent file={invoice.logo} />
+			{/if}
+		</div>
+	</section>
+
+	<section class="panel">
+		<header class="panel-header">
+			<span class="panel-eyebrow">Items</span>
+			<h2>Invoice Items</h2>
+			<p class="panel-subtitle">Track every product or service going on this invoice.</p>
+		</header>
+
+		<div class="items-stack">
+			{#each invoice.items as item, index}
+				<ItemFormComponent
+					{item}
+					{index}
+					onUpdate={(updatedItem) => updateItem(index, updatedItem)}
+				/>
+			{/each}
+		</div>
+
+		<button type="button" class="add-item-btn" onclick={addItem}>
+			<span aria-hidden="true">＋</span>
+			Add another line
+		</button>
+	</section>
+
+	<section class="panel">
+		<header class="panel-header">
+			<span class="panel-eyebrow">Notes</span>
+			<h2>Terms & Notes</h2>
+			<p class="panel-subtitle">Clarify payment expectations or leave a personal message.</p>
+		</header>
+
+		<TermsAndNotesComponent
+			terms={invoice.terms}
+			notes={invoice.notes}
+			onUpdateTerms={updateTerms}
+			onUpdateNotes={updateNotes}
 		/>
-	</div>
+	</section>
 
-	<div class="form-section">
-		<label for="invoiceTo">To</label>
-		<input id="invoiceTo" type="text" oninput={onInvoiceToInput} value={invoice.invoiceTo} placeholder="Client Name" />
-	</div>
+	<section class="panel">
+		<header class="panel-header">
+			<span class="panel-eyebrow">Payment</span>
+			<h2>Totals & Status</h2>
+			<p class="panel-subtitle">Keep the running balance up to date.</p>
+		</header>
 
-	<div class="form-section">
-		<label for="invoiceDate">Invoice Date</label>
-		<input
-			id="invoiceDate"
-			type="date"
-			value={invoice.date}
-			oninput={handleInvoiceDateChange}
-		/>
-	</div>
+		<div class="summary-section">
+			<AmountPaidComponent {updatePaidAmount} amountPaid={invoice.amountPaid} />
 
-	<div class="form-section">
-		<label for="dueDate">Due Date</label>
-		<input id="dueDate" type="date" value={invoice.dueDate} oninput={handleDueDateChange} />
-		<small
-			>If you change Invoice Date, Due Date will auto-adjust (+30 days) unless you edit manually.</small
-		>
-	</div>
+			<TotalComponent {invoice} {onUpdateTax} {onUpdateDiscount} {onUpdateShipping} />
+		</div>
 
-	<div class="form-section">
-		<label for="logoUpload">Upload Logo</label>
-		<input id="logoUpload" type="file" accept="image/*" onchange={handleFileChange} />
-		{#if invoice.logoFilename}
-			<small class="loaded-filename">Current: {invoice.logoFilename}</small>
-		{/if}
-		{#if invoice.logo}
-			<FilePreviewComponent file={invoice.logo} />
-		{/if}
-	</div>
-
-	<h3 class="invoice-items-header">Invoice Items</h3>
-	{#each invoice.items as item, index}
-		<ItemFormComponent {item} onUpdate={(updatedItem) => updateItem(index, updatedItem)} />
-	{/each}
-
-	<button type="button" class="add-item-btn" onclick={addItem}> Add Item </button>
-
-	<TermsAndNotesComponent
-		terms={invoice.terms}
-		notes={invoice.notes}
-		onUpdateTerms={updateTerms}
-		onUpdateNotes={updateNotes}
-	/>
-
-	<AmountPaidComponent {updatePaidAmount} amountPaid={invoice.amountPaid} />
-
-	<TotalComponent {invoice} {onUpdateTax} {onUpdateDiscount} {onUpdateShipping} />
-	<div class="paid-status">
-		<label>
-			<input type="checkbox" onchange={(e) => togglePaidStatus(e.target.checked)} checked={invoice.paid} />
-			Mark as Paid
+		<label class="paid-status">
+			<input
+				type="checkbox"
+				onchange={(e) => togglePaidStatus(e.target.checked)}
+				checked={invoice.paid}
+			/>
+			<span class="status-label">Mark invoice as paid</span>
 		</label>
-	</div>
+	</section>
 </form>
 
 <style>
 	.invoice-form {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
-		padding: 2rem;
-		background: #f9fafb;
-		border-radius: 0.5rem;
-		border: 1px solid #e5e7eb;
+		gap: 1.15rem;
 	}
-	.form-section {
+
+	.panel {
 		display: flex;
 		flex-direction: column;
+		gap: 1.15rem;
+		padding: 1.35rem;
+		background: var(--color-bg-primary);
 	}
-	.form-section label {
-		margin-bottom: 0.5rem;
-		font-weight: bold;
+
+	.panel-header {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
 	}
-	.form-section input[type='text'],
-	.form-section input[type='date'],
-	.form-section input[type='file'] {
-		padding: 0.5rem;
-		border: 1px solid #d1d5db;
-		border-radius: 0.375rem;
-		font-size: 1rem;
+
+	.panel-eyebrow {
+		font-size: 0.7rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--color-text-secondary);
+		font-weight: 600;
 	}
-	.add-item-btn {
-		padding: 0.5rem 1rem;
-		background-color: #2563eb;
-		color: white;
-		border: none;
-		border-radius: 0.375rem;
-		font-size: 1rem;
+
+	.panel-header h2 {
+		margin: 0;
+		font-size: 1.35rem;
+		color: var(--color-text-primary);
+	}
+
+	.panel-subtitle {
+		margin: 0;
+		color: var(--color-text-secondary);
+		font-size: 0.9rem;
+	}
+
+	.field-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 1rem;
+	}
+
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.field label {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.field input[type='text'],
+	.field input[type='date'],
+	.field input[type='number'],
+	.field input[type='file'] {
+		padding: 0.65rem 0.85rem;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border-secondary);
+		background: var(--color-bg-secondary);
+		color: var(--color-text-primary);
+		font-size: 0.95rem;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.field input:focus {
+		outline: none;
+		border-color: var(--color-accent-blue);
+		box-shadow: var(--shadow-focus);
+	}
+
+	.field input[type='file'] {
+		padding: 0.45rem 0.8rem;
 		cursor: pointer;
-		width: fit-content;
 	}
+
+	.field input[type='file']::file-selector-button {
+		margin-right: 0.85rem;
+		padding: 0.4rem 0.9rem;
+		border: none;
+		border-radius: var(--radius-sm);
+		background: var(--color-accent-blue);
+		color: #fff;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.2s ease;
+	}
+
+	.field input[type='file']::file-selector-button:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 85%, black 15%);
+	}
+
+	.field-hint {
+		color: var(--color-text-secondary);
+		font-size: 0.8rem;
+		line-height: 1.4;
+	}
+
+	.items-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+	}
+
+	.add-item-btn {
+		align-self: flex-start;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0.65rem 1.1rem;
+		border-radius: var(--radius-pill);
+		background: rgba(59, 130, 246, 0.12);
+		color: var(--color-accent-blue);
+		font-weight: 600;
+		border: 1px solid rgba(59, 130, 246, 0.24);
+		cursor: pointer;
+		transition: background-color 0.2s ease, border-color 0.2s ease;
+	}
+
 	.add-item-btn:hover {
-		background-color: #1d4ed8;
+		background: rgba(59, 130, 246, 0.18);
 	}
+
+	.summary-section {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
 	.paid-status {
-		margin-top: 1rem;
-		font-weight: bold;
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.6rem;
+		padding: 0.85rem 1rem;
+		border-radius: var(--radius-md);
+		background: rgba(59, 130, 246, 0.12);
+		border: 1px solid rgba(59, 130, 246, 0.24);
+		font-weight: 600;
+		color: var(--color-text-primary);
 	}
+
 	.paid-status input {
-		transform: scale(1.5);
+		width: 1.1rem;
+		height: 1.1rem;
+		accent-color: var(--color-accent-blue);
 	}
+
+	.status-label {
+		font-size: 0.9rem;
+	}
+
 	.loaded-filename {
 		font-size: 0.8rem;
-		color: #555;
-		margin-top: 0.25rem;
+		color: var(--color-text-secondary);
 	}
-	.invoice-items-header {
-		margin-top: 1.5rem;
-		font-size: 1.25rem;
-		font-weight: bold;
-		color: #111827;
+
+	@media (max-width: 900px) {
+		.panel {
+			padding: 1.2rem;
+			gap: 1.05rem;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.panel {
+			padding: 1.1rem;
+			border-radius: var(--radius-md);
+			gap: 1.05rem;
+		}
 	}
 </style>

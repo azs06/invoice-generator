@@ -19,78 +19,213 @@
 </script>
 
 <div class="additional-payments">
-	<h3>Additional Payments</h3>
-
-	{#each additionalPayments as payment, index}
-		<div class="payment-entry">
-			<input
-				type="date"
-				bind:value={payment.date}
-				oninput={(e) => updatePayment(index, 'date', e.target.value)}
-			/>
-			<input
-				type="number"
-				min="0"
-				placeholder="Amount"
-				bind:value={payment.amount}
-				oninput={(e) => updatePayment(index, 'amount', +e.target.value)}
-			/>
-			<input
-				type="text"
-				placeholder="Payment Method"
-				bind:value={payment.method}
-				oninput={(e) => updatePayment(index, 'method', e.target.value)}
-			/>
-			<button type="button" onclick={() => removePayment(index)} class="remove-btn">Remove</button>
+	<header class="payments-header">
+		<div>
+			<span class="eyebrow">Optional</span>
+			<h3>Additional Payments</h3>
+			<p class="subtitle">Log partial payments you've received so the balance stays accurate.</p>
 		</div>
-	{/each}
+		<button type="button" class="add-btn" onclick={addPayment}>
+			<span aria-hidden="true">＋</span>
+			Add payment
+		</button>
+	</header>
 
-	<button type="button" class="add-btn" onclick={addPayment}> Add Payment </button>
+	{#if additionalPayments.length === 0}
+		<p class="empty-state">No extra payments recorded yet.</p>
+	{:else}
+		<div class="payments-list">
+			{#each additionalPayments as payment, index}
+				<div class="payment-entry">
+					<div class="field">
+						<label for={`payment-date-${index}`}>Date</label>
+						<input
+							id={`payment-date-${index}`}
+							type="date"
+							bind:value={payment.date}
+							oninput={(e) => updatePayment(index, 'date', e.target.value)}
+						/>
+					</div>
+					<div class="field">
+						<label for={`payment-amount-${index}`}>Amount</label>
+						<input
+							id={`payment-amount-${index}`}
+							type="number"
+							min="0"
+							step="0.01"
+							placeholder="0.00"
+							bind:value={payment.amount}
+							oninput={(e) => updatePayment(index, 'amount', +e.target.value)}
+						/>
+					</div>
+					<div class="field field--wide">
+						<label for={`payment-method-${index}`}>Method</label>
+						<input
+							id={`payment-method-${index}`}
+							type="text"
+							placeholder="Card, bank transfer, cash..."
+							bind:value={payment.method}
+							oninput={(e) => updatePayment(index, 'method', e.target.value)}
+						/>
+					</div>
+					<button
+						type="button"
+						onclick={() => removePayment(index)}
+						class="remove-btn"
+						aria-label={`Remove payment #${index + 1}`}
+					>
+						Remove
+					</button>
+				</div>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style>
 	.additional-payments {
-		margin-top: 2rem;
-		padding: 1rem;
-		background-color: #f3f4f6;
-		border-radius: 0.5rem;
-	}
-	.payment-entry {
 		display: flex;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
+		flex-direction: column;
+		gap: 1.5rem;
+		padding: 1.5rem;
+		border-radius: var(--radius-lg);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border-secondary);
+	}
+
+	.payments-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.25rem;
 		flex-wrap: wrap;
 	}
-	.payment-entry input {
-		padding: 0.5rem;
-		border: 1px solid #d1d5db;
-		border-radius: 0.375rem;
-		flex: 1 1 30%;
-		font-size: 1rem;
+
+	.eyebrow {
+		display: block;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		font-weight: 600;
+		color: var(--color-text-secondary);
+		margin-bottom: 0.25rem;
 	}
-	.remove-btn {
-		background-color: #ef4444;
-		color: white;
-		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 0.375rem;
-		cursor: pointer;
-		font-size: 0.875rem;
+
+	.payments-header h3 {
+		margin: 0;
+		font-size: 1.25rem;
+		color: var(--color-text-primary);
 	}
-	.remove-btn:hover {
-		background-color: #dc2626;
+
+	.subtitle {
+		margin: 0;
+		color: var(--color-text-secondary);
+		font-size: 0.9rem;
 	}
+
 	.add-btn {
-		margin-top: 1rem;
-		padding: 0.5rem 1rem;
-		background-color: #10b981;
-		color: white;
-		border: none;
-		border-radius: 0.375rem;
-		font-size: 1rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0.65rem 1.1rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid rgba(59, 130, 246, 0.24);
+		background: rgba(59, 130, 246, 0.12);
+		color: var(--color-accent-blue);
+		font-weight: 600;
+		font-size: 0.95rem;
 		cursor: pointer;
+		transition: background-color 0.2s ease, border-color 0.2s ease;
 	}
+
 	.add-btn:hover {
-		background-color: #059669;
+		background: rgba(59, 130, 246, 0.18);
+	}
+
+	.empty-state {
+		margin: 0;
+		padding: 1rem 1.25rem;
+		border-radius: var(--radius-md);
+		background: var(--color-bg-primary);
+		border: 1px dashed var(--color-border-secondary);
+		color: var(--color-text-secondary);
+		font-size: 0.9rem;
+	}
+
+	.payments-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.payment-entry {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+		gap: 1rem;
+		padding: 1rem;
+		border-radius: var(--radius-md);
+		background: var(--color-bg-primary);
+		border: 1px solid var(--color-border-primary);
+		align-items: end;
+	}
+
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.field--wide {
+		grid-column: span 1;
+	}
+
+	.field label {
+		font-size: 0.8rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		color: var(--color-text-secondary);
+	}
+
+	.field input {
+		padding: 0.7rem 0.85rem;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border-secondary);
+		background: var(--color-bg-secondary);
+		color: var(--color-text-primary);
+		font-size: 0.95rem;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.field input:focus {
+		outline: none;
+		border-color: var(--color-accent-blue);
+		box-shadow: var(--shadow-focus);
+	}
+
+	.remove-btn {
+		align-self: center;
+		padding: 0.6rem 1rem;
+		border-radius: var(--radius-md);
+		border: 1px solid rgba(248, 113, 113, 0.3);
+		background: rgba(248, 113, 113, 0.12);
+		color: #dc2626;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background-color 0.2s ease, border-color 0.2s ease;
+	}
+
+	.remove-btn:hover {
+		background: rgba(248, 113, 113, 0.18);
+	}
+
+	@media (max-width: 720px) {
+		.payment-entry {
+			grid-template-columns: 1fr;
+		}
+
+		.remove-btn {
+			justify-self: flex-start;
+		}
 	}
 </style>

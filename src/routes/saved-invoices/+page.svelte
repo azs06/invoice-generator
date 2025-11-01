@@ -321,9 +321,10 @@
 	.delete-btn {
 		padding: 0.3rem 0.8rem;
 		font-size: 0.875rem;
-		border-radius: 0.375rem;
+		border-radius: var(--radius-sm);
 		border: none;
 		cursor: pointer;
+		transition: background-color 0.2s ease;
 	}
 	.archive-btn {
 		background-color: #3b82f6; /* Blue */
@@ -349,12 +350,14 @@
 		z-index: 50;
 	}
 	.modal {
-		background: white;
+		background: var(--color-bg-primary);
 		padding: 2rem;
-		border-radius: 0.5rem;
+		border-radius: var(--radius-lg);
 		text-align: center;
 		max-width: 400px;
 		width: 90%;
+		border: 1px solid var(--color-border-primary);
+		box-shadow: var(--shadow-soft);
 	}
 	.modal-actions {
 		display: flex;
