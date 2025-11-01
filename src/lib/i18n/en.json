@@ -1,0 +1,62 @@
+{
+	"app": {
+		"title": "FreeInvoice.info",
+		"tagline": "Free Invoice Generator"
+	},
+	"nav": {
+		"home": "Home",
+		"saved_invoices": "Saved Invoices"
+	},
+	"invoice": {
+		"edit": "Edit Invoice",
+		"preview": "Preview Invoice",
+		"new": "New Invoice",
+		"save_pdf": "Save as PDF",
+		"downloading": "Downloading...",
+		"from": "From",
+		"to": "To",
+		"date": "Invoice Date",
+		"due_date": "Due Date",
+		"number": "Invoice #",
+		"upload_logo": "Upload Logo",
+		"choose_file": "Choose file",
+		"no_file": "No file chosen",
+		"current_logo": "Current"
+	},
+	"items": {
+		"item": "Item",
+		"quantity": "Quantity",
+		"price": "Price",
+		"amount": "Amount",
+		"add_item": "Add Item"
+	},
+	"summary": {
+		"subtotal": "Subtotal",
+		"discount": "Discount",
+		"tax": "Tax",
+		"shipping": "Shipping",
+		"total": "Total",
+		"amount_paid": "Amount Paid",
+		"balance_due": "Balance Due",
+		"due": "Due"
+	},
+	"fields": {
+		"terms": "Terms",
+		"notes": "Notes",
+		"paid_status": "Mark as Paid"
+	},
+	"status": {
+		"paid": "PAID",
+		"unpaid": "UNPAID"
+	},
+	"placeholders": {
+		"from": "Your business name and address",
+		"to": "Client name and address",
+		"item_name": "Item description",
+		"terms": "Payment terms, late fees, etc.",
+		"notes": "Additional notes or thank you message"
+	},
+	"helpers": {
+		"due_date_auto": "If you change Invoice Date, Due Date will auto-adjust (+30 days) unless you edit manually."
+	}
+}

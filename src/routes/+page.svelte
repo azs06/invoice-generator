@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
 	import { saveInvoice, getAllInvoices } from '$lib/db.js';
@@ -11,6 +12,7 @@
 	let invoice = $state(null); // Initialize invoice state as null
 	let previewRef = $state(null); // Reference for the preview section
 	let isGeneratingPDF = $state(false); // State to track PDF generation status
+	let showMobilePreview = $state(false); // Track mobile preview visibility
 
 	let userEditedDueDate = $state(false); // Track if user has edited the due date
 
@@ -173,11 +175,13 @@
 	<div class="page-layout">
 		<div class="form-section">
 			<div class="form-header">
-				<h1>Edit Invoice</h1>
+				<h1 class="text-gray-900 dark:text-white">{$_('invoice.edit')}</h1>
 				<button
-					class="new-invoice-btn inline-block p-2 bg-blue-600 text-white rounded mb-6"
-					onclick={startNewInvoice}>New Invoice</button
+					class="new-invoice-btn inline-block p-2 bg-blue-600 hover:bg-blue-700 text-white rounded mb-6 transition-colors"
+					onclick={startNewInvoice}
 				>
+					{$_('invoice.new')}
+				</button>
 			</div>
 
 			<InvoiceFormComponent
@@ -199,18 +203,18 @@
 			/>
 		</div>
 
-		<div class="preview-section">
+		<div class="preview-section" class:mobile-preview-open={showMobilePreview}>
 			<div class="preview-header">
-				<h1>Preview Invoice</h1>
+				<h1 class="text-gray-900 dark:text-white">{$_('invoice.preview')}</h1>
 				<button
-					class="save-pdf-btn inline p-2 mb-6 bg-blue-600 text-white rounded"
+					class="save-pdf-btn inline p-2 mb-6 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
 					onclick={saveAsPDF}
 					disabled={isGeneratingPDF}
 				>
 					{#if isGeneratingPDF}
-						⏳ Downloading...
+						⏳ {$_('invoice.downloading')}
 					{:else}
-						Save as PDF
+						{$_('invoice.save_pdf')}
 					{/if}
 				</button>
 			</div>
@@ -219,9 +223,21 @@
 				<InvoicePreviewComponent {invoice} />
 			</div>
 		</div>
+
+		<!-- Mobile preview toggle button -->
+		<button
+			class="mobile-preview-toggle"
+			onclick={() => (showMobilePreview = !showMobilePreview)}
+		>
+			{#if showMobilePreview}
+				Close Preview
+			{:else}
+				Show Preview
+			{/if}
+		</button>
 	</div>
 {:else}
-	<p>Loading...</p>
+	<p class="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</p>
 {/if}
 
 <style>
@@ -230,18 +246,88 @@
 		grid-template-columns: 1fr 1fr;
 		gap: 2rem;
 		padding: 2rem;
+		position: relative;
 	}
+
 	.form-section,
 	.preview-section {
-		background: #f9fafb;
+		background: var(--color-bg-secondary);
 		padding: 1.5rem;
 		border-radius: 0.5rem;
-		border: 1px solid #e5e7eb;
+		border: 1px solid var(--color-border-primary);
 		overflow-y: auto;
 		max-height: 90vh;
 	}
+
 	h1 {
 		font-size: 1.5rem;
 		margin-bottom: 1rem;
+	}
+
+	.mobile-preview-toggle {
+		display: none;
+	}
+
+	/* Tablet */
+	@media (max-width: 1024px) {
+		.page-layout {
+			grid-template-columns: 2fr 3fr;
+			gap: 1rem;
+			padding: 1rem;
+		}
+
+		.form-section,
+		.preview-section {
+			padding: 1rem;
+		}
+	}
+
+	/* Mobile */
+	@media (max-width: 768px) {
+		.page-layout {
+			grid-template-columns: 1fr;
+			padding: 1rem;
+		}
+
+		.preview-section {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			z-index: 50;
+			max-height: 100vh;
+			transform: translateY(100%);
+			transition: transform 0.3s ease;
+			border-radius: 0;
+		}
+
+		.preview-section.mobile-preview-open {
+			transform: translateY(0);
+		}
+
+		.mobile-preview-toggle {
+			display: block;
+			position: fixed;
+			bottom: 1rem;
+			right: 1rem;
+			z-index: 40;
+			padding: 0.75rem 1.5rem;
+			background: #3b82f6;
+			color: white;
+			border-radius: 9999px;
+			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+			font-weight: 500;
+			transition: all 0.2s;
+		}
+
+		.mobile-preview-toggle:hover {
+			background: #2563eb;
+			box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+		}
+
+		.form-section {
+			max-height: none;
+		}
 	}
 </style>
