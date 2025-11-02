@@ -80,6 +80,23 @@
 
 ---
 
+## 🧩 Template System Roadmap
+
+### Objectives
+- Serve multiple invoice layouts in the live preview and exported PDF without duplicating business logic.
+- Make templates discoverable from the UI with room for premium offerings later.
+- Keep the current data schema untouched so legacy invoices continue rendering.
+
+### Iteration Plan
+1. **Template Registry** — Create a registry in `src/lib/templates` that maps each template ID to its Svelte component, printable styles, and metadata (name, tags, premium flag). The new registry already powers the dropdown.
+2. **Preview Rendering** — Update `InvoicePreviewComponent.svelte` to read the selected template ID (store) and render the corresponding component. Establish a shared props contract (`{ invoice, totals }`) so templates stay interchangeable.
+3. **PDF Styling** — When calling `html2pdf.js` in `src/routes/+page.svelte`, inject template-specific CSS. Start with inline `<style>` blocks, then graduate to dedicated CSS modules for complex layouts.
+4. **Template Authoring Kit** — Add documentation + Storybook-style playground for designing new templates, covering typography tokens, spacing scale, table variants, and print-safe colors.
+5. **Premium Upsell Hooks** — Flag premium templates in the registry and gate them behind future auth/entitlement checks while keeping the selector experience consistent.
+6. **Persistence & Migration** — Persist `selectedTemplateId` alongside invoices in IndexedDB plus migrate existing records with the default template ID to avoid breaking saved invoices.
+
+---
+
 ## 🔐 Phase 2: Authentication System (1-2 weeks)
 
 ### Goal

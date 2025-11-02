@@ -2,6 +2,7 @@
 	import { _ } from 'svelte-i18n';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import LanguageSelector from './LanguageSelector.svelte';
+	import CurrencySelector from './CurrencySelector.svelte';
 </script>
 
 <header class="app-header">
@@ -17,6 +18,7 @@
 		</div>
 
 		<div class="controls">
+			<CurrencySelector />
 			<LanguageSelector />
 			<ThemeToggle />
 		</div>

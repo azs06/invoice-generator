@@ -3,7 +3,8 @@
 	import { _ } from 'svelte-i18n';
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
-	import { saveInvoice, getAllInvoices } from '$lib/db.js';
+	import TemplateSelector from '$components/TemplateSelector.svelte';
+	import { saveInvoice, getAllInvoices, getInvoice } from '$lib/db.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { totalAmounts  } from '$lib/InvoiceCalculator.js';
 
@@ -16,6 +17,8 @@
 	let activeTab = $state('edit'); // Track active tab: 'edit' or 'preview'
 
 	let userEditedDueDate = $state(false); // Track if user has edited the due date
+	let showSaveDraftModal = $state(false); // Track save draft modal visibility
+	let draftName = $state(''); // Track draft name input
 
 	const createNewInvoice = () => ({
 		id: uuidv4(),
@@ -36,6 +39,8 @@
 		shipping: { amount: 0 },
 		paid: false,
 		archived: false,
+		draft: true,
+		draftName: '',
 		total: 0,
 		subTotal: 0,
 		balanceDue: 0
@@ -90,23 +95,46 @@
 
 	onMount(async () => {
 		const invoicesFromDb = await getAllInvoices();
-		if (invoicesFromDb.length > 0) {
-			// Load the latest invoice by created order (simple pick last)
-			// Ensure we are getting the actual invoice data object
-			const latestInvoiceEntry = invoicesFromDb[invoicesFromDb.length - 1];
-			invoice = latestInvoiceEntry.invoice; // Assuming getAllInvoices returns {id, invoice}
+		let loadedInvoice = null;
 
-			// Set default logo and invoiceLabel if not present
-			if (!invoice.logo) {
-				invoice.logo = '/logo.png';
-				invoice.logoFilename = 'logo.png';
+		if (typeof window !== 'undefined') {
+			const currentUrl = new URL(window.location.href);
+			const invoiceIdFromQuery = currentUrl.searchParams.get('invoice');
+
+			if (invoiceIdFromQuery) {
+				const storedInvoice = await getInvoice(invoiceIdFromQuery);
+				if (storedInvoice) {
+					loadedInvoice = storedInvoice;
+					if (!loadedInvoice.id) {
+						loadedInvoice.id = invoiceIdFromQuery;
+					}
+				}
+
+				currentUrl.searchParams.delete('invoice');
+				const cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+				window.history.replaceState({}, '', cleanUrl);
 			}
-			if (!invoice.invoiceLabel) {
-				invoice.invoiceLabel = 'INVOICE';
-			}
-		} else {
-			// No invoices in DB, so create a new one
-			invoice = createNewInvoice();
+		}
+
+		if (!loadedInvoice && invoicesFromDb.length > 0) {
+			const latestInvoiceEntry = invoicesFromDb[invoicesFromDb.length - 1];
+			loadedInvoice = latestInvoiceEntry.invoice;
+		}
+
+		invoice = loadedInvoice ?? createNewInvoice();
+
+		if (!invoice.id) {
+			invoice.id = uuidv4();
+		}
+		if (!invoice.logo) {
+			invoice.logo = '/logo.png';
+			invoice.logoFilename = 'logo.png';
+		}
+		if (!invoice.invoiceLabel) {
+			invoice.invoiceLabel = 'INVOICE';
+		}
+		if (invoice.draft === undefined || invoice.draft === null) {
+			invoice.draft = true;
 		}
 	});
 
@@ -186,54 +214,96 @@
 	const onInvoiceLabelInput = (e) => {
 		invoice.invoiceLabel = e.target.value;
 	};
+	const openSaveDraftModal = () => {
+		// Pre-fill with invoice label + number
+		draftName = `${invoice.invoiceLabel || 'INVOICE'} ${invoice.invoiceNumber || ''}`.trim();
+		showSaveDraftModal = true;
+	};
+	const closeSaveDraftModal = () => {
+		showSaveDraftModal = false;
+		draftName = '';
+	};
+	const saveDraftAndRedirect = async () => {
+		// Update invoice with draft name and mark as draft
+		invoice.draft = true;
+		invoice.draftName = draftName.trim();
+
+		// Save to IndexedDB (happens automatically via $effect, but we'll ensure it)
+		await saveInvoice(invoice.id, invoice);
+
+		// Close modal
+		closeSaveDraftModal();
+
+		// Redirect to saved invoices page
+		if (typeof window !== 'undefined') {
+			window.location.href = '/saved-invoices';
+		}
+	};
 
 </script>
 {#if invoice}
 	<div class="page-layout">
-		<!-- Tab Navigation -->
-		<div class="tab-navigation">
-			<button
-				class="tab-button"
-				class:active={activeTab === 'edit'}
-				onclick={() => (activeTab = 'edit')}
-			>
-				<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-					<path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v4A1.5 1.5 0 0 0 2.5 10h6A1.5 1.5 0 0 0 10 8.5v-4A1.5 1.5 0 0 0 8.5 3h-6Zm9 0A1.5 1.5 0 0 0 10 4.5v4A1.5 1.5 0 0 0 11.5 10h6A1.5 1.5 0 0 0 19 8.5v-4A1.5 1.5 0 0 0 17.5 3h-6Zm-9 7A1.5 1.5 0 0 0 1 11.5v4A1.5 1.5 0 0 0 2.5 17h6A1.5 1.5 0 0 0 10 15.5v-4A1.5 1.5 0 0 0 8.5 10h-6Zm9 0a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 0-1.5-1.5h-6Z" />
-				</svg>
-				Edit
-			</button>
-			<button
-				class="tab-button"
-				class:active={activeTab === 'preview'}
-				onclick={() => (activeTab = 'preview')}
-			>
-				<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-					<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-					<path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
-				</svg>
-				Preview
-			</button>
+		<div class="page-toolbar">
+			<!-- Tab Navigation -->
+			<div class="tab-navigation">
+				<button
+					class="tab-button"
+					class:active={activeTab === 'edit'}
+					onclick={() => (activeTab = 'edit')}
+				>
+					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v4A1.5 1.5 0 0 0 2.5 10h6A1.5 1.5 0 0 0 10 8.5v-4A1.5 1.5 0 0 0 8.5 3h-6Zm9 0A1.5 1.5 0 0 0 10 4.5v4A1.5 1.5 0 0 0 11.5 10h6A1.5 1.5 0 0 0 19 8.5v-4A1.5 1.5 0 0 0 17.5 3h-6Zm-9 7A1.5 1.5 0 0 0 1 11.5v4A1.5 1.5 0 0 0 2.5 17h6A1.5 1.5 0 0 0 10 15.5v-4A1.5 1.5 0 0 0 8.5 10h-6Zm9 0a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 0-1.5-1.5h-6Z" />
+					</svg>
+					Edit
+				</button>
+				<button
+					class="tab-button"
+					class:active={activeTab === 'preview'}
+					onclick={() => (activeTab = 'preview')}
+				>
+					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+						<path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+					</svg>
+					Preview
+				</button>
+			</div>
+
+			<TemplateSelector />
 		</div>
 
 		<!-- Edit View -->
 		{#if activeTab === 'edit'}
 			<div class="content-section form-section">
 				<div class="sticky-button-wrapper">
-					<button
-						class="icon-button form-action"
-						aria-label={$_('invoice.new')}
-						title={$_('invoice.new')}
-						onclick={startNewInvoice}
-					>
-						<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-							<path
-								fill-rule="evenodd"
-								d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-						<span class="sr-only">{$_('invoice.new')}</span>
-					</button>
+					<div class="button-group">
+						<button
+							class="action-button save-draft-button"
+							title="Save Draft"
+							onclick={openSaveDraftModal}
+						>
+							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+								<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+							</svg>
+							Save Draft
+						</button>
+						<button
+							class="icon-button form-action"
+							aria-label={$_('invoice.new')}
+							title={$_('invoice.new')}
+							onclick={startNewInvoice}
+						>
+							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path
+									fill-rule="evenodd"
+									d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							<span class="sr-only">{$_('invoice.new')}</span>
+						</button>
+					</div>
 				</div>
 
 				<InvoiceFormComponent
@@ -305,6 +375,33 @@
 	<p class="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</p>
 {/if}
 
+<!-- Save Draft Modal -->
+{#if showSaveDraftModal}
+	<div class="modal-backdrop" onclick={closeSaveDraftModal}>
+		<div class="modal" onclick={(e) => e.stopPropagation()}>
+			<h2 class="modal-title">Save Draft</h2>
+			<p class="modal-description">Give your draft a name (optional)</p>
+
+			<input
+				type="text"
+				class="modal-input"
+				placeholder="Draft name"
+				bind:value={draftName}
+				onkeydown={(e) => e.key === 'Enter' && saveDraftAndRedirect()}
+			/>
+
+			<div class="modal-actions">
+				<button class="modal-button cancel-button" onclick={closeSaveDraftModal}>
+					Cancel
+				</button>
+				<button class="modal-button save-button" onclick={saveDraftAndRedirect}>
+					Save
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.page-layout {
 		display: flex;
@@ -314,6 +411,14 @@
 		position: relative;
 		max-width: 1400px;
 		margin: 0 auto;
+	}
+
+	.page-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
 	}
 
 	.tab-navigation {
@@ -431,9 +536,53 @@
 		height: 0;
 	}
 
+	.sticky-button-wrapper .button-group {
+		pointer-events: all;
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+		transform: translate(25%, -25%);
+	}
+
 	.sticky-button-wrapper .icon-button {
 		pointer-events: all;
-		transform: translate(25%, -25%);
+		transform: none;
+	}
+
+	.action-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		padding: 0.5rem 1rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid transparent;
+		font-weight: 500;
+		font-size: 0.875rem;
+		box-shadow: var(--shadow-soft);
+		cursor: pointer;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+	}
+
+	.save-draft-button {
+		background-color: #3b82f6;
+		color: white;
+	}
+
+	.save-draft-button:hover {
+		background-color: #2563eb;
+		border-color: rgba(59, 130, 246, 0.3);
+	}
+
+	.action-button:focus-visible {
+		outline: none;
+		box-shadow: var(--shadow-focus);
+	}
+
+	.action-button .icon {
+		width: 1rem;
+		height: 1rem;
 	}
 
 	:global(.invoice-form) {
@@ -480,6 +629,125 @@
 
 		.content-section {
 			--section-padding: 0.85rem;
+		}
+
+		.sticky-button-wrapper .button-group {
+			flex-direction: column;
+			gap: 0.25rem;
+		}
+
+		.action-button {
+			font-size: 0.75rem;
+			padding: 0.375rem 0.75rem;
+		}
+	}
+
+	/* Modal Styles */
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 50;
+		backdrop-filter: blur(2px);
+	}
+
+	.modal {
+		background: var(--color-bg-primary);
+		padding: 2rem;
+		border-radius: var(--radius-lg);
+		max-width: 450px;
+		width: 90%;
+		border: 1px solid var(--color-border-primary);
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+	}
+
+	.modal-title {
+		font-size: 1.5rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+		margin: 0 0 0.5rem 0;
+	}
+
+	.modal-description {
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+		margin: 0 0 1.5rem 0;
+	}
+
+	.modal-input {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid var(--color-border-primary);
+		border-radius: var(--radius-md);
+		background: var(--color-bg-secondary);
+		color: var(--color-text-primary);
+		font-size: 0.9375rem;
+		margin-bottom: 1.5rem;
+		transition: border-color 0.2s ease;
+	}
+
+	.modal-input:focus {
+		outline: none;
+		border-color: var(--color-accent, #3b82f6);
+		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: flex-end;
+	}
+
+	.modal-button {
+		padding: 0.625rem 1.25rem;
+		border-radius: var(--radius-md);
+		font-weight: 500;
+		font-size: 0.9375rem;
+		border: 1px solid transparent;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.cancel-button {
+		background-color: var(--color-bg-secondary);
+		color: var(--color-text-secondary);
+		border-color: var(--color-border-primary);
+	}
+
+	.cancel-button:hover {
+		background-color: var(--color-bg-tertiary);
+		color: var(--color-text-primary);
+	}
+
+	.save-button {
+		background-color: #3b82f6;
+		color: white;
+	}
+
+	.save-button:hover {
+		background-color: #2563eb;
+	}
+
+	.save-button:focus-visible,
+	.cancel-button:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+	}
+
+	@media (max-width: 768px) {
+		.modal {
+			padding: 1.5rem;
+		}
+
+		.modal-actions {
+			flex-direction: column;
+		}
+
+		.modal-button {
+			width: 100%;
 		}
 	}
 </style>
