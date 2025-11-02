@@ -39,7 +39,7 @@ export const TEMPLATES = {
  * @returns {any|null} Template object or null if not found
  */
 export function getTemplate(templateId) {
-	return Object.values(TEMPLATES).find(template => template.id === templateId) || null;
+	return Object.values(TEMPLATES).find((template) => template.id === templateId) || null;
 }
 
 /**
@@ -56,7 +56,7 @@ export function getAllTemplates() {
  * @returns {Array<any>} Array of template objects
  */
 export function getTemplatesByPremium(isPremium = false) {
-	return Object.values(TEMPLATES).filter(template => template.premium === isPremium);
+	return Object.values(TEMPLATES).filter((template) => template.premium === isPremium);
 }
 
 /**
@@ -65,9 +65,7 @@ export function getTemplatesByPremium(isPremium = false) {
  * @returns {Array<any>} Array of template objects
  */
 export function getTemplatesByTag(tag) {
-	return Object.values(TEMPLATES).filter(template =>
-		template.tags.includes(tag)
-	);
+	return Object.values(TEMPLATES).filter((template) => template.tags.includes(tag));
 }
 
 /**
@@ -75,7 +73,7 @@ export function getTemplatesByTag(tag) {
  * @returns {Array<any>} Array of template options with id and label
  */
 export function getTemplateOptions() {
-	return Object.values(TEMPLATES).map(template => ({
+	return Object.values(TEMPLATES).map((template) => ({
 		id: template.id,
 		label: template.name,
 		premium: template.premium

@@ -130,7 +130,9 @@
 							<span class="item-name">{item.name || `Item ${index + 1}`}</span>
 							<span class="item-quantity">× {item.quantity ?? 0}</span>
 						</div>
-						<span class="item-amount">{toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</span>
+						<span class="item-amount"
+							>{$toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</span
+						>
 					</div>
 				{/each}
 			</div>
@@ -144,39 +146,39 @@
 	<section class="summary-section">
 		<div class="summary-row">
 			<span>Subtotal</span>
-			<span>{toUSCurrency(subTotal())}</span>
+			<span>{$toUSCurrency(subTotal())}</span>
 		</div>
 		{#if discountDisplayValue() > 0}
 			<div class="summary-row">
 				<span>Discount</span>
-				<span>-{toUSCurrency(discountDisplayValue())}</span>
+				<span>-{$toUSCurrency(discountDisplayValue())}</span>
 			</div>
 		{/if}
 		{#if taxDisplayValue() > 0}
 			<div class="summary-row">
 				<span>Tax</span>
-				<span>+{toUSCurrency(taxDisplayValue())}</span>
+				<span>+{$toUSCurrency(taxDisplayValue())}</span>
 			</div>
 		{/if}
 		{#if shippingDisplayValue() > 0}
 			<div class="summary-row">
 				<span>Shipping</span>
-				<span>+{toUSCurrency(shippingDisplayValue())}</span>
+				<span>+{$toUSCurrency(shippingDisplayValue())}</span>
 			</div>
 		{/if}
 		<div class="summary-row total">
 			<span>Total</span>
-			<span>{toUSCurrency(totalAmount())}</span>
+			<span>{$toUSCurrency(totalAmount())}</span>
 		</div>
 		{#if amountPaid() > 0}
 			<div class="summary-row">
 				<span>Paid</span>
-				<span>{toUSCurrency(amountPaid())}</span>
+				<span>{$toUSCurrency(amountPaid())}</span>
 			</div>
 		{/if}
 		<div class="summary-row balance">
 			<span>{balanceDue() < 0 ? 'Credit' : 'Balance'}</span>
-			<span>{toUSCurrency(Math.abs(balanceDue()))}</span>
+			<span>{$toUSCurrency(Math.abs(balanceDue()))}</span>
 		</div>
 	</section>
 
@@ -197,7 +199,11 @@
 		padding: 2rem;
 		background: white;
 		color: #333;
-		font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+		font-family:
+			'Inter',
+			-apple-system,
+			BlinkMacSystemFont,
+			sans-serif;
 		max-width: 800px;
 		margin: 0 auto;
 		line-height: 1.5;

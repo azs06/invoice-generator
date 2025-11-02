@@ -1,4 +1,3 @@
-
 <script>
 	import { DEFAULT_LOGO_PATH, defaultInvoice } from '$lib/index.js';
 	import { toUSCurrency } from '$lib/currency.js';
@@ -61,8 +60,7 @@
 		}
 	};
 
-	const balanceSummaryLabel = () =>
-		balanceDue() < 0 ? 'Credit balance' : 'Balance due';
+	const balanceSummaryLabel = () => (balanceDue() < 0 ? 'Credit balance' : 'Balance due');
 </script>
 
 <div class="invoice-preview">
@@ -119,7 +117,7 @@
 			</div>
 			<div class="balance-due-highlight">
 				<span class="balance-label">{balanceSummaryLabel()}:</span>
-				<span class="balance-amount">{toUSCurrency(Math.abs(balanceDue()))}</span>
+				<span class="balance-amount">{$toUSCurrency(Math.abs(balanceDue()))}</span>
 			</div>
 		</div>
 	</section>
@@ -140,8 +138,8 @@
 						<tr>
 							<td>{item.name || `Item ${index + 1}`}</td>
 							<td>{item.quantity ?? 0}</td>
-							<td>{toUSCurrency(item.price || 0)}</td>
-							<td>{toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td>
+							<td>{$toUSCurrency(item.price || 0)}</td>
+							<td>{$toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td>
 						</tr>
 					{/each}
 				{:else}
@@ -157,31 +155,31 @@
 		<div class="summary-table">
 			<div class="summary-row">
 				<span>Subtotal:</span>
-				<span>{toUSCurrency(subTotal())}</span>
+				<span>{$toUSCurrency(subTotal())}</span>
 			</div>
 			<div class="summary-row">
 				<span>Discount:</span>
-				<span>-{toUSCurrency(discountDisplayValue())}</span>
+				<span>-{$toUSCurrency(discountDisplayValue())}</span>
 			</div>
 			<div class="summary-row">
 				<span>Tax:</span>
-				<span>+{toUSCurrency(taxDisplayValue())}</span>
+				<span>+{$toUSCurrency(taxDisplayValue())}</span>
 			</div>
 			<div class="summary-row">
 				<span>Shipping:</span>
-				<span>+{toUSCurrency(shippingDisplayValue())}</span>
+				<span>+{$toUSCurrency(shippingDisplayValue())}</span>
 			</div>
 			<div class="summary-row emphasize">
 				<span>Total:</span>
-				<span>{toUSCurrency(totalAmount())}</span>
+				<span>{$toUSCurrency(totalAmount())}</span>
 			</div>
 			<div class="summary-row">
 				<span>Amount Paid:</span>
-				<span>{toUSCurrency(amountPaid())}</span>
+				<span>{$toUSCurrency(amountPaid())}</span>
 			</div>
 			<div class="summary-row emphasize">
 				<span>{balanceDue() < 0 ? 'Credit:' : 'Due:'}</span>
-				<span>{toUSCurrency(Math.abs(balanceDue()))}</span>
+				<span>{$toUSCurrency(Math.abs(balanceDue()))}</span>
 			</div>
 		</div>
 	</section>

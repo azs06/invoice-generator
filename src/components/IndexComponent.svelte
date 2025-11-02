@@ -38,10 +38,7 @@
 
 	const addItem = () => {
 		ensureItems();
-		invoice.items = [
-			...invoice.items,
-			{ name: '', quantity: 1, price: 0, amount: 0 }
-		];
+		invoice.items = [...invoice.items, { name: '', quantity: 1, price: 0, amount: 0 }];
 	};
 
 	/**
@@ -86,64 +83,54 @@
 		invoice.shipping = next;
 	};
 </script>
-  
-  <div class="invoice-index">
-    <h2>Invoice</h2>
-  
-    <div class="items-list">
-      {#each invoice.items as item, index}
-        <ItemInputComponent
-          {item}
-          onUpdate={createItemUpdater(index)}
-        />
-      {/each}
-  
-      <button type="button" onclick={addItem} class="add-item-btn">
-        Add Item
-      </button>
-    </div>
-  
-    <TermsAndNotesComponent
-      terms={invoice.terms}
-      notes={invoice.notes}
-      onUpdateTerms={updateTerms}
-      onUpdateNotes={updateNotes}
-    />
 
-    <AmountPaidComponent
-      {invoice}
-      updatePaidAmount={updatePaidAmount}
-      amountPaid={invoice.amountPaid}
-    />
-  
-    <TotalComponent
-      {invoice}
-      onUpdateDiscount={handleDiscountChange}
-      onUpdateTax={handleTaxChange}
-      onUpdateShipping={handleShippingChange}
-    />
-  </div>
-  
-  <style>
-    .invoice-index {
-      padding: 2rem;
-    }
-    .items-list {
-      margin-bottom: 2rem;
-    }
-    .add-item-btn {
-      margin-top: 1rem;
-      padding: 0.5rem 1rem;
-      background-color: #2563eb;
-      color: white;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-    .add-item-btn:hover {
-      background-color: #1d4ed8;
-    }
-  </style>
-  
+<div class="invoice-index">
+	<h2>Invoice</h2>
+
+	<div class="items-list">
+		{#each invoice.items as item, index}
+			<ItemInputComponent {item} onUpdate={createItemUpdater(index)} />
+		{/each}
+
+		<button type="button" onclick={addItem} class="add-item-btn"> Add Item </button>
+	</div>
+
+	<TermsAndNotesComponent
+		terms={invoice.terms}
+		notes={invoice.notes}
+		onUpdateTerms={updateTerms}
+		onUpdateNotes={updateNotes}
+	/>
+
+	<AmountPaidComponent {invoice} {updatePaidAmount} amountPaid={invoice.amountPaid} />
+
+	<TotalComponent
+		{invoice}
+		onUpdateDiscount={handleDiscountChange}
+		onUpdateTax={handleTaxChange}
+		onUpdateShipping={handleShippingChange}
+	/>
+</div>
+
+<style>
+	.invoice-index {
+		padding: 2rem;
+	}
+	.items-list {
+		margin-bottom: 2rem;
+	}
+	.add-item-btn {
+		margin-top: 1rem;
+		padding: 0.5rem 1rem;
+		background-color: #2563eb;
+		color: white;
+		border: none;
+		border-radius: var(--radius-sm);
+		font-size: 1rem;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+	}
+	.add-item-btn:hover {
+		background-color: #1d4ed8;
+	}
+</style>

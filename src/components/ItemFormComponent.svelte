@@ -1,5 +1,6 @@
-
 <script>
+	import { _ } from 'svelte-i18n';
+	import { toUSCurrency } from '$lib/currency.js';
 	/** @typedef {import('$lib/types').InvoiceItem} InvoiceItem */
 
 	/** @type {InvoiceItem} */
@@ -31,26 +32,15 @@
 		const amount = Number.isFinite(item.amount) ? Number(item.amount) : qty * price;
 		return Number.isFinite(amount) ? amount : 0;
 	};
-
-	/**
-	 * @param {number} value
-	 */
-	const formatCurrency = (value) =>
-		new Intl.NumberFormat(undefined, {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2
-		}).format(value || 0);
 </script>
 
 <div class="item-row">
 	<div class="item-cell item-col">
-		<label for={`item-name-${index}`} class="sr-only">Item name</label>
+		<label for={`item-name-${index}`} class="sr-only">{$_('items.item')}</label>
 		<input
 			id={`item-name-${index}`}
 			type="text"
-			placeholder="Describe the work or product"
+			placeholder={$_('placeholders.item_name')}
 			bind:value={item.name}
 			oninput={(event) => {
 				const target = event.currentTarget;
@@ -62,7 +52,7 @@
 	</div>
 
 	<div class="item-cell qty-col">
-		<label for={`item-quantity-${index}`} class="sr-only">Quantity</label>
+		<label for={`item-quantity-${index}`} class="sr-only">{$_('items.quantity')}</label>
 		<input
 			id={`item-quantity-${index}`}
 			type="number"
@@ -79,7 +69,7 @@
 	</div>
 
 	<div class="item-cell price-col">
-		<label for={`item-price-${index}`} class="sr-only">Price</label>
+		<label for={`item-price-${index}`} class="sr-only">{$_('items.price')}</label>
 		<input
 			id={`item-price-${index}`}
 			type="number"
@@ -96,8 +86,8 @@
 		/>
 	</div>
 
-	<div class="item-cell amount-col">
-		<span class="item-amount">{formatCurrency(lineTotal())}</span>
+	<div class="item-cell amount-col" data-label={`${$_('items.amount')}:`}>
+		<span class="item-amount">{$toUSCurrency(lineTotal())}</span>
 	</div>
 </div>
 
@@ -150,7 +140,9 @@
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
 		font-size: 0.9rem;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.item-input:focus {
@@ -197,7 +189,7 @@
 		}
 
 		.amount-col::before {
-			content: 'Amount:';
+			content: attr(data-label);
 			font-size: 0.85rem;
 			font-weight: 600;
 			color: var(--color-text-secondary);

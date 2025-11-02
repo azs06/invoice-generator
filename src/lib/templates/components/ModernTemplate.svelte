@@ -1,4 +1,5 @@
 <script>
+	import { _ } from 'svelte-i18n';
 	import { toUSCurrency } from '$lib/currency.js';
 	import { calculateDiscount, calculateTax } from '$lib/InvoiceCalculator.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
@@ -48,18 +49,18 @@
 	const statusLabel = () => {
 		switch (balanceState()) {
 			case 'credit':
-				return 'CREDIT OWED';
+				return $_('status.credit_owed');
 			case 'settled':
-				return 'PAID';
+				return $_('status.paid');
 			case 'partial':
-				return 'PARTIALLY PAID';
+				return $_('status.partially_paid');
 			default:
-				return 'UNPAID';
+				return $_('status.unpaid');
 		}
 	};
 
 	const balanceSummaryLabel = () =>
-		balanceDue() < 0 ? 'Credit balance' : 'Balance due';
+		balanceDue() < 0 ? $_('summary.credit_balance') : $_('summary.balance_due');
 </script>
 
 <div class="invoice-preview modern-template">
@@ -80,7 +81,7 @@
 
 		<div class="invoice-title-section">
 			<div class="invoice-title">
-				<span class="invoice-label">{invoice.invoiceLabel || 'INVOICE'}</span>
+				<span class="invoice-label">{invoice.invoiceLabel || $_('invoice.invoice_label')}</span>
 				<span class="invoice-number">#{invoice.invoiceNumber || 'PENDING'}</span>
 			</div>
 			<span class={`status-text ${balanceState()}`}>{statusLabel()}</span>
@@ -90,7 +91,7 @@
 	<section class="details-grid">
 		<div class="details-column left-column">
 			<div class="details-block">
-				<span class="details-label">Bill To:</span>
+				<span class="details-label">{$_('invoice.to')}:</span>
 				<span class="details-value">{invoice.invoiceTo || '—'}</span>
 			</div>
 			{#if invoice.invoiceFrom}
@@ -101,22 +102,22 @@
 		</div>
 		<div class="details-column right-column">
 			<div class="details-block">
-				<span class="details-label">Date:</span>
+				<span class="details-label">{$_('invoice.date')}:</span>
 				<span class="details-value">{invoice.date || '—'}</span>
 			</div>
 			{#if invoice.terms}
 				<div class="details-block">
-					<span class="details-label">Payment Terms:</span>
+					<span class="details-label">{$_('fields.terms')}:</span>
 					<span class="details-value">{invoice.terms}</span>
 				</div>
 			{/if}
 			<div class="details-block">
-				<span class="details-label">Due Date:</span>
+				<span class="details-label">{$_('invoice.due_date')}:</span>
 				<span class="details-value">{invoice.dueDate || '—'}</span>
 			</div>
 			<div class="balance-due-highlight">
 				<span class="balance-label">{balanceSummaryLabel()}:</span>
-				<span class="balance-amount">{toUSCurrency(Math.abs(balanceDue()))}</span>
+				<span class="balance-amount">{$toUSCurrency(Math.abs(balanceDue()))}</span>
 			</div>
 		</div>
 	</section>
@@ -125,25 +126,25 @@
 		<table class="items-table">
 			<thead>
 				<tr>
-					<th>Item</th>
-					<th>Quantity</th>
-					<th>Rate</th>
-					<th>Amount</th>
+					<th>{$_('items.item')}</th>
+					<th>{$_('items.quantity')}</th>
+					<th>{$_('items.price')}</th>
+					<th>{$_('items.amount')}</th>
 				</tr>
 			</thead>
 			<tbody>
 				{#if invoice.items?.length}
 					{#each invoice.items as item, index (index)}
 						<tr>
-							<td>{item.name || `Item ${index + 1}`}</td>
+							<td>{item.name || `${$_('items.item')} ${index + 1}`}</td>
 							<td>{item.quantity ?? 0}</td>
-							<td>{toUSCurrency(item.price || 0)}</td>
-							<td>{toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td>
+							<td>{$toUSCurrency(item.price || 0)}</td>
+							<td>{$toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td>
 						</tr>
 					{/each}
 				{:else}
 					<tr class="empty-row">
-						<td colspan="4">Add line items to populate your invoice.</td>
+						<td colspan="4">{$_('items.add_item_prompt')}</td>
 					</tr>
 				{/if}
 			</tbody>
@@ -153,39 +154,41 @@
 	<section class="summary">
 		<div class="summary-table">
 			<div class="summary-row">
-				<span>Subtotal:</span>
-				<span>{toUSCurrency(subTotal())}</span>
+				<span>{$_('summary.subtotal')}:</span>
+				<span>{$toUSCurrency(subTotal())}</span>
 			</div>
 			<div class="summary-row">
-				<span>Discount:</span>
-				<span>-{toUSCurrency(discountDisplayValue())}</span>
+				<span>{$_('summary.discount')}:</span>
+				<span>-{$toUSCurrency(discountDisplayValue())}</span>
 			</div>
 			<div class="summary-row">
-				<span>Tax:</span>
-				<span>+{toUSCurrency(taxDisplayValue())}</span>
+				<span>{$_('summary.tax')}:</span>
+				<span>+{$toUSCurrency(taxDisplayValue())}</span>
 			</div>
 			<div class="summary-row">
-				<span>Shipping:</span>
-				<span>+{toUSCurrency(shippingDisplayValue())}</span>
+				<span>{$_('summary.shipping')}:</span>
+				<span>+{$toUSCurrency(shippingDisplayValue())}</span>
 			</div>
 			<div class="summary-row emphasize">
-				<span>Total:</span>
-				<span>{toUSCurrency(totalAmount())}</span>
+				<span>{$_('summary.total')}:</span>
+				<span>{$toUSCurrency(totalAmount())}</span>
 			</div>
 			<div class="summary-row">
-				<span>Amount Paid:</span>
-				<span>{toUSCurrency(amountPaid())}</span>
+				<span>{$_('summary.amount_paid')}:</span>
+				<span>{$toUSCurrency(amountPaid())}</span>
 			</div>
 			<div class="summary-row emphasize">
-				<span>{balanceDue() < 0 ? 'Credit:' : 'Due:'}</span>
-				<span>{toUSCurrency(Math.abs(balanceDue()))}</span>
+				<span
+					>{balanceDue() < 0 ? `${$_('summary.credit_balance')}:` : `${$_('summary.due')}:`}</span
+				>
+				<span>{$toUSCurrency(Math.abs(balanceDue()))}</span>
 			</div>
 		</div>
 	</section>
 
 	{#if invoice.notes}
 		<section class="notes-section">
-			<span class="details-label">Notes:</span>
+			<span class="details-label">{$_('fields.notes')}:</span>
 			<p>{invoice.notes}</p>
 		</section>
 	{/if}
@@ -194,7 +197,7 @@
 		<!-- Terms moved to details section, only show here if not already shown above -->
 	{:else if invoice.notes}
 		<section class="notes-section">
-			<span class="details-label">Terms:</span>
+			<span class="details-label">{$_('fields.terms')}:</span>
 			<p>{invoice.terms}</p>
 		</section>
 	{/if}

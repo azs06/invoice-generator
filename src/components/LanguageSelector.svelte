@@ -95,7 +95,10 @@
 		font-weight: 500;
 		line-height: 1.2;
 		cursor: pointer;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease,
+			background 0.2s ease;
 	}
 
 	select:focus-visible {

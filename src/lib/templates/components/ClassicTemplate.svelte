@@ -80,7 +80,7 @@
 					</div>
 				{/if}
 			</div>
-			
+
 			<div class="invoice-info">
 				<h1 class="invoice-title">{invoice.invoiceLabel || 'INVOICE'}</h1>
 				<div class="invoice-number">#{invoice.invoiceNumber || 'PENDING'}</div>
@@ -96,7 +96,7 @@
 				<pre>{invoice.invoiceTo || '—'}</pre>
 			</div>
 		</div>
-		
+
 		<div class="invoice-meta">
 			<div class="meta-item">
 				<span class="meta-label">Date:</span>
@@ -131,8 +131,10 @@
 						<tr>
 							<td class="item-col">{item.name || `Item ${index + 1}`}</td>
 							<td class="qty-col">{item.quantity ?? 0}</td>
-							<td class="price-col">{toUSCurrency(item.price || 0)}</td>
-							<td class="total-col">{toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td>
+							<td class="price-col">{$toUSCurrency(item.price || 0)}</td>
+							<td class="total-col"
+								>{$toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td
+							>
 						</tr>
 					{/each}
 				{:else}
@@ -148,39 +150,39 @@
 		<div class="totals-container">
 			<div class="totals-row">
 				<span class="totals-label">Subtotal:</span>
-				<span class="totals-value">{toUSCurrency(subTotal())}</span>
+				<span class="totals-value">{$toUSCurrency(subTotal())}</span>
 			</div>
 			{#if discountDisplayValue() > 0}
 				<div class="totals-row">
 					<span class="totals-label">Discount:</span>
-					<span class="totals-value">-{toUSCurrency(discountDisplayValue())}</span>
+					<span class="totals-value">-{$toUSCurrency(discountDisplayValue())}</span>
 				</div>
 			{/if}
 			{#if taxDisplayValue() > 0}
 				<div class="totals-row">
 					<span class="totals-label">Tax:</span>
-					<span class="totals-value">+{toUSCurrency(taxDisplayValue())}</span>
+					<span class="totals-value">+{$toUSCurrency(taxDisplayValue())}</span>
 				</div>
 			{/if}
 			{#if shippingDisplayValue() > 0}
 				<div class="totals-row">
 					<span class="totals-label">Shipping:</span>
-					<span class="totals-value">+{toUSCurrency(shippingDisplayValue())}</span>
+					<span class="totals-value">+{$toUSCurrency(shippingDisplayValue())}</span>
 				</div>
 			{/if}
 			<div class="totals-row total-row">
 				<span class="totals-label">Total:</span>
-				<span class="totals-value">{toUSCurrency(totalAmount())}</span>
+				<span class="totals-value">{$toUSCurrency(totalAmount())}</span>
 			</div>
 			{#if amountPaid() > 0}
 				<div class="totals-row">
 					<span class="totals-label">Amount Paid:</span>
-					<span class="totals-value">{toUSCurrency(amountPaid())}</span>
+					<span class="totals-value">{$toUSCurrency(amountPaid())}</span>
 				</div>
 			{/if}
 			<div class="totals-row balance-row">
 				<span class="totals-label">{balanceDue() < 0 ? 'Credit:' : 'Balance Due:'}</span>
-				<span class="totals-value">{toUSCurrency(Math.abs(balanceDue()))}</span>
+				<span class="totals-value">{$toUSCurrency(Math.abs(balanceDue()))}</span>
 			</div>
 		</div>
 	</section>

@@ -1,5 +1,3 @@
-
-
 <script>
 	'use runes';
 	import { page } from '$app/state';

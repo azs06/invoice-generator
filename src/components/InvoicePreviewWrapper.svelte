@@ -21,10 +21,11 @@
 	 * @returns {InvoiceTotals}
 	 */
 	const calculateTotals = (value) => {
-		const subTotal = value.items?.reduce((sum, item) => {
-			const itemAmount = item.amount ?? (item.price || 0) * (item.quantity || 0);
-			return sum + itemAmount;
-		}, 0) || 0;
+		const subTotal =
+			value.items?.reduce((sum, item) => {
+				const itemAmount = item.amount ?? (item.price || 0) * (item.quantity || 0);
+				return sum + itemAmount;
+			}, 0) || 0;
 
 		const total = totalAmounts(value, subTotal);
 		const balanceDue = total - (value.amountPaid || 0);

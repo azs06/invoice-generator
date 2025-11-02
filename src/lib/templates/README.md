@@ -22,43 +22,46 @@ src/lib/templates/
 Create a new Svelte component in `src/lib/templates/components/`. The component should:
 
 1. Accept these props:
+
    ```javascript
    let { invoice, totals = {} } = $props();
    ```
 
 2. Use the invoice data structure:
+
    ```javascript
    // Basic invoice info
-   invoice.invoiceLabel    // "INVOICE", "RECEIPT", etc.
-   invoice.invoiceNumber   // "INV-12345"
-   invoice.date          // "2023-12-01"
-   invoice.dueDate       // "2023-12-31"
-   invoice.invoiceFrom    // Company details
-   invoice.invoiceTo      // Client details
-   invoice.terms         // Payment terms
-   invoice.notes          // Additional notes
-   
+   invoice.invoiceLabel; // "INVOICE", "RECEIPT", etc.
+   invoice.invoiceNumber; // "INV-12345"
+   invoice.date; // "2023-12-01"
+   invoice.dueDate; // "2023-12-31"
+   invoice.invoiceFrom; // Company details
+   invoice.invoiceTo; // Client details
+   invoice.terms; // Payment terms
+   invoice.notes; // Additional notes
+
    // Items array
    invoice.items = [
-     {
-       name: "Item description",
-       quantity: 2,
-       price: 100,
-       amount: 200
-     }
-   ]
-   
+   	{
+   		name: 'Item description',
+   		quantity: 2,
+   		price: 100,
+   		amount: 200
+   	}
+   ];
+
    // Financial calculations
-   totals.subTotal       // Calculated subtotal
-   totals.total         // Calculated total with tax/shipping
-   totals.balanceDue    // Balance after payments
+   totals.subTotal; // Calculated subtotal
+   totals.total; // Calculated total with tax/shipping
+   totals.balanceDue; // Balance after payments
    ```
 
 3. Include currency formatting:
+
    ```javascript
    import { toUSCurrency } from '$lib/currency.js';
-   
-   // Usage: toUSCurrency(amount)
+
+   // Usage in markup: {$toUSCurrency(amount)}
    ```
 
 ### 2. Add Template Styles
@@ -68,33 +71,35 @@ All styles should be defined in the `<style>` block within your component.
 #### CSS Guidelines
 
 1. Define CSS custom properties at the component root for consistency:
+
    ```css
    .my-template {
-     --primary-color: #2563eb;
-     --text-color: #1f2937;
-     --border-color: #e5e7eb;
-     --background-color: #ffffff;
+   	--primary-color: #2563eb;
+   	--text-color: #1f2937;
+   	--border-color: #e5e7eb;
+   	--background-color: #ffffff;
    }
    ```
 
 2. Include print-specific styles for PDF exports:
+
    ```css
    @media print {
-     .my-template {
-       --text-color: #000000 !important;
-       --background-color: #ffffff !important;
-       color: #000 !important;
-       background: #fff !important;
-     }
+   	.my-template {
+   		--text-color: #000000 !important;
+   		--background-color: #ffffff !important;
+   		color: #000 !important;
+   		background: #fff !important;
+   	}
    }
    ```
 
 3. Follow responsive design patterns:
    ```css
    @media (max-width: 768px) {
-     .my-template {
-       padding: 1rem;
-     }
+   	.my-template {
+   		padding: 1rem;
+   	}
    }
    ```
 
@@ -104,16 +109,16 @@ Add your template to `src/lib/templates/registry.js`:
 
 ```javascript
 export const TEMPLATES = {
-  // ... existing templates
-  mytemplate: {
-    id: 'mytemplate',
-    name: 'My Template',
-    description: 'A custom invoice template',
-    component: () => import('./components/MyTemplate.svelte'),
-    tags: ['custom', 'modern'],
-    premium: false,
-    preview: '/templates/mytemplate-preview.png'
-  }
+	// ... existing templates
+	mytemplate: {
+		id: 'mytemplate',
+		name: 'My Template',
+		description: 'A custom invoice template',
+		component: () => import('./components/MyTemplate.svelte'),
+		tags: ['custom', 'modern'],
+		premium: false,
+		preview: '/templates/mytemplate-preview.png'
+	}
 };
 ```
 
@@ -174,39 +179,39 @@ export const TEMPLATES = {
 
 ```svelte
 <script>
-  import { toUSCurrency } from '$lib/currency.js';
-  
-  let { invoice, totals = {} } = $props();
-  
-  // Calculate any template-specific values
-  const calculatedValue = () => {
-    // Your custom logic here
-  };
+	import { toUSCurrency } from '$lib/currency.js';
+
+	let { invoice, totals = {} } = $props();
+
+	// Calculate any template-specific values
+	const calculatedValue = () => {
+		// Your custom logic here
+	};
 </script>
 
 <div class="my-template">
-  <header>
-    <h1>{invoice.invoiceLabel || 'INVOICE'}</h1>
-    <div class="invoice-number">#{invoice.invoiceNumber}</div>
-  </header>
-  
-  <main>
-    <!-- Your template layout here -->
-  </main>
-  
-  <footer>
-    <div class="total">
-      Total: {toUSCurrency(totals.total || 0)}
-    </div>
-  </footer>
+	<header>
+		<h1>{invoice.invoiceLabel || 'INVOICE'}</h1>
+		<div class="invoice-number">#{invoice.invoiceNumber}</div>
+	</header>
+
+	<main>
+		<!-- Your template layout here -->
+	</main>
+
+	<footer>
+		<div class="total">
+			Total: {$toUSCurrency(totals.total || 0)}
+		</div>
+	</footer>
 </div>
 
 <style>
-  .my-template {
-    font-family: 'Inter', sans-serif;
-    color: var(--text-color);
-    /* Your styles here */
-  }
+	.my-template {
+		font-family: 'Inter', sans-serif;
+		color: var(--text-color);
+		/* Your styles here */
+	}
 </style>
 ```
 

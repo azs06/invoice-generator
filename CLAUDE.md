@@ -88,6 +88,7 @@ npm run lint             # Check formatting with Prettier
 ### Path Aliases
 
 Configured in `svelte.config.js`:
+
 - `$components` → `src/components`
 - `$services` → `src/services`
 - `$lib` → `src/lib` (SvelteKit default)
@@ -106,6 +107,7 @@ When modifying components, maintain this runes-based approach.
 ## PDF Export
 
 The PDF generation in `src/routes/+page.svelte`:
+
 1. Waits for all images (including logo) to load
 2. Uses html2pdf.js with specific settings (scale: 3, CORS enabled)
 3. Exports the preview component with 0.5in margins on letter-size page

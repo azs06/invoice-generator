@@ -1,4 +1,3 @@
-
 <script>
 	'use runes';
 	import { onMount } from 'svelte';
@@ -9,7 +8,7 @@
 	import { saveInvoice, getAllInvoices, getInvoice } from '$lib/db.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
-	import { totalAmounts  } from '$lib/InvoiceCalculator.js';
+	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
 	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
@@ -265,7 +264,7 @@
 				invoice.id = uuidv4();
 			}
 			if (!invoice.logo) {
-			invoice.logo = DEFAULT_LOGO_PATH;
+				invoice.logo = DEFAULT_LOGO_PATH;
 				invoice.logoFilename = 'logo.png';
 			}
 			if (!invoice.invoiceLabel) {
@@ -474,16 +473,17 @@
 	const openSaveDraftModal = () => {
 		// Pre-fill with invoice label + number
 		if (invoice) {
-			draftName = `${invoice.invoiceLabel || 'INVOICE'} ${invoice.invoiceNumber || ''}`.trim();
+			draftName =
+				`${invoice.invoiceLabel || $_('invoice.invoice_label')} ${invoice.invoiceNumber || ''}`.trim();
 		}
 		showSaveDraftModal = true;
 	};
-	
+
 	const closeSaveDraftModal = () => {
 		showSaveDraftModal = false;
 		draftName = '';
 	};
-	
+
 	const saveDraftAndRedirect = async () => {
 		if (invoice) {
 			// Update invoice with draft name and mark as draft
@@ -529,8 +529,8 @@
 			saveDraftAndRedirect();
 		}
 	};
-
 </script>
+
 {#if invoice}
 	<div class="page-layout">
 		<div class="page-toolbar">
@@ -542,7 +542,9 @@
 					onclick={() => setActiveTab('edit')}
 				>
 					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v4A1.5 1.5 0 0 0 2.5 10h6A1.5 1.5 0 0 0 10 8.5v-4A1.5 1.5 0 0 0 8.5 3h-6Zm9 0A1.5 1.5 0 0 0 10 4.5v4A1.5 1.5 0 0 0 11.5 10h6A1.5 1.5 0 0 0 19 8.5v-4A1.5 1.5 0 0 0 17.5 3h-6Zm-9 7A1.5 1.5 0 0 0 1 11.5v4A1.5 1.5 0 0 0 2.5 17h6A1.5 1.5 0 0 0 10 15.5v-4A1.5 1.5 0 0 0 8.5 10h-6Zm9 0a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 0-1.5-1.5h-6Z" />
+						<path
+							d="M2.5 3A1.5 1.5 0 0 0 1 4.5v4A1.5 1.5 0 0 0 2.5 10h6A1.5 1.5 0 0 0 10 8.5v-4A1.5 1.5 0 0 0 8.5 3h-6Zm9 0A1.5 1.5 0 0 0 10 4.5v4A1.5 1.5 0 0 0 11.5 10h6A1.5 1.5 0 0 0 19 8.5v-4A1.5 1.5 0 0 0 17.5 3h-6Zm-9 7A1.5 1.5 0 0 0 1 11.5v4A1.5 1.5 0 0 0 2.5 17h6A1.5 1.5 0 0 0 10 15.5v-4A1.5 1.5 0 0 0 8.5 10h-6Zm9 0a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 0-1.5-1.5h-6Z"
+						/>
 					</svg>
 					Edit
 				</button>
@@ -553,7 +555,11 @@
 				>
 					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-						<path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+						<path
+							fill-rule="evenodd"
+							d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+							clip-rule="evenodd"
+						/>
 					</svg>
 					Preview
 				</button>
@@ -566,131 +572,147 @@
 
 		<!-- Edit View -->
 		<div class="content-section form-section" class:hidden={activeTab !== 'edit'}>
-				<div class="sticky-button-wrapper">
-					<div class="button-group">
-						<button
-							class="action-button save-draft-button"
-							title="Save Draft"
-							onclick={openSaveDraftModal}
-						>
-							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-								<path fill-rule="evenodd" d="M10 2c-1.716 0-3.408.106-5.07.31C3.806 2.45 3 3.414 3 4.517V17.25a.75.75 0 0 0 1.075.676L10 15.082l5.925 2.844A.75.75 0 0 0 17 17.25V4.517c0-1.103-.806-2.068-1.93-2.207A41.403 41.403 0 0 0 10 2Z" clip-rule="evenodd" />
-							</svg>
-							Save Draft
-						</button>
-						<button
-							class="icon-button form-action"
-							aria-label={$_('invoice.new')}
-							title={$_('invoice.new')}
-							onclick={startNewInvoice}
-						>
-							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-								<path
-									fill-rule="evenodd"
-									d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-							<span class="sr-only">{$_('invoice.new')}</span>
-						</button>
-					</div>
+			<div class="sticky-button-wrapper">
+				<div class="button-group">
+					<button
+						class="action-button save-draft-button"
+						title={$_('actions.save_draft')}
+						onclick={openSaveDraftModal}
+					>
+						<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path
+								fill-rule="evenodd"
+								d="M10 2c-1.716 0-3.408.106-5.07.31C3.806 2.45 3 3.414 3 4.517V17.25a.75.75 0 0 0 1.075.676L10 15.082l5.925 2.844A.75.75 0 0 0 17 17.25V4.517c0-1.103-.806-2.068-1.93-2.207A41.403 41.403 0 0 0 10 2Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+						{$_('actions.save_draft')}
+					</button>
+					<button
+						class="icon-button form-action"
+						aria-label={$_('invoice.new')}
+						title={$_('invoice.new')}
+						onclick={startNewInvoice}
+					>
+						<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path
+								fill-rule="evenodd"
+								d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+						<span class="sr-only">{$_('invoice.new')}</span>
+					</button>
 				</div>
+			</div>
 
-				<InvoiceFormComponent
-					{invoice}
-					{updateInvoiceItems}
-					{addInvoiceItem}
-					{updateInvoiceTerms}
-					{updateInvoiceNotes}
-					{updateInvoicePaidAmount}
-					{handleInvoiceDateChange}
-					{handleDueDateChange}
-					{onUpdateTax}
-					{onUpdateDiscount}
-					{onUpdateShipping}
-					{onUpdateLogo}
-					{togglePaidStatus}
-					{onInvoiceToInput}
-					{onInvoiceFromInput}
-					{onInvoiceNumberInput}
-					{onInvoiceLabelInput}
-				/>
+			<InvoiceFormComponent
+				{invoice}
+				{updateInvoiceItems}
+				{addInvoiceItem}
+				{updateInvoiceTerms}
+				{updateInvoiceNotes}
+				{updateInvoicePaidAmount}
+				{handleInvoiceDateChange}
+				{handleDueDateChange}
+				{onUpdateTax}
+				{onUpdateDiscount}
+				{onUpdateShipping}
+				{onUpdateLogo}
+				{togglePaidStatus}
+				{onInvoiceToInput}
+				{onInvoiceFromInput}
+				{onInvoiceNumberInput}
+				{onInvoiceLabelInput}
+			/>
 		</div>
 
 		<!-- Preview View -->
 		<div class="content-section preview-section" class:hidden={activeTab !== 'preview'}>
-				<div class="sticky-button-wrapper">
-					<div class="button-group">
-						<button
-							class="icon-button preview-action"
-							aria-label={$_('invoice.print_pdf')}
-							title={$_('invoice.print_pdf')}
-							onclick={printPDF}
-							disabled={isGeneratingPDF}
-						>
-							{#if isGeneratingPDF && pdfAction === 'print'}
-								<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-									<circle
-										cx="12"
-										cy="12"
-										r="9"
-										stroke-width="2"
-										stroke-dasharray="45 15"
-										stroke-dashoffset="0"
-										stroke-linecap="round"
-									/>
-								</svg>
-								<span class="sr-only">{$_('invoice.printing')}</span>
-							{:else}
-								<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-									<path d="M6 2a2 2 0 0 0-2 2v3h12V4a2 2 0 0 0-2-2H6Z" />
-									<path
-										fill-rule="evenodd"
-										d="M4 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3.5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15 12.5V16h1a3 3 0 0 0 3-3v-2a3 3 0 0 0-3-3H4Zm1.5 5.5V18a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2v-4.5a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5Z"
-										clip-rule="evenodd"
-									/>
-									<path d="M6 6.5h8v2H6v-2Z" />
-								</svg>
-								<span class="sr-only">{$_('invoice.print_pdf')}</span>
-							{/if}
-						</button>
-						<button
-							class="icon-button preview-action"
-							aria-label={$_('invoice.save_pdf')}
-							title={$_('invoice.save_pdf')}
-							onclick={saveAsPDF}
-							disabled={isGeneratingPDF}
-						>
-							{#if isGeneratingPDF && pdfAction === 'download'}
-								<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-									<circle
-										cx="12"
-										cy="12"
-										r="9"
-										stroke-width="2"
-										stroke-dasharray="45 15"
-										stroke-dashoffset="0"
-										stroke-linecap="round"
-									/>
-								</svg>
-								<span class="sr-only">{$_('invoice.downloading')}</span>
-							{:else}
-								<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-									<path
-										fill-rule="evenodd"
-										d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-								<span class="sr-only">{$_('invoice.save_pdf')}</span>
-							{/if}
-						</button>
-					</div>
+			<div class="sticky-button-wrapper">
+				<div class="button-group">
+					<button
+						class="icon-button preview-action"
+						aria-label={$_('invoice.print_pdf')}
+						title={$_('invoice.print_pdf')}
+						onclick={printPDF}
+						disabled={isGeneratingPDF}
+					>
+						{#if isGeneratingPDF && pdfAction === 'print'}
+							<svg
+								class="icon spin"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								aria-hidden="true"
+							>
+								<circle
+									cx="12"
+									cy="12"
+									r="9"
+									stroke-width="2"
+									stroke-dasharray="45 15"
+									stroke-dashoffset="0"
+									stroke-linecap="round"
+								/>
+							</svg>
+							<span class="sr-only">{$_('invoice.printing')}</span>
+						{:else}
+							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path d="M6 2a2 2 0 0 0-2 2v3h12V4a2 2 0 0 0-2-2H6Z" />
+								<path
+									fill-rule="evenodd"
+									d="M4 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3.5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15 12.5V16h1a3 3 0 0 0 3-3v-2a3 3 0 0 0-3-3H4Zm1.5 5.5V18a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2v-4.5a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5Z"
+									clip-rule="evenodd"
+								/>
+								<path d="M6 6.5h8v2H6v-2Z" />
+							</svg>
+							<span class="sr-only">{$_('invoice.print_pdf')}</span>
+						{/if}
+					</button>
+					<button
+						class="icon-button preview-action"
+						aria-label={$_('invoice.save_pdf')}
+						title={$_('invoice.save_pdf')}
+						onclick={saveAsPDF}
+						disabled={isGeneratingPDF}
+					>
+						{#if isGeneratingPDF && pdfAction === 'download'}
+							<svg
+								class="icon spin"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								aria-hidden="true"
+							>
+								<circle
+									cx="12"
+									cy="12"
+									r="9"
+									stroke-width="2"
+									stroke-dasharray="45 15"
+									stroke-dashoffset="0"
+									stroke-linecap="round"
+								/>
+							</svg>
+							<span class="sr-only">{$_('invoice.downloading')}</span>
+						{:else}
+							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path
+									fill-rule="evenodd"
+									d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							<span class="sr-only">{$_('invoice.save_pdf')}</span>
+						{/if}
+					</button>
 				</div>
+			</div>
 
-				<div bind:this={previewRef}>
-					<InvoicePreviewWrapper {invoice} />
-				</div>
+			<div bind:this={previewRef}>
+				<InvoicePreviewWrapper {invoice} />
+			</div>
 		</div>
 	</div>
 {:else}
@@ -703,29 +725,29 @@
 	<div
 		class="modal-backdrop"
 		role="button"
-		aria-label="Close save draft modal"
+		aria-label={$_('actions.cancel')}
 		tabindex="0"
 		onclick={closeSaveDraftModal}
 		onkeydown={handleBackdropKeydown}
 	>
 		<div class="modal" role="dialog" aria-modal="true" onpointerdown={stopModalPropagation}>
-			<h2 class="modal-title">Save Draft</h2>
-			<p class="modal-description">Give your draft a name (optional)</p>
+			<h2 class="modal-title">{$_('modal.save_draft_title')}</h2>
+			<p class="modal-description">{$_('modal.save_draft_description')}</p>
 
 			<input
 				type="text"
 				class="modal-input"
-				placeholder="Draft name"
+				placeholder={$_('modal.draft_name_placeholder')}
 				bind:value={draftName}
 				onkeydown={handleDraftInputKeydown}
 			/>
 
 			<div class="modal-actions">
 				<button class="modal-button cancel-button" onclick={closeSaveDraftModal}>
-					Cancel
+					{$_('actions.cancel')}
 				</button>
 				<button class="modal-button save-button" onclick={saveDraftAndRedirect}>
-					Save
+					{$_('actions.save')}
 				</button>
 			</div>
 		</div>
@@ -820,7 +842,9 @@
 		color: var(--color-accent-contrast, #ffffff);
 		box-shadow: var(--shadow-soft);
 		cursor: pointer;
-		transition: background-color 0.2s ease, border-color 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease;
 		position: relative;
 	}
 
@@ -995,7 +1019,9 @@
 		max-width: 450px;
 		width: 90%;
 		border: 1px solid var(--color-border-primary);
-		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		box-shadow:
+			0 20px 25px -5px rgba(0, 0, 0, 0.1),
+			0 10px 10px -5px rgba(0, 0, 0, 0.04);
 	}
 
 	.modal-title {

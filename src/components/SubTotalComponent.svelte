@@ -12,7 +12,7 @@
 		<span class="subtotal-eyebrow">Running total</span>
 		<h3>Subtotal</h3>
 	</div>
-	<p>{toUSCurrency(calculateSubTotal())}</p>
+	<p>{$toUSCurrency(calculateSubTotal())}</p>
 </div>
 
 <style>

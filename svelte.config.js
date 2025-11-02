@@ -22,7 +22,7 @@ const config = {
 		}),
 		alias: {
 			$components: 'src/components',
-			$services: 'src/services',
+			$services: 'src/services'
 		}
 	}
 };

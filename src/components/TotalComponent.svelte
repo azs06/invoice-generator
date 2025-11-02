@@ -1,8 +1,8 @@
-
 <script>
 	'use runes';
+	import { _ } from 'svelte-i18n';
 	import { totalAmounts, calculateDiscount, calculateTax } from '../lib/InvoiceCalculator.js';
-	import { toUSCurrency } from '$lib/currency.js';
+	import { toUSCurrency, currencySymbol } from '$lib/currency.js';
 	import { defaultInvoice } from '$lib/index.js';
 	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
 	/** @typedef {import('$lib/types').MonetaryAdjustment} MonetaryAdjustment */
@@ -45,18 +45,18 @@
 <div class="total-summary">
 	<!-- Summary Display -->
 	<div class="summary-row">
-		<span class="summary-label">Subtotal:</span>
-		<span class="summary-value">{toUSCurrency(subTotal())}</span>
+		<span class="summary-label">{$_('summary.subtotal')}:</span>
+		<span class="summary-value">{$toUSCurrency(subTotal())}</span>
 	</div>
 
 	<!-- Discount Control -->
 	<div class="summary-row with-control">
 		<div class="control-group">
-			<span class="summary-label">Discount:</span>
+			<span class="summary-label">{$_('summary.discount')}:</span>
 			<div class="type-toggle">
 				<label class:active={discount.type === 'flat'}>
 					<input type="radio" value="flat" bind:group={discount.type} />
-					<span>$</span>
+					<span>{$currencySymbol}</span>
 				</label>
 				<label class:active={discount.type === 'percent'}>
 					<input type="radio" value="percent" bind:group={discount.type} />
@@ -73,18 +73,18 @@
 				placeholder="0"
 				class="summary-input"
 			/>
-			<span class="summary-value">-{toUSCurrency(discountAmount())}</span>
+			<span class="summary-value">-{$toUSCurrency(discountAmount())}</span>
 		</div>
 	</div>
 
 	<!-- Tax Control -->
 	<div class="summary-row with-control">
 		<div class="control-group">
-			<span class="summary-label">Tax:</span>
+			<span class="summary-label">{$_('summary.tax')}:</span>
 			<div class="type-toggle">
 				<label class:active={tax.type === 'flat'}>
 					<input type="radio" value="flat" bind:group={tax.type} />
-					<span>$</span>
+					<span>{$currencySymbol}</span>
 				</label>
 				<label class:active={tax.type === 'percent'}>
 					<input type="radio" value="percent" bind:group={tax.type} />
@@ -101,13 +101,13 @@
 				placeholder="0"
 				class="summary-input"
 			/>
-			<span class="summary-value">+{toUSCurrency(taxAmount())}</span>
+			<span class="summary-value">+{$toUSCurrency(taxAmount())}</span>
 		</div>
 	</div>
 
 	<!-- Shipping Control -->
 	<div class="summary-row with-control">
-		<span class="summary-label">Shipping:</span>
+		<span class="summary-label">{$_('summary.shipping')}:</span>
 		<div class="input-with-value">
 			<input
 				type="number"
@@ -117,14 +117,14 @@
 				placeholder="0"
 				class="summary-input"
 			/>
-			<span class="summary-value">+{toUSCurrency(invoice.shipping?.amount || 0)}</span>
+			<span class="summary-value">+{$toUSCurrency(invoice.shipping?.amount || 0)}</span>
 		</div>
 	</div>
 
 	<!-- Total -->
 	<div class="summary-row total-row">
-		<span class="summary-label">Total:</span>
-		<span class="summary-value">{toUSCurrency(totalAmount())}</span>
+		<span class="summary-label">{$_('summary.total')}:</span>
+		<span class="summary-value">{$toUSCurrency(totalAmount())}</span>
 	</div>
 </div>
 
@@ -218,7 +218,9 @@
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
 		text-align: right;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.summary-input:focus {

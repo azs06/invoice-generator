@@ -3,6 +3,7 @@
 A concise, actionable list based on the current FreeInvoice.info layout (edit pane left, preview right).
 
 ## What Works
+
 - Clear two‑column model: edit on left, live preview on right.
 - Strong hierarchy: section label, title, helper text, and generous spacing.
 - Status chip and balance summary surface the financial state quickly.
@@ -18,10 +19,12 @@ A concise, actionable list based on the current FreeInvoice.info layout (edit pa
 ### High Priority
 
 1. **Unify date formats** – Inputs show `MM/DD/YYYY` while preview shows `YYYY‑MM‑DD`. Use locale‑aware formatting from the language selector.
+
    - Status: ❌ Not started
    - Impact: High (visible inconsistency in every invoice)
 
 2. **Add tooltips/labels to floating action buttons** – Current buttons (+, download) lack context; add descriptive labels (e.g., "Add item", "Export PDF").
+
    - Status: ❌ Not started
    - Impact: High (improves discoverability)
 
@@ -32,6 +35,7 @@ A concise, actionable list based on the current FreeInvoice.info layout (edit pa
 ### Medium Priority
 
 4. **Improve empty state messaging** – Replace em‑dashes (—) with friendly prompts ("Add your company", "Add a client") in From/To fields.
+
    - Status: ❌ Not started
    - Impact: Medium (better UX for blank invoices)
 
@@ -88,4 +92,3 @@ A concise, actionable list based on the current FreeInvoice.info layout (edit pa
 - Taxes and discounts: support per‑line and summary rows with clear inclusion/exclusion in totals.
 - Inline validation for missing client details or invalid date ranges; surface errors near fields and echo critical ones in the preview header.
 - Autosave feedback near "Saved Invoices"; consider undo/redo for recent edits.
-

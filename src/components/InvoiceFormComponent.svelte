@@ -1,5 +1,5 @@
-
 <script>
+	import { _ } from 'svelte-i18n';
 	import ItemFormComponent from './ItemFormComponent.svelte';
 	import TermsAndNotesComponent from './TermsAndNotesComponent.svelte';
 	import AmountPaidComponent from './AmountPaidComponent.svelte';
@@ -96,7 +96,6 @@
 		}
 		togglePaidStatus(target.checked);
 	};
-
 </script>
 
 <form class="invoice-form" onsubmit={(e) => e.preventDefault()}>
@@ -123,7 +122,7 @@
 					class="logo-file-input"
 				/>
 				<label for="logoUpload" class="logo-upload-label">
-					Change Logo
+					{$_('invoice.change_logo')}
 				</label>
 			</div>
 		</div>
@@ -132,8 +131,8 @@
 			<div class="invoice-title-group">
 				<input
 					type="text"
-					value={invoice.invoiceLabel || 'INVOICE'}
-					placeholder="INVOICE"
+					value={invoice.invoiceLabel || $_('invoice.invoice_label')}
+					placeholder={$_('placeholders.invoice_label')}
 					class="invoice-label-input"
 					oninput={onInvoiceLabelInput}
 				/>
@@ -142,7 +141,7 @@
 					<input
 						type="text"
 						value={invoice.invoiceNumber}
-						placeholder="Invoice Number"
+						placeholder={$_('placeholders.invoice_number')}
 						class="invoice-number-input"
 						oninput={onInvoiceNumberInput}
 					/>
@@ -150,12 +149,8 @@
 			</div>
 
 			<label class="paid-status-inline">
-				<input
-					type="checkbox"
-					onchange={handlePaidToggle}
-					checked={invoice.paid}
-				/>
-				<span>Mark as paid</span>
+				<input type="checkbox" onchange={handlePaidToggle} checked={invoice.paid} />
+				<span>{$_('fields.paid_status')}</span>
 			</label>
 		</div>
 	</header>
@@ -164,38 +159,41 @@
 	<section class="details-section">
 		<div class="details-grid">
 			<div class="field">
-				<label for="invoiceFrom">From</label>
+				<label for="invoiceFrom">{$_('invoice.from')}</label>
 				<input
 					id="invoiceFrom"
 					type="text"
 					value={invoice.invoiceFrom}
-					placeholder="Your Company"
+					placeholder={$_('placeholders.your_company')}
 					oninput={onInvoiceFromInput}
 				/>
 			</div>
 
 			<div class="field">
-				<label for="invoiceTo">Bill To</label>
+				<label for="invoiceTo">{$_('invoice.to')}</label>
 				<input
 					id="invoiceTo"
 					type="text"
 					oninput={onInvoiceToInput}
 					value={invoice.invoiceTo}
-					placeholder="Client Name"
+					placeholder={$_('placeholders.client_name')}
 				/>
 			</div>
 
 			<div class="field">
-				<label for="invoiceDate">Invoice Date</label>
-				<input id="invoiceDate" type="date" value={invoice.date} oninput={handleInvoiceDateChange} />
+				<label for="invoiceDate">{$_('invoice.date')}</label>
+				<input
+					id="invoiceDate"
+					type="date"
+					value={invoice.date}
+					oninput={handleInvoiceDateChange}
+				/>
 			</div>
 
 			<div class="field">
-				<label for="dueDate">Due Date</label>
+				<label for="dueDate">{$_('invoice.due_date')}</label>
 				<input id="dueDate" type="date" value={invoice.dueDate} oninput={handleDueDateChange} />
-				<small class="field-hint"
-					>Auto-adjusts +30 days from Invoice Date unless edited manually.</small
-				>
+				<small class="field-hint">{$_('helpers.due_date_auto')}</small>
 			</div>
 		</div>
 	</section>
@@ -204,10 +202,10 @@
 	<section class="items-section">
 		<div class="items-table-container">
 			<div class="items-table-header">
-				<div class="header-cell item-col">Item</div>
-				<div class="header-cell qty-col">Quantity</div>
-				<div class="header-cell price-col">Rate</div>
-				<div class="header-cell amount-col">Amount</div>
+				<div class="header-cell item-col">{$_('items.item')}</div>
+				<div class="header-cell qty-col">{$_('items.quantity')}</div>
+				<div class="header-cell price-col">{$_('items.price')}</div>
+				<div class="header-cell amount-col">{$_('items.amount')}</div>
 			</div>
 
 			<div class="items-table-body">
@@ -219,9 +217,11 @@
 
 		<button type="button" class="add-item-btn" onclick={addItem}>
 			<span aria-hidden="true">+</span>
-			Add another line
+			{$_('items.add_another_line')}
 		</button>
 	</section>
+
+	<div class="section-divider" aria-hidden="true"></div>
 
 	<!-- Summary Section (Right-aligned) -->
 	<section class="summary-section">
@@ -313,6 +313,14 @@
 		background: color-mix(in srgb, var(--color-accent-blue) 85%, black 15%);
 	}
 
+	.section-divider {
+		height: 1px;
+		width: 100%;
+		background: var(--color-border-primary);
+		border-radius: 999px;
+		align-self: stretch;
+	}
+
 	.invoice-title-section {
 		display: flex;
 		flex-direction: column;
@@ -337,7 +345,9 @@
 		padding: 0.4rem 0.65rem;
 		border-radius: var(--radius-sm);
 		text-align: right;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 		text-transform: uppercase;
 	}
 
@@ -372,7 +382,9 @@
 		color: var(--color-text-primary);
 		font-size: 0.95rem;
 		text-align: left;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.invoice-number-input:hover {
@@ -437,7 +449,9 @@
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
 		font-size: 0.95rem;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.field input:focus {
@@ -506,7 +520,9 @@
 		font-weight: 600;
 		border: 1px solid rgba(59, 130, 246, 0.24);
 		cursor: pointer;
-		transition: background-color 0.2s ease, border-color 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease;
 	}
 
 	.add-item-btn:hover {

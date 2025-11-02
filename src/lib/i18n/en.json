@@ -16,21 +16,28 @@
 		"print_pdf": "Print PDF",
 		"printing": "Printing...",
 		"from": "From",
-		"to": "To",
+		"to": "Bill To",
 		"date": "Invoice Date",
 		"due_date": "Due Date",
 		"number": "Invoice #",
+		"invoice_label": "INVOICE",
+		"invoice_number": "Invoice Number",
 		"upload_logo": "Upload Logo",
+		"change_logo": "Change Logo",
 		"choose_file": "Choose file",
 		"no_file": "No file chosen",
-		"current_logo": "Current"
+		"current_logo": "Current",
+		"your_company": "Your Company",
+		"client_name": "Client Name"
 	},
 	"items": {
 		"item": "Item",
 		"quantity": "Quantity",
-		"price": "Price",
+		"price": "Rate",
 		"amount": "Amount",
-		"add_item": "Add Item"
+		"add_item": "Add Item",
+		"add_another_line": "Add another line",
+		"add_item_prompt": "Add line items to populate your invoice."
 	},
 	"summary": {
 		"subtotal": "Subtotal",
@@ -40,25 +47,42 @@
 		"total": "Total",
 		"amount_paid": "Amount Paid",
 		"balance_due": "Balance Due",
-		"due": "Due"
+		"due": "Due",
+		"credit_balance": "Credit balance"
 	},
 	"fields": {
 		"terms": "Terms",
 		"notes": "Notes",
-		"paid_status": "Mark as Paid"
+		"paid_status": "Mark as paid"
 	},
 	"status": {
 		"paid": "PAID",
-		"unpaid": "UNPAID"
+		"unpaid": "UNPAID",
+		"credit_owed": "CREDIT OWED",
+		"partially_paid": "PARTIALLY PAID"
 	},
 	"placeholders": {
 		"from": "Your business name and address",
 		"to": "Client name and address",
 		"item_name": "Item description",
 		"terms": "Payment terms, late fees, etc.",
-		"notes": "Additional notes or thank you message"
+		"notes": "Additional notes or thank you message",
+		"invoice_label": "INVOICE",
+		"invoice_number": "Invoice Number",
+		"your_company": "Your Company",
+		"client_name": "Client Name"
 	},
 	"helpers": {
-		"due_date_auto": "If you change Invoice Date, Due Date will auto-adjust (+30 days) unless you edit manually."
+		"due_date_auto": "Auto-adjusts +30 days from Invoice Date unless edited manually."
+	},
+	"actions": {
+		"save_draft": "Save Draft",
+		"cancel": "Cancel",
+		"save": "Save"
+	},
+	"modal": {
+		"save_draft_title": "Save Draft",
+		"save_draft_description": "Give your draft a name (optional)",
+		"draft_name_placeholder": "Draft name"
 	}
 }

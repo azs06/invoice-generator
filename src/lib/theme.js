@@ -42,5 +42,5 @@ if (browser) {
 
 // Helper function to toggle theme
 export function toggleTheme() {
-	theme.update(current => current === 'light' ? 'dark' : 'light');
+	theme.update((current) => (current === 'light' ? 'dark' : 'light'));
 }

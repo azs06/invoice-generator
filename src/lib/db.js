@@ -67,7 +67,7 @@ export async function saveInvoice(id, invoiceData) {
  * @returns {Promise<any>} Invoice data
  */
 export async function getInvoice(id) {
-  return await get(INVOICE_PREFIX + id);
+	return await get(INVOICE_PREFIX + id);
 }
 
 /**
@@ -75,28 +75,28 @@ export async function getInvoice(id) {
  * @returns {Promise<void>}
  */
 export async function deleteInvoice(id) {
-  return await del(INVOICE_PREFIX + id);
+	return await del(INVOICE_PREFIX + id);
 }
 
 /**
  * @returns {Promise<Array<{id: string, invoice: any}>>} Array of invoices with IDs
  */
 export async function getAllInvoices() {
-  const allKeys = await keys();
-  const invoices = [];
-  for (const key of allKeys) {
-    if (typeof key === 'string' && key.startsWith(INVOICE_PREFIX)) {
-      const invoice = await get(key);
-      const id = key.replace(INVOICE_PREFIX, '');
-      invoices.push({ id, invoice });
-    }
-  }
-  return invoices;
+	const allKeys = await keys();
+	const invoices = [];
+	for (const key of allKeys) {
+		if (typeof key === 'string' && key.startsWith(INVOICE_PREFIX)) {
+			const invoice = await get(key);
+			const id = key.replace(INVOICE_PREFIX, '');
+			invoices.push({ id, invoice });
+		}
+	}
+	return invoices;
 }
 
 /**
  * @returns {Promise<void>}
  */
 export async function clearAllInvoices() {
-  await clear();
+	await clear();
 }

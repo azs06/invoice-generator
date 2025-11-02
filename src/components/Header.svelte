@@ -84,7 +84,9 @@
 		text-decoration: none;
 		padding: 0.4rem 0.65rem;
 		border-radius: var(--radius-pill);
-		transition: color 0.2s ease, background 0.2s ease;
+		transition:
+			color 0.2s ease,
+			background 0.2s ease;
 	}
 
 	.nav-link:hover,

@@ -1,17 +1,21 @@
 <script>
-	let { open = false, title = '', onClose, children, footer} = $props();
+	let { open = false, title = '', onClose, children, footer } = $props();
 
 	const close = () => {
 		onClose && onClose();
 	};
-  const onkeydown = () => {
-
-  }
+	const onkeydown = () => {};
 </script>
 
 {#if open}
-	<div role="button" tabindex="0" class="modal-backdrop" onclick={close} onkeydown={onkeydown}>
-		<div role="button" tabindex="0" class="modal-content" onclick={(e) => e.stopPropagation()} onkeydown={onkeydown}>
+	<div role="button" tabindex="0" class="modal-backdrop" onclick={close} {onkeydown}>
+		<div
+			role="button"
+			tabindex="0"
+			class="modal-content"
+			onclick={(e) => e.stopPropagation()}
+			{onkeydown}
+		>
 			<header class="modal-header">
 				<h2>{title}</h2>
 				<button class="close-btn" onclick={close}>×</button>

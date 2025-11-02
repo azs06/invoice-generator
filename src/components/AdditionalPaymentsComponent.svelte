@@ -203,7 +203,9 @@
 		font-weight: 600;
 		font-size: 0.95rem;
 		cursor: pointer;
-		transition: background-color 0.2s ease, border-color 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease;
 	}
 
 	.add-btn:hover {
@@ -262,7 +264,9 @@
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
 		font-size: 0.95rem;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.field input:focus {
@@ -280,7 +284,9 @@
 		color: #dc2626;
 		font-weight: 600;
 		cursor: pointer;
-		transition: background-color 0.2s ease, border-color 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease;
 	}
 
 	.remove-btn:hover {

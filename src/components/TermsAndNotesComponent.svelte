@@ -1,4 +1,5 @@
 <script>
+	import { _ } from 'svelte-i18n';
 	/**
 	 * @typedef {(value: string) => void} UpdateHandler
 	 */
@@ -34,27 +35,27 @@
 		onUpdateNotes(target.value);
 	};
 </script>
-  
+
 <div class="terms-notes">
 	<div class="field">
-		<label for="terms-textarea">Terms</label>
+		<label for="terms-textarea">{$_('fields.terms')}</label>
 		<textarea
 			id="terms-textarea"
 			rows="4"
 			bind:value={terms}
 			oninput={handleTermsChange}
-			placeholder="Enter payment terms..."
+			placeholder={$_('placeholders.terms')}
 		></textarea>
 	</div>
 
 	<div class="field">
-		<label for="notes-textarea">Notes</label>
+		<label for="notes-textarea">{$_('fields.notes')}</label>
 		<textarea
 			id="notes-textarea"
 			rows="4"
 			bind:value={notes}
 			oninput={handleNotesChange}
-			placeholder="Additional notes..."
+			placeholder={$_('placeholders.notes')}
 		></textarea>
 	</div>
 </div>
@@ -86,7 +87,9 @@
 		color: var(--color-text-primary);
 		min-height: 100px;
 		font-size: 0.875rem;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 		resize: vertical;
 	}
 
@@ -96,4 +99,3 @@
 		box-shadow: var(--shadow-focus);
 	}
 </style>
-  

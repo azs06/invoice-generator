@@ -1,4 +1,3 @@
-
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -26,6 +25,9 @@
 	let filterMode = 'all';
 	/** @type {boolean} */
 	let isLoading = true;
+	/** @type {(value: number) => string} */
+	let formatCurrencyFn = (value) => '';
+	$: formatCurrencyFn = $toUSCurrency;
 
 	/**
 	 * @param {string | null | undefined} value
@@ -58,7 +60,7 @@
 	const formatAmount = (value = 0) => {
 		const amount = Number(value);
 		const safeAmount = Number.isFinite(amount) ? amount : 0;
-		return toUSCurrency(safeAmount);
+		return formatCurrencyFn(safeAmount);
 	};
 
 	/**
@@ -239,7 +241,13 @@
 			<div class="header-controls">
 				<label class="search-field">
 					<span class="sr-only">Search saved invoices</span>
-					<svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+					<svg
+						class="search-icon"
+						viewBox="0 0 20 20"
+						fill="none"
+						stroke="currentColor"
+						aria-hidden="true"
+					>
 						<path
 							stroke-linecap="round"
 							stroke-linejoin="round"
@@ -254,7 +262,7 @@
 						oninput={onSearchInput}
 					/>
 				</label>
-				<button class="primary-button" type="button" onclick={() => goto('/') }>
+				<button class="primary-button" type="button" onclick={() => goto('/')}>
 					<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
 							fill-rule="evenodd"
@@ -270,20 +278,20 @@
 				<div class="filter-group">
 					<span class="filter-label">Collection</span>
 					<div class="chip-group">
-					<button
-						type="button"
-						class:active={!showArchived}
-						onclick={() => setArchivedView(false)}
-						aria-pressed={!showArchived}
-					>
+						<button
+							type="button"
+							class:active={!showArchived}
+							onclick={() => setArchivedView(false)}
+							aria-pressed={!showArchived}
+						>
 							Active
 						</button>
-					<button
-						type="button"
-						class:active={showArchived}
-						onclick={() => setArchivedView(true)}
-						aria-pressed={showArchived}
-					>
+						<button
+							type="button"
+							class:active={showArchived}
+							onclick={() => setArchivedView(true)}
+							aria-pressed={showArchived}
+						>
 							Archived
 						</button>
 					</div>
@@ -292,28 +300,28 @@
 				<div class="filter-group">
 					<span class="filter-label">Status</span>
 					<div class="chip-group">
-					<button
-						type="button"
-						class:active={filterMode === 'all'}
-						onclick={() => setFilterMode('all')}
-						aria-pressed={filterMode === 'all'}
-					>
+						<button
+							type="button"
+							class:active={filterMode === 'all'}
+							onclick={() => setFilterMode('all')}
+							aria-pressed={filterMode === 'all'}
+						>
 							All
 						</button>
-					<button
-						type="button"
-						class:active={filterMode === 'draft'}
-						onclick={() => setFilterMode('draft')}
-						aria-pressed={filterMode === 'draft'}
-					>
+						<button
+							type="button"
+							class:active={filterMode === 'draft'}
+							onclick={() => setFilterMode('draft')}
+							aria-pressed={filterMode === 'draft'}
+						>
 							Drafts
 						</button>
-					<button
-						type="button"
-						class:active={filterMode === 'finalized'}
-						onclick={() => setFilterMode('finalized')}
-						aria-pressed={filterMode === 'finalized'}
-					>
+						<button
+							type="button"
+							class:active={filterMode === 'finalized'}
+							onclick={() => setFilterMode('finalized')}
+							aria-pressed={filterMode === 'finalized'}
+						>
 							Finalized
 						</button>
 					</div>
@@ -330,7 +338,7 @@
 			<div class="state-card">
 				<h2>No saved invoices yet</h2>
 				<p>Start a draft and it will appear here automatically.</p>
-				<button class="primary-button" type="button" onclick={() => goto('/') }>
+				<button class="primary-button" type="button" onclick={() => goto('/')}>
 					<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
 							fill-rule="evenodd"
@@ -351,7 +359,9 @@
 									<h3 class="invoice-card__title">{invoiceTitle(record.invoice)}</h3>
 									<div class="invoice-card__badges">
 										<span
-											class="status-badge {record.invoice.draft ? 'status-badge--draft' : 'status-badge--finalized'}"
+											class="status-badge {record.invoice.draft
+												? 'status-badge--draft'
+												: 'status-badge--finalized'}"
 										>
 											{record.invoice.draft ? 'Draft' : 'Finalized'}
 										</span>
@@ -418,7 +428,9 @@
 											onclick={() => archiveInvoice(record.id)}
 										>
 											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-												<path d="M4 3a2 2 0 0 0-2 2v1.5A1.5 1.5 0 0 0 3.5 8H4v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8h.5A1.5 1.5 0 0 0 18 6.5V5a2 2 0 0 0-2-2H4Zm3 6.5A.5.5 0 0 1 7.5 9h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5ZM4 5h12v1.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V5Z" />
+												<path
+													d="M4 3a2 2 0 0 0-2 2v1.5A1.5 1.5 0 0 0 3.5 8H4v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8h.5A1.5 1.5 0 0 0 18 6.5V5a2 2 0 0 0-2-2H4Zm3 6.5A.5.5 0 0 1 7.5 9h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5ZM4 5h12v1.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V5Z"
+												/>
 											</svg>
 											<span>Archive</span>
 										</button>
@@ -448,7 +460,7 @@
 
 		<footer class="page-footer">
 			<p>These invoices are stored on this device. Clearing your browser cache will remove them.</p>
-		<button class="ghost-button ghost-button--danger" type="button" onclick={clearData}>
+			<button class="ghost-button ghost-button--danger" type="button" onclick={clearData}>
 				Clear everything
 			</button>
 		</footer>
@@ -460,7 +472,8 @@
 				<h2>Delete this invoice?</h2>
 				<p>This action cannot be undone. You will need to recreate the invoice manually.</p>
 				<div class="modal-actions">
-					<button class="danger-button" type="button" onclick={() => removeInvoice()}>Delete</button>
+					<button class="danger-button" type="button" onclick={() => removeInvoice()}>Delete</button
+					>
 					<button class="ghost-button" type="button" onclick={cancelDelete}>Cancel</button>
 				</div>
 			</div>
@@ -550,7 +563,9 @@
 		border-radius: var(--radius-pill);
 		padding: 0.35rem 1rem 0.35rem 2.75rem;
 		box-shadow: var(--shadow-soft);
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.search-field:focus-within {
@@ -588,7 +603,9 @@
 		font-weight: 600;
 		cursor: pointer;
 		box-shadow: var(--shadow-medium);
-		transition: transform 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.primary-button:hover {
@@ -642,7 +659,11 @@
 		color: var(--color-text-secondary);
 		font-weight: 500;
 		cursor: pointer;
-		transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease,
+			border-color 0.2s ease,
+			transform 0.2s ease;
 	}
 
 	.chip-group button:hover {
@@ -813,7 +834,11 @@
 		padding: 0.45rem 0.95rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease,
+			color 0.2s ease,
+			transform 0.2s ease;
 	}
 
 	.ghost-button:hover {
@@ -951,7 +976,9 @@
 		padding: 0.55rem 1.2rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: background-color 0.2s ease, transform 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			transform 0.2s ease;
 	}
 
 	.danger-button:hover {

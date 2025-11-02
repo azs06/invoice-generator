@@ -1,4 +1,5 @@
 <script>
+	import { _ } from 'svelte-i18n';
 	import { toUSCurrency } from '$lib/currency.js';
 
 	/** @type {number} */
@@ -23,7 +24,7 @@
 
 <div class="amount-paid-summary">
 	<div class="summary-row">
-		<span class="summary-label">Amount Paid:</span>
+		<span class="summary-label">{$_('summary.amount_paid')}:</span>
 		<div class="input-with-value">
 			<input
 				id="amount-paid-input"
@@ -35,13 +36,13 @@
 				class="summary-input"
 				oninput={handleOnChange}
 			/>
-			<span class="summary-value">{toUSCurrency(amountPaid || 0)}</span>
+			<span class="summary-value">{$toUSCurrency(amountPaid || 0)}</span>
 		</div>
 	</div>
 
 	<div class="summary-row due-row">
-		<span class="summary-label">Balance Due:</span>
-		<span class="summary-value">{toUSCurrency(Math.abs((invoice?.balanceDue || 0)))}</span>
+		<span class="summary-label">{$_('summary.balance_due')}:</span>
+		<span class="summary-value">{$toUSCurrency(Math.abs(invoice?.balanceDue || 0))}</span>
 	</div>
 </div>
 
@@ -89,7 +90,9 @@
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
 		text-align: right;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.summary-input:focus {

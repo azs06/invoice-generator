@@ -96,7 +96,7 @@ export async function getMigrationStatus() {
  */
 export async function runMigrationIfNeeded() {
 	const needsMigration = await isMigrationNeeded();
-	
+
 	if (!needsMigration) {
 		return {
 			success: true,
@@ -107,7 +107,7 @@ export async function runMigrationIfNeeded() {
 
 	console.log('Running template migration for existing invoices...');
 	const result = await migrateInvoicesToIncludeTemplateId();
-	
+
 	if (result.success) {
 		console.log(`Successfully migrated ${result.migrated} invoices to include templateId`);
 	} else {

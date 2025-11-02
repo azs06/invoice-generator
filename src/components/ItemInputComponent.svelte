@@ -58,12 +58,7 @@
 </script>
 
 <div class="item-input">
-	<input
-		type="text"
-		placeholder="Item Name"
-		bind:value={item.name}
-		oninput={handleNameInput}
-	/>
+	<input type="text" placeholder="Item Name" bind:value={item.name} oninput={handleNameInput} />
 
 	<input
 		type="number"
@@ -97,7 +92,9 @@
 		background: var(--color-bg-secondary);
 		font-size: 1rem;
 		color: var(--color-text-primary);
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.item-input input:focus {
