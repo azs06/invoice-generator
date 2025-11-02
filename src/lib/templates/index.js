@@ -1,3 +1,5 @@
+// Legacy template options for backward compatibility
+// This file is deprecated - use registry.js instead
 export const TEMPLATE_OPTIONS = [
 	{
 		id: 'modern',

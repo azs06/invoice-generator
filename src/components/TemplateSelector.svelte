@@ -21,7 +21,12 @@
 		on:change={handleChange}
 	>
 		{#each TEMPLATE_OPTIONS as option}
-			<option value={option.id}>{option.label}</option>
+			<option value={option.id}>
+				{option.label}
+				{#if option.premium}
+					<span class="premium-indicator"> PRO</span>
+				{/if}
+			</option>
 		{/each}
 	</select>
 </div>
@@ -54,6 +59,16 @@
 		border-radius: var(--radius-sm);
 		cursor: pointer;
 		position: relative;
+	}
+
+	.premium-indicator {
+		font-size: 0.7rem;
+		font-weight: 700;
+		color: var(--color-accent, #2563eb);
+		margin-left: 0.5rem;
+		padding: 0.1rem 0.3rem;
+		border-radius: var(--radius-sm);
+		background: rgba(37, 99, 235, 0.1);
 	}
 
 	.selector-control:focus-visible {

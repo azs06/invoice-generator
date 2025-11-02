@@ -1,12 +1,33 @@
 import { writable } from 'svelte/store';
-import { TEMPLATE_OPTIONS, DEFAULT_TEMPLATE_ID } from '$lib/templates/index.js';
+import { getTemplateOptions, getDefaultTemplateId, templateExists, getTemplate } from '$lib/templates/registry.js';
+
+const DEFAULT_TEMPLATE_ID = getDefaultTemplateId();
+const TEMPLATE_OPTIONS = getTemplateOptions();
 
 const selectedTemplateId = writable(DEFAULT_TEMPLATE_ID);
 
 const setTemplateId = (templateId) => {
 	const fallback = DEFAULT_TEMPLATE_ID;
-	const candidate = TEMPLATE_OPTIONS.find((template) => template.id === templateId);
-	selectedTemplateId.set(candidate ? candidate.id : fallback);
+	// Validate template exists
+	if (templateExists(templateId)) {
+		selectedTemplateId.set(templateId);
+	} else {
+		selectedTemplateId.set(fallback);
+	}
 };
 
-export { TEMPLATE_OPTIONS, selectedTemplateId, setTemplateId };
+// Get current template info
+const getCurrentTemplate = () => {
+	let currentId;
+	const unsubscribe = selectedTemplateId.subscribe(value => currentId = value);
+	unsubscribe();
+	return getTemplate(currentId || DEFAULT_TEMPLATE_ID);
+};
+
+export {
+	TEMPLATE_OPTIONS,
+	selectedTemplateId,
+	setTemplateId,
+	getCurrentTemplate,
+	DEFAULT_TEMPLATE_ID
+};

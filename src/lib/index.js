@@ -22,5 +22,6 @@ export const defaultInvoice = {
 	archived: false,
 	total: 0,
 	subTotal: 0,
-	balanceDue: 0
+	balanceDue: 0,
+	templateId: 'modern'
 };

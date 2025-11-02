@@ -38,7 +38,8 @@ export async function saveInvoice(id, invoiceData) {
 	const objectToSerialize = {
 		...invoiceData,
 		logo: processedLogo,
-		logoFilename: logoFilename // Ensure logoFilename is included
+		logoFilename: logoFilename, // Ensure logoFilename is included
+		templateId: invoiceData.templateId || 'modern' // Include templateId with fallback
 	};
 	// Convert the entire object (including any nested proxies) to a plain JavaScript object.
 	const plainInvoiceObject = JSON.parse(JSON.stringify(objectToSerialize));

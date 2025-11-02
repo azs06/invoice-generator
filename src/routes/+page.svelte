@@ -2,11 +2,13 @@
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
-	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
+	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
 	import { saveInvoice, getAllInvoices, getInvoice } from '$lib/db.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { totalAmounts  } from '$lib/InvoiceCalculator.js';
+	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
+	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
 
 	export const prerender = true;
 
@@ -43,7 +45,8 @@
 		draftName: '',
 		total: 0,
 		subTotal: 0,
-		balanceDue: 0
+		balanceDue: 0,
+		templateId: 'modern'
 	});
 
 	const startNewInvoice = () => {
@@ -94,6 +97,9 @@
 	};
 
 	onMount(async () => {
+		// Run template migration for existing invoices
+		await runMigrationIfNeeded();
+
 		const invoicesFromDb = await getAllInvoices();
 		let loadedInvoice = null;
 
@@ -135,6 +141,18 @@
 		}
 		if (invoice.draft === undefined || invoice.draft === null) {
 			invoice.draft = true;
+		}
+
+		// Sync template store with loaded invoice's templateId
+		if (invoice.templateId) {
+			setTemplateId(invoice.templateId);
+		}
+	});
+
+	// Sync invoice templateId when template selector changes
+	$effect(() => {
+		if (invoice && $selectedTemplateId && invoice.templateId !== $selectedTemplateId) {
+			invoice.templateId = $selectedTemplateId;
 		}
 	});
 
@@ -273,8 +291,7 @@
 		</div>
 
 		<!-- Edit View -->
-		{#if activeTab === 'edit'}
-			<div class="content-section form-section">
+		<div class="content-section form-section" class:hidden={activeTab !== 'edit'}>
 				<div class="sticky-button-wrapper">
 					<div class="button-group">
 						<button
@@ -325,12 +342,10 @@
 					{onInvoiceNumberInput}
 					{onInvoiceLabelInput}
 				/>
-			</div>
-		{/if}
+		</div>
 
 		<!-- Preview View -->
-		{#if activeTab === 'preview'}
-			<div class="content-section preview-section">
+		<div class="content-section preview-section" class:hidden={activeTab !== 'preview'}>
 				<div class="sticky-button-wrapper">
 					<button
 						class="icon-button preview-action"
@@ -366,10 +381,9 @@
 				</div>
 
 				<div bind:this={previewRef}>
-					<InvoicePreviewComponent {invoice} />
+					<InvoicePreviewWrapper {invoice} />
 				</div>
-			</div>
-		{/if}
+		</div>
 	</div>
 {:else}
 	<p class="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</p>
@@ -472,6 +486,10 @@
 		border: 1px solid var(--color-border-primary);
 		overflow: visible;
 		position: relative;
+	}
+
+	.content-section.hidden {
+		display: none;
 	}
 
 	.icon-button {
