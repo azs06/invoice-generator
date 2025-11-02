@@ -32,22 +32,23 @@
 
 	<div class="controls">
 		<div class="control">
-			<label class="control-label" for="discount-rate">Discount</label>
-			<div class="type-toggle" role="group" aria-label="Discount type">
-				<button
-					type="button"
-					class:selected={discount.type === 'flat'}
-					on:click={() => (discount.type = 'flat')}
-				>
-					Flat
-				</button>
-				<button
-					type="button"
-					class:selected={discount.type === 'percent'}
-					on:click={() => (discount.type = 'percent')}
-				>
-					%
-				</button>
+			<div class="control-header">
+				<label class="control-label" for="discount-rate">Discount</label>
+				<div class="type-choice" role="radiogroup" aria-label="Discount type">
+					<label class:selected={discount.type === 'flat'}>
+						<input type="radio" value="flat" aria-label="Flat discount" bind:group={discount.type} />
+						<span>Flat</span>
+					</label>
+					<label class:selected={discount.type === 'percent'}>
+						<input
+							type="radio"
+							value="percent"
+							aria-label="Percent discount"
+							bind:group={discount.type}
+						/>
+						<span>%</span>
+					</label>
+				</div>
 			</div>
 			<input
 				id="discount-rate"
@@ -61,18 +62,18 @@
 		</div>
 
 		<div class="control">
-			<label class="control-label" for="tax-rate">Tax</label>
-			<div class="type-toggle" role="group" aria-label="Tax type">
-				<button type="button" class:selected={tax.type === 'flat'} on:click={() => (tax.type = 'flat')}>
-					Flat
-				</button>
-				<button
-					type="button"
-					class:selected={tax.type === 'percent'}
-					on:click={() => (tax.type = 'percent')}
-				>
-					%
-				</button>
+			<div class="control-header">
+				<label class="control-label" for="tax-rate">Tax</label>
+				<div class="type-choice" role="radiogroup" aria-label="Tax type">
+					<label class:selected={tax.type === 'flat'}>
+						<input type="radio" value="flat" aria-label="Flat tax" bind:group={tax.type} />
+						<span>Flat</span>
+					</label>
+					<label class:selected={tax.type === 'percent'}>
+						<input type="radio" value="percent" aria-label="Percent tax" bind:group={tax.type} />
+						<span>%</span>
+					</label>
+				</div>
 			</div>
 			<input
 				id="tax-rate"
@@ -159,57 +160,75 @@
 
 	.controls {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 0.85rem;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 0.7rem;
 	}
 
 	.control {
 		display: flex;
 		flex-direction: column;
-		gap: 0.4rem;
-		padding: 0.85rem;
+		gap: 0.5rem;
+		padding: 0.75rem;
 		border-radius: var(--radius-md);
 		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
 	}
 
 	.control-label {
-		font-size: 0.85rem;
+		font-size: 0.82rem;
 		color: var(--color-text-secondary);
 		font-weight: 600;
 		letter-spacing: 0.02em;
 		text-transform: uppercase;
 	}
 
-	.type-toggle {
+	.control-header {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.35rem;
+	}
+
+	.type-choice {
 		display: inline-flex;
-		background: var(--color-bg-secondary);
+		align-items: center;
+		gap: 0.35rem;
+		flex-wrap: wrap;
+	}
+
+	.type-choice label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.24rem 0.58rem;
+		position: relative;
 		border-radius: var(--radius-pill);
-		padding: 0.2rem;
 		border: 1px solid var(--color-border-secondary);
-	}
-
-	.type-toggle button {
-		flex: 1;
-		padding: 0.3rem 0.8rem;
-		background: transparent;
-		border: none;
-		font-size: 0.85rem;
-		font-weight: 600;
+		background: var(--color-bg-secondary);
 		color: var(--color-text-secondary);
-		border-radius: var(--radius-pill);
+		font-size: 0.78rem;
+		font-weight: 600;
 		cursor: pointer;
-		transition: background 0.2s ease, color 0.2s ease;
+		transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 	}
 
-	.type-toggle button.selected {
-		background: var(--color-accent-blue);
-		color: #fff;
+	.type-choice label.selected {
+		border-color: var(--color-accent-blue);
+		background: rgba(59, 130, 246, 0.16);
+		color: var(--color-accent-blue);
 		box-shadow: var(--shadow-soft);
 	}
 
+	.type-choice input {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+		pointer-events: none;
+	}
+
 	.number-input {
-		padding: 0.65rem;
+		padding: 0.6rem;
 		font-size: 0.95rem;
 		border: 1px solid var(--color-border-secondary);
 		border-radius: var(--radius-sm);
@@ -291,7 +310,7 @@
 		}
 
 		.control {
-			padding: 0.75rem;
+			padding: 0.6rem;
 		}
 
 		.summary-callout {

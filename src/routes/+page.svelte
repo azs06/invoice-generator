@@ -174,21 +174,23 @@
 {#if invoice}
 	<div class="page-layout">
 		<div class="form-section">
-			<button
-				class="icon-button form-action"
-				aria-label={$_('invoice.new')}
-				title={$_('invoice.new')}
-				onclick={startNewInvoice}
-			>
-				<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-					<path
-						fill-rule="evenodd"
-						d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-				<span class="sr-only">{$_('invoice.new')}</span>
-			</button>
+			<div class="sticky-button-wrapper">
+				<button
+					class="icon-button form-action"
+					aria-label={$_('invoice.new')}
+					title={$_('invoice.new')}
+					onclick={startNewInvoice}
+				>
+					<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path
+							fill-rule="evenodd"
+							d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					<span class="sr-only">{$_('invoice.new')}</span>
+				</button>
+			</div>
 
 			<InvoiceFormComponent
 				{invoice}
@@ -210,37 +212,39 @@
 		</div>
 
 		<div class="preview-section" class:mobile-preview-open={showMobilePreview}>
-			<button
-				class="icon-button preview-action"
-				aria-label={$_('invoice.save_pdf')}
-				title={$_('invoice.save_pdf')}
-				onclick={saveAsPDF}
-				disabled={isGeneratingPDF}
-			>
-				{#if isGeneratingPDF}
-					<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-						<circle
-							cx="12"
-							cy="12"
-							r="9"
-							stroke-width="2"
-							stroke-dasharray="45 15"
-							stroke-dashoffset="0"
-							stroke-linecap="round"
-						/>
-					</svg>
-					<span class="sr-only">{$_('invoice.downloading')}</span>
-				{:else}
-					<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							fill-rule="evenodd"
-							d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					<span class="sr-only">{$_('invoice.save_pdf')}</span>
-				{/if}
-			</button>
+			<div class="sticky-button-wrapper">
+				<button
+					class="icon-button preview-action"
+					aria-label={$_('invoice.save_pdf')}
+					title={$_('invoice.save_pdf')}
+					onclick={saveAsPDF}
+					disabled={isGeneratingPDF}
+				>
+					{#if isGeneratingPDF}
+						<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+							<circle
+								cx="12"
+								cy="12"
+								r="9"
+								stroke-width="2"
+								stroke-dasharray="45 15"
+								stroke-dashoffset="0"
+								stroke-linecap="round"
+							/>
+						</svg>
+						<span class="sr-only">{$_('invoice.downloading')}</span>
+					{:else}
+						<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path
+								fill-rule="evenodd"
+								d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+						<span class="sr-only">{$_('invoice.save_pdf')}</span>
+					{/if}
+				</button>
+			</div>
 
 			<div bind:this={previewRef}>
 				<InvoicePreviewComponent {invoice} />
@@ -336,12 +340,20 @@
 		border: 0;
 	}
 
-	.form-section .form-action,
-	.preview-section .preview-action {
-		position: absolute;
-		top: 0.65rem;
-		right: 0.65rem;
-		z-index: 3;
+	.sticky-button-wrapper {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		height: 0;
+		display: flex;
+		justify-content: flex-end;
+		padding-right: 0.5rem;
+		padding-top: 0.5rem;
+		pointer-events: none;
+	}
+
+	.sticky-button-wrapper .icon-button {
+		pointer-events: all;
 	}
 
 	:global(.invoice-form) {

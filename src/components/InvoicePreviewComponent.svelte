@@ -328,8 +328,10 @@
 	}
 
 	.details-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		display: flex;
+		flex-wrap: wrap;
+		/* Ensure first line (From/To) pushes to far edges */
+		justify-content: space-between;
 		gap: 1rem;
 		padding: 1rem;
 		border-radius: var(--radius-md);
@@ -340,6 +342,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.35rem;
+		/* Two-up layout on wide screens while allowing space-between */
+		flex: 1 1 320px;
+		max-width: calc(50% - 0.5rem);
 	}
 
 	.details-label {
@@ -469,6 +474,12 @@
 
 		.summary {
 			justify-content: stretch;
+		}
+
+		/* Stack details on small screens */
+		.details-block {
+			flex-basis: 100%;
+			max-width: 100%;
 		}
 	}
 </style>
