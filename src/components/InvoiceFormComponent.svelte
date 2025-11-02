@@ -189,7 +189,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.15rem;
-		padding: 1.35rem;
+		padding: 1rem 1.35rem 1.35rem;
 		background: var(--color-bg-primary);
 	}
 

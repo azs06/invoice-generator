@@ -272,7 +272,7 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.1rem;
-		padding: 1.25rem;
+		padding: 2.5rem 1.25rem 1.25rem 1.25rem;
 		position: relative;
 	}
 
@@ -282,10 +282,20 @@
 		--section-radius: var(--radius-lg);
 		background: var(--color-bg-primary);
 		padding: var(--section-padding);
+		border-radius: var(--radius-lg);
 		border: 1px solid var(--color-border-primary);
-		overflow-y: auto;
-		max-height: 90vh;
+		overflow: visible;
 		position: relative;
+		display: flex;
+		flex-direction: column;
+		max-height: 90vh;
+	}
+
+	.form-section > :global(:not(.sticky-button-wrapper)),
+	.preview-section > :global(div:not(.sticky-button-wrapper)) {
+		overflow-y: auto;
+		flex: 1;
+		min-height: 0;
 	}
 
 	.icon-button {
@@ -341,23 +351,22 @@
 	}
 
 	.sticky-button-wrapper {
-		position: sticky;
+		position: absolute;
 		top: 0;
+		right: 0;
 		z-index: 10;
-		height: 0;
-		display: flex;
-		justify-content: flex-end;
-		padding-right: 0.5rem;
-		padding-top: 0.5rem;
 		pointer-events: none;
+		flex-shrink: 0;
+		height: 0;
 	}
 
 	.sticky-button-wrapper .icon-button {
 		pointer-events: all;
+		transform: translate(25%, -25%);
 	}
 
 	:global(.invoice-form) {
-		padding-top: 1.5rem;
+		padding-top: 0.5rem;
 	}
 
 	@keyframes spin {

@@ -376,6 +376,7 @@
 		width: 100%;
 		border-collapse: collapse;
 		background: var(--color-bg-primary);
+		table-layout: fixed;
 	}
 
 	.items-table th {
