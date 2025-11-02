@@ -25,109 +25,88 @@
 </script>
 
 <div class="total-summary">
-	<div class="summary-header">
-		<h3>Invoice Summary</h3>
-		<p>Adjust totals without leaving the form.</p>
+	<!-- Summary Display -->
+	<div class="summary-row">
+		<span class="summary-label">Subtotal:</span>
+		<span class="summary-value">{toUSCurrency(subTotal())}</span>
 	</div>
 
-	<div class="controls">
-		<div class="control">
-			<div class="control-header">
-				<label class="control-label" for="discount-rate">Discount</label>
-				<div class="type-choice" role="radiogroup" aria-label="Discount type">
-					<label class:selected={discount.type === 'flat'}>
-						<input type="radio" value="flat" aria-label="Flat discount" bind:group={discount.type} />
-						<span>Flat</span>
-					</label>
-					<label class:selected={discount.type === 'percent'}>
-						<input
-							type="radio"
-							value="percent"
-							aria-label="Percent discount"
-							bind:group={discount.type}
-						/>
-						<span>%</span>
-					</label>
-				</div>
+	<!-- Discount Control -->
+	<div class="summary-row with-control">
+		<div class="control-group">
+			<span class="summary-label">Discount:</span>
+			<div class="type-toggle">
+				<label class:active={discount.type === 'flat'}>
+					<input type="radio" value="flat" bind:group={discount.type} />
+					<span>$</span>
+				</label>
+				<label class:active={discount.type === 'percent'}>
+					<input type="radio" value="percent" bind:group={discount.type} />
+					<span>%</span>
+				</label>
 			</div>
+		</div>
+		<div class="input-with-value">
 			<input
-				id="discount-rate"
 				type="number"
 				bind:value={discount.rate}
 				min="0"
 				step="0.01"
-				placeholder="0.00"
-				class="number-input"
+				placeholder="0"
+				class="summary-input"
 			/>
+			<span class="summary-value">-{toUSCurrency(discountAmount())}</span>
 		</div>
+	</div>
 
-		<div class="control">
-			<div class="control-header">
-				<label class="control-label" for="tax-rate">Tax</label>
-				<div class="type-choice" role="radiogroup" aria-label="Tax type">
-					<label class:selected={tax.type === 'flat'}>
-						<input type="radio" value="flat" aria-label="Flat tax" bind:group={tax.type} />
-						<span>Flat</span>
-					</label>
-					<label class:selected={tax.type === 'percent'}>
-						<input type="radio" value="percent" aria-label="Percent tax" bind:group={tax.type} />
-						<span>%</span>
-					</label>
-				</div>
+	<!-- Tax Control -->
+	<div class="summary-row with-control">
+		<div class="control-group">
+			<span class="summary-label">Tax:</span>
+			<div class="type-toggle">
+				<label class:active={tax.type === 'flat'}>
+					<input type="radio" value="flat" bind:group={tax.type} />
+					<span>$</span>
+				</label>
+				<label class:active={tax.type === 'percent'}>
+					<input type="radio" value="percent" bind:group={tax.type} />
+					<span>%</span>
+				</label>
 			</div>
+		</div>
+		<div class="input-with-value">
 			<input
-				id="tax-rate"
 				type="number"
 				bind:value={tax.rate}
 				min="0"
 				step="0.01"
-				placeholder="0.00"
-				class="number-input"
+				placeholder="0"
+				class="summary-input"
 			/>
+			<span class="summary-value">+{toUSCurrency(taxAmount())}</span>
 		</div>
+	</div>
 
-		<div class="control">
-			<label class="control-label" for="shipping-amount">Shipping</label>
+	<!-- Shipping Control -->
+	<div class="summary-row with-control">
+		<span class="summary-label">Shipping:</span>
+		<div class="input-with-value">
 			<input
-				id="shipping-amount"
 				type="number"
 				bind:value={shipping.amount}
 				min="0"
 				step="0.01"
-				placeholder="0.00"
-				class="number-input shipping-input"
+				placeholder="0"
+				class="summary-input"
 			/>
+			<span class="summary-value">+{toUSCurrency(invoice.shipping?.amount || 0)}</span>
 		</div>
 	</div>
 
-	<div class="summary">
-		<div class="summary-line">
-			<span>Subtotal</span>
-			<span>{toUSCurrency(subTotal())}</span>
-		</div>
-		<div class="summary-line">
-			<span>Discount</span>
-			<span class="negative">-{toUSCurrency(discountAmount())}</span>
-		</div>
-		<div class="summary-line">
-			<span>Tax</span>
-			<span class="positive">+{toUSCurrency(taxAmount())}</span>
-		</div>
-		<div class="summary-line">
-			<span>Shipping</span>
-			<span class="positive">+{toUSCurrency(invoice.shipping?.amount || 0)}</span>
-		</div>
-	</div>
-
-	<div class="summary-callout">
-		<div class="summary-total">
-			<span>Total</span>
-			<strong>{toUSCurrency(totalAmount())}</strong>
-		</div>
-		<div class="summary-due">
-			<span>Balance Due</span>
-			<strong>{toUSCurrency(invoice.balanceDue)}</strong>
-		</div>
+	<!-- Total -->
+	<div class="summary-row total-row">
+		<span class="summary-label">Total:</span>
+		<span class="summary-value">{toUSCurrency(totalAmount())}</span>
 	</div>
 </div>
 
@@ -135,186 +114,122 @@
 	.total-summary {
 		display: flex;
 		flex-direction: column;
-		gap: 0.7rem;
-		padding: 0.75rem;
-		background: var(--color-bg-secondary);
+		gap: 0.65rem;
 	}
 
-	.summary-header {
+	.summary-row {
 		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.summary-header h3 {
-		margin: 0;
-		font-size: 1rem;
-		color: var(--color-text-primary);
-	}
-
-	.summary-header p {
-		margin: 0;
-		font-size: 0.825rem;
-		color: var(--color-text-secondary);
-	}
-
-	.controls {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-		gap: 0.5rem;
-	}
-
-	.control {
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-		padding: 0.6rem;
-		border-radius: var(--radius-md);
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
-	}
-
-	.control-label {
-		font-size: 0.82rem;
-		color: var(--color-text-secondary);
-		font-weight: 600;
-		letter-spacing: 0.02em;
-		text-transform: uppercase;
-	}
-
-	.control-header {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.35rem;
-	}
-
-	.type-choice {
-		display: inline-flex;
+		justify-content: space-between;
 		align-items: center;
-		gap: 0.35rem;
+		padding: 0.5rem 0;
+		font-size: 0.95rem;
+		gap: 1rem;
+	}
+
+	.summary-row.with-control {
 		flex-wrap: wrap;
 	}
 
-	.type-choice label {
+	.summary-label {
+		color: var(--color-text-secondary);
+		font-weight: 500;
+	}
+
+	.summary-value {
+		color: var(--color-text-primary);
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.control-group {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.type-toggle {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
-		padding: 0.24rem 0.58rem;
-		position: relative;
-		border-radius: var(--radius-pill);
-		border: 1px solid var(--color-border-secondary);
+		padding: 0.15rem;
+		border-radius: var(--radius-sm);
 		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border-secondary);
+	}
+
+	.type-toggle label {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.5rem;
+		padding: 0.2rem 0.4rem;
+		border-radius: var(--radius-xs);
+		background: transparent;
 		color: var(--color-text-secondary);
-		font-size: 0.78rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+		transition: all 0.15s ease;
 	}
 
-	.type-choice label.selected {
-		border-color: var(--color-accent-blue);
-		background: rgba(59, 130, 246, 0.16);
-		color: var(--color-accent-blue);
-		box-shadow: var(--shadow-soft);
+	.type-toggle label.active {
+		background: var(--color-accent-blue);
+		color: #fff;
 	}
 
-	.type-choice input {
+	.type-toggle input {
 		position: absolute;
 		opacity: 0;
-		width: 0;
-		height: 0;
 		pointer-events: none;
 	}
 
-	.number-input {
-		padding: 0.6rem;
-		font-size: 0.95rem;
+	.input-with-value {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex: 1;
+		justify-content: flex-end;
+	}
+
+	.summary-input {
+		width: 80px;
+		padding: 0.35rem 0.5rem;
+		font-size: 0.875rem;
 		border: 1px solid var(--color-border-secondary);
 		border-radius: var(--radius-sm);
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
+		text-align: right;
 		transition: border-color 0.2s ease, box-shadow 0.2s ease;
 	}
 
-	.number-input:focus {
+	.summary-input:focus {
 		outline: none;
 		border-color: var(--color-accent-blue);
 		box-shadow: var(--shadow-focus);
 	}
 
-	.summary {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		padding: 0.65rem;
-		border-radius: var(--radius-md);
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+	.total-row {
+		padding-top: 0.75rem;
+		margin-top: 0.5rem;
+		border-top: 1px solid var(--color-border-primary);
+		font-size: 1.05rem;
 	}
 
-	.summary-line {
-		display: flex;
-		justify-content: space-between;
-		font-size: 0.9rem;
-		color: var(--color-text-secondary);
-	}
-
-	.summary-line .negative {
-		color: #dc2626;
-	}
-
-	.summary-line .positive {
-		color: #047857;
-	}
-
-	.summary-callout {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-		gap: 0.65rem;
-		padding: 0.65rem;
-		border-radius: var(--radius-md);
-		border: 1px solid rgba(59, 130, 246, 0.24);
-		background: rgba(59, 130, 246, 0.1);
-	}
-
-	.summary-total,
-	.summary-due {
-		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
-	}
-
-	.summary-total span,
-	.summary-due span {
-		font-size: 0.8rem;
-		letter-spacing: 0.02em;
-		text-transform: uppercase;
-		color: var(--color-text-secondary);
-		font-weight: 600;
-	}
-
-	.summary-total strong,
-	.summary-due strong {
-		font-size: 1.1rem;
+	.total-row .summary-label,
+	.total-row .summary-value {
+		font-weight: 700;
 		color: var(--color-text-primary);
 	}
 
-	.summary-due strong {
-		color: #b91c1c;
-	}
-
 	@media (max-width: 640px) {
-		.total-summary {
-			padding: 0.65rem;
+		.summary-row {
+			font-size: 0.9rem;
 		}
 
-		.control {
-			padding: 0.5rem;
-		}
-
-		.summary-callout {
-			grid-template-columns: 1fr;
+		.summary-input {
+			width: 70px;
+			font-size: 0.825rem;
 		}
 	}
 </style>

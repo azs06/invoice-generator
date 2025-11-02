@@ -82,7 +82,7 @@
 
 		<div class="invoice-title-section">
 			<div class="invoice-title">
-				<span class="invoice-label">INVOICE</span>
+				<span class="invoice-label">{invoice.invoiceLabel || 'INVOICE'}</span>
 				<span class="invoice-number">#{invoice.invoiceNumber || 'PENDING'}</span>
 			</div>
 			<span class={`status-text ${balanceState()}`}>{statusLabel()}</span>

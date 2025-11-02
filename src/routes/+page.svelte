@@ -19,9 +19,10 @@
 
 	const createNewInvoice = () => ({
 		id: uuidv4(),
+		invoiceLabel: 'INVOICE',
 		invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
-		logo: null,
-		logoFilename: null,
+		logo: '/logo.png',
+		logoFilename: 'logo.png',
 		invoiceFrom: '',
 		invoiceTo: '',
 		date: new Date().toISOString().split('T')[0],
@@ -94,6 +95,15 @@
 			// Ensure we are getting the actual invoice data object
 			const latestInvoiceEntry = invoicesFromDb[invoicesFromDb.length - 1];
 			invoice = latestInvoiceEntry.invoice; // Assuming getAllInvoices returns {id, invoice}
+
+			// Set default logo and invoiceLabel if not present
+			if (!invoice.logo) {
+				invoice.logo = '/logo.png';
+				invoice.logoFilename = 'logo.png';
+			}
+			if (!invoice.invoiceLabel) {
+				invoice.invoiceLabel = 'INVOICE';
+			}
 		} else {
 			// No invoices in DB, so create a new one
 			invoice = createNewInvoice();
@@ -170,6 +180,12 @@
 	const onInvoiceFromInput = (e) => {
 		invoice.invoiceFrom = e.target.value;
 	};
+	const onInvoiceNumberInput = (e) => {
+		invoice.invoiceNumber = e.target.value;
+	};
+	const onInvoiceLabelInput = (e) => {
+		invoice.invoiceLabel = e.target.value;
+	};
 
 </script>
 {#if invoice}
@@ -236,6 +252,8 @@
 					{togglePaidStatus}
 					{onInvoiceToInput}
 					{onInvoiceFromInput}
+					{onInvoiceNumberInput}
+					{onInvoiceLabelInput}
 				/>
 			</div>
 		{/if}

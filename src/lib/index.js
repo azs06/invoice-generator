@@ -3,8 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const defaultInvoice = {
 	id: uuidv4(),
+	invoiceLabel: 'INVOICE',
 	invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
-	logo: null,
+	logo: '/logo.png',
+	logoFilename: 'logo.png',
 	invoiceFrom: '',
 	invoiceTo: '',
 	date: new Date().toISOString().split('T')[0],

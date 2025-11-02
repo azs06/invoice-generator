@@ -42,19 +42,19 @@
 	.terms-notes {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 0.65rem;
+		gap: 1rem;
 	}
 
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.3rem;
+		gap: 0.4rem;
 	}
 
 	label {
 		font-weight: 600;
-		color: var(--color-text-primary);
-		font-size: 0.8rem;
+		color: var(--color-text-secondary);
+		font-size: 0.8125rem;
 	}
 
 	textarea {

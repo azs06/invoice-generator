@@ -2,7 +2,6 @@
 	import ItemFormComponent from './ItemFormComponent.svelte';
 	import TermsAndNotesComponent from './TermsAndNotesComponent.svelte';
 	import AmountPaidComponent from './AmountPaidComponent.svelte';
-	import FilePreviewComponent from './FilePreviewComponent.svelte';
 	import TotalComponent from './TotalComponent.svelte';
 	import { defaultInvoice } from '$lib';
 
@@ -22,6 +21,8 @@
 		togglePaidStatus,
 		onInvoiceToInput,
 		onInvoiceFromInput,
+		onInvoiceNumberInput,
+		onInvoiceLabelInput,
 	} = $props();
 
 	const handleFileChange = (e) => {
@@ -52,14 +53,69 @@
 </script>
 
 <form class="invoice-form" onsubmit={(e) => e.preventDefault()}>
-	<section class="panel">
-		<header class="panel-header">
-			<span class="panel-eyebrow">Basics</span>
-			<h2>Invoice Details</h2>
-			<p class="panel-subtitle">Set the sender, recipient, and important dates.</p>
-		</header>
+	<!-- Header: Logo + Invoice Title -->
+	<header class="form-header">
+		<div class="logo-section">
+			<div class="logo-upload-area">
+				<div class="logo-preview">
+					{#if invoice.logo}
+						{#if typeof invoice.logo === 'string'}
+							<img src={invoice.logo} alt="Uploaded logo" />
+						{:else}
+							<img src={URL.createObjectURL(invoice.logo)} alt="Uploaded logo" />
+						{/if}
+					{:else}
+						<img src="/logo.png" alt="Default logo" />
+					{/if}
+				</div>
+				<input
+					id="logoUpload"
+					type="file"
+					accept="image/*"
+					onchange={handleFileChange}
+					class="logo-file-input"
+				/>
+				<label for="logoUpload" class="logo-upload-label">
+					Change Logo
+				</label>
+			</div>
+		</div>
 
-		<div class="field-grid">
+		<div class="invoice-title-section">
+			<div class="invoice-title-group">
+				<input
+					type="text"
+					value={invoice.invoiceLabel || 'INVOICE'}
+					placeholder="INVOICE"
+					class="invoice-label-input"
+					oninput={onInvoiceLabelInput}
+				/>
+				<div class="invoice-number-field">
+					<span class="number-prefix">#</span>
+					<input
+						type="text"
+						value={invoice.invoiceNumber}
+						placeholder="Invoice Number"
+						class="invoice-number-input"
+						oninput={onInvoiceNumberInput}
+					/>
+				</div>
+			</div>
+
+			<label class="paid-status-inline">
+				<input
+					type="checkbox"
+					onchange={(e) => togglePaidStatus(e.target.checked)}
+					checked={invoice.paid}
+				/>
+				<span>Mark as paid</span>
+			</label>
+		</div>
+	</header>
+
+	<!-- Invoice Details Grid -->
+	<section class="details-section">
+		<div class="details-grid">
 			<div class="field">
 				<label for="invoiceFrom">From</label>
 				<input
@@ -72,7 +128,7 @@
 			</div>
 
 			<div class="field">
-				<label for="invoiceTo">To</label>
+				<label for="invoiceTo">Bill To</label>
 				<input
 					id="invoiceTo"
 					type="text"
@@ -91,61 +147,49 @@
 				<label for="dueDate">Due Date</label>
 				<input id="dueDate" type="date" value={invoice.dueDate} oninput={handleDueDateChange} />
 				<small class="field-hint"
-					>If you change Invoice Date, Due Date auto-adjusts (+30 days) unless you edit manually.</small
+					>Auto-adjusts +30 days from Invoice Date unless edited manually.</small
 				>
 			</div>
 		</div>
 	</section>
 
-	<section class="panel">
-		<header class="panel-header">
-			<span class="panel-eyebrow">Branding</span>
-			<h2>Logo</h2>
-			<p class="panel-subtitle">Optional logo helps your invoice feel polished.</p>
-		</header>
+	<!-- Items Table -->
+	<section class="items-section">
+		<div class="items-table-container">
+			<div class="items-table-header">
+				<div class="header-cell item-col">Item</div>
+				<div class="header-cell qty-col">Quantity</div>
+				<div class="header-cell price-col">Rate</div>
+				<div class="header-cell amount-col">Amount</div>
+			</div>
 
-		<div class="field">
-			<label for="logoUpload">Upload Logo</label>
-			<input id="logoUpload" type="file" accept="image/*" onchange={handleFileChange} />
-			{#if invoice.logoFilename}
-				<small class="loaded-filename">Current: {invoice.logoFilename}</small>
-			{/if}
-			{#if invoice.logo}
-				<FilePreviewComponent file={invoice.logo} />
-			{/if}
-		</div>
-	</section>
-
-	<section class="panel">
-		<header class="panel-header">
-			<span class="panel-eyebrow">Items</span>
-			<h2>Invoice Items</h2>
-			<p class="panel-subtitle">Track every product or service going on this invoice.</p>
-		</header>
-
-		<div class="items-stack">
-			{#each invoice.items as item, index}
-				<ItemFormComponent
-					{item}
-					{index}
-					onUpdate={(updatedItem) => updateItem(index, updatedItem)}
-				/>
-			{/each}
+			<div class="items-table-body">
+				{#each invoice.items as item, index}
+					<ItemFormComponent
+						{item}
+						{index}
+						onUpdate={(updatedItem) => updateItem(index, updatedItem)}
+					/>
+				{/each}
+			</div>
 		</div>
 
 		<button type="button" class="add-item-btn" onclick={addItem}>
-			<span aria-hidden="true">＋</span>
+			<span aria-hidden="true">+</span>
 			Add another line
 		</button>
 	</section>
 
-	<section class="panel">
-		<header class="panel-header">
-			<span class="panel-eyebrow">Notes</span>
-			<h2>Terms & Notes</h2>
-			<p class="panel-subtitle">Clarify payment expectations or leave a personal message.</p>
-		</header>
+	<!-- Summary Section (Right-aligned) -->
+	<section class="summary-section">
+		<div class="summary-container">
+			<TotalComponent {invoice} {onUpdateTax} {onUpdateDiscount} {onUpdateShipping} />
+			<AmountPaidComponent {invoice} {updatePaidAmount} amountPaid={invoice.amountPaid} />
+		</div>
+	</section>
 
+	<!-- Terms & Notes Footer -->
+	<section class="footer-section">
 		<TermsAndNotesComponent
 			terms={invoice.terms}
 			notes={invoice.notes}
@@ -153,100 +197,203 @@
 			onUpdateNotes={updateNotes}
 		/>
 	</section>
-
-	<section class="panel">
-		<header class="panel-header">
-			<span class="panel-eyebrow">Payment</span>
-			<h2>Totals & Status</h2>
-			<p class="panel-subtitle">Keep the running balance up to date.</p>
-		</header>
-
-		<div class="summary-section">
-			<AmountPaidComponent {updatePaidAmount} amountPaid={invoice.amountPaid} />
-
-			<TotalComponent {invoice} {onUpdateTax} {onUpdateDiscount} {onUpdateShipping} />
-		</div>
-
-		<label class="paid-status">
-			<input
-				type="checkbox"
-				onchange={(e) => togglePaidStatus(e.target.checked)}
-				checked={invoice.paid}
-			/>
-			<span class="status-label">Mark invoice as paid</span>
-		</label>
-	</section>
 </form>
 
 <style>
 	.invoice-form {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.panel {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		padding: 0.75rem 1rem 1rem;
+		gap: 2rem;
+		padding: 2rem;
 		background: var(--color-bg-primary);
+		border-radius: var(--radius-lg);
+		max-width: 1024px;
+		margin: 0 auto;
 	}
 
-	.panel-header {
+	/* Header Section */
+	.form-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1.5rem;
+		padding-bottom: 1.5rem;
+		border-bottom: 1px solid var(--color-border-primary);
+	}
+
+	.logo-section {
+		flex: 0 0 auto;
+	}
+
+	.logo-upload-area {
 		display: flex;
 		flex-direction: column;
+		gap: 0.75rem;
+		align-items: flex-start;
+	}
+
+	.logo-preview {
+		width: 150px;
+		height: 80px;
+		border-radius: var(--radius-md);
+		overflow: hidden;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border-primary);
+	}
+
+	.logo-preview img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	.logo-file-input {
+		display: none;
+	}
+
+	.logo-upload-label {
+		padding: 0.5rem 1rem;
+		border-radius: var(--radius-sm);
+		background: var(--color-accent-blue);
+		color: #fff;
+		font-weight: 600;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: background 0.2s ease;
+		border: none;
+	}
+
+	.logo-upload-label:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 85%, black 15%);
+	}
+
+	.invoice-title-section {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.75rem;
+	}
+
+	.invoice-title-group {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.5rem;
+	}
+
+	.invoice-label-input {
+		font-size: 2rem;
+		font-weight: 300;
+		letter-spacing: 0.02em;
+		color: var(--color-text-primary);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border-secondary);
+		padding: 0.4rem 0.65rem;
+		border-radius: var(--radius-sm);
+		text-align: right;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		text-transform: uppercase;
+	}
+
+	.invoice-label-input:hover {
+		border-color: var(--color-border-primary);
+	}
+
+	.invoice-label-input:focus {
+		outline: none;
+		border-color: var(--color-accent-blue);
+		box-shadow: var(--shadow-focus);
+	}
+
+	.invoice-number-field {
+		display: flex;
+		align-items: center;
 		gap: 0.25rem;
 	}
 
-	.panel-eyebrow {
-		font-size: 0.65rem;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
+	.number-prefix {
+		font-size: 1rem;
+		font-weight: 400;
 		color: var(--color-text-secondary);
-		font-weight: 600;
 	}
 
-	.panel-header h2 {
-		margin: 0;
-		font-size: 1.1rem;
+	.invoice-number-input {
+		width: 180px;
+		padding: 0.4rem 0.6rem;
+		border: 1px solid var(--color-border-secondary);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
+		font-size: 0.95rem;
+		text-align: left;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
 	}
 
-	.panel-subtitle {
-		margin: 0;
-		color: var(--color-text-secondary);
-		font-size: 0.825rem;
+	.invoice-number-input:hover {
+		border-color: var(--color-border-primary);
 	}
 
-	.field-grid {
+	.invoice-number-input:focus {
+		outline: none;
+		border-color: var(--color-accent-blue);
+		box-shadow: var(--shadow-focus);
+	}
+
+	.paid-status-inline {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.65rem 1rem;
+		border-radius: var(--radius-md);
+		background: rgba(59, 130, 246, 0.1);
+		border: 1px solid rgba(59, 130, 246, 0.24);
+		font-weight: 600;
+		font-size: 0.875rem;
+		color: var(--color-text-primary);
+		cursor: pointer;
+	}
+
+	.paid-status-inline input {
+		width: 1rem;
+		height: 1rem;
+		accent-color: var(--color-accent-blue);
+		cursor: pointer;
+	}
+
+	/* Details Section */
+	.details-section {
+		padding: 0;
+	}
+
+	.details-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 0.65rem;
+		gap: 1rem;
 	}
 
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.3rem;
+		gap: 0.4rem;
 	}
 
 	.field label {
-		font-size: 0.8rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
-		color: var(--color-text-primary);
+		color: var(--color-text-secondary);
 	}
 
 	.field input[type='text'],
-	.field input[type='date'],
-	.field input[type='number'],
-	.field input[type='file'] {
-		padding: 0.5rem 0.75rem;
+	.field input[type='date'] {
+		padding: 0.65rem 0.85rem;
 		border-radius: var(--radius-sm);
 		border: 1px solid var(--color-border-secondary);
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
-		font-size: 0.9rem;
+		font-size: 0.95rem;
 		transition: border-color 0.2s ease, box-shadow 0.2s ease;
 	}
 
@@ -256,44 +403,59 @@
 		box-shadow: var(--shadow-focus);
 	}
 
-	.field input[type='file'] {
-		padding: 0.45rem 0.8rem;
-		cursor: pointer;
-	}
-
-	.field input[type='file']::file-selector-button {
-		margin-right: 0.85rem;
-		padding: 0.4rem 0.9rem;
-		border: none;
-		border-radius: var(--radius-sm);
-		background: var(--color-accent-blue);
-		color: #fff;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background 0.2s ease;
-	}
-
-	.field input[type='file']::file-selector-button:hover {
-		background: color-mix(in srgb, var(--color-accent-blue) 85%, black 15%);
-	}
-
 	.field-hint {
 		color: var(--color-text-secondary);
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 		line-height: 1.4;
 	}
 
-	.items-stack {
+	/* Items Section */
+	.items-section {
 		display: flex;
 		flex-direction: column;
-		gap: 0.65rem;
+		gap: 1rem;
+	}
+
+	.items-table-container {
+		border: 1px solid var(--color-border-primary);
+		border-radius: var(--radius-md);
+		overflow: hidden;
+	}
+
+	.items-table-header {
+		display: grid;
+		grid-template-columns: 2fr 1fr 1fr 1fr;
+		gap: 1rem;
+		padding: 0.85rem 1rem;
+		background: #f3f4f6;
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	:global(.dark) .items-table-header {
+		background: #1e293b;
+		color: #f1f5f9;
+	}
+
+	.header-cell {
+		text-align: left;
+	}
+
+	.amount-col {
+		text-align: right;
+	}
+
+	.items-table-body {
+		display: flex;
+		flex-direction: column;
 	}
 
 	.add-item-btn {
 		align-self: flex-start;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.45rem;
+		gap: 0.5rem;
 		padding: 0.65rem 1.1rem;
 		border-radius: var(--radius-pill);
 		background: rgba(59, 130, 246, 0.12);
@@ -308,51 +470,79 @@
 		background: rgba(59, 130, 246, 0.18);
 	}
 
+	/* Summary Section */
 	.summary-section {
 		display: flex;
-		flex-direction: column;
-		gap: 0.7rem;
+		justify-content: flex-end;
+		padding-top: 1rem;
 	}
 
-	.paid-status {
+	.summary-container {
+		width: 100%;
+		max-width: 450px;
 		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		padding: 0.85rem 1rem;
-		border-radius: var(--radius-md);
-		background: rgba(59, 130, 246, 0.12);
-		border: 1px solid rgba(59, 130, 246, 0.24);
-		font-weight: 600;
-		color: var(--color-text-primary);
+		flex-direction: column;
+		gap: 1rem;
 	}
 
-	.paid-status input {
-		width: 1.1rem;
-		height: 1.1rem;
-		accent-color: var(--color-accent-blue);
+	/* Footer Section */
+	.footer-section {
+		padding-top: 1rem;
+		border-top: 1px solid var(--color-border-primary);
 	}
 
-	.status-label {
-		font-size: 0.9rem;
-	}
+	/* Responsive */
+	@media (max-width: 768px) {
+		.invoice-form {
+			padding: 1.25rem;
+			gap: 1.5rem;
+		}
 
-	.loaded-filename {
-		font-size: 0.8rem;
-		color: var(--color-text-secondary);
-	}
+		.form-header {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 1.25rem;
+		}
 
-	@media (max-width: 900px) {
-		.panel {
-			padding: 0.85rem;
-			gap: 0.7rem;
+		.invoice-title-section {
+			align-items: flex-start;
+		}
+
+		.invoice-title-group {
+			align-items: flex-start;
+		}
+
+		.invoice-label-input {
+			font-size: 1.75rem;
+		}
+
+		.details-grid {
+			grid-template-columns: 1fr;
+			gap: 0.85rem;
+		}
+
+		.items-table-header {
+			grid-template-columns: 2fr 1fr 1fr 1fr;
+			padding: 0.75rem;
+			font-size: 0.75rem;
+		}
+
+		.summary-section {
+			justify-content: stretch;
+		}
+
+		.summary-container {
+			max-width: 100%;
 		}
 	}
 
 	@media (max-width: 640px) {
-		.panel {
-			padding: 0.8rem;
-			border-radius: var(--radius-md);
-			gap: 0.65rem;
+		.invoice-form {
+			padding: 1rem;
+		}
+
+		.items-table-header {
+			display: none;
 		}
 	}
 </style>
