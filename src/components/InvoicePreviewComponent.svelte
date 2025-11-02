@@ -361,6 +361,12 @@
 		word-break: break-word;
 	}
 
+	/* Right-align the second column (To and Due Date) */
+	.details-block:nth-child(2),
+	.details-block:nth-child(4) {
+		text-align: right;
+	}
+
 	.items-card {
 		border-radius: var(--radius-md);
 		overflow: hidden;
