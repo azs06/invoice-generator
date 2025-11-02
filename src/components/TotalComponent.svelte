@@ -135,40 +135,40 @@
 	.total-summary {
 		display: flex;
 		flex-direction: column;
-		gap: 1.1rem;
-		padding: 1.05rem;
+		gap: 0.7rem;
+		padding: 0.75rem;
 		background: var(--color-bg-secondary);
 	}
 
 	.summary-header {
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: 0.25rem;
 	}
 
 	.summary-header h3 {
 		margin: 0;
-		font-size: 1.2rem;
+		font-size: 1rem;
 		color: var(--color-text-primary);
 	}
 
 	.summary-header p {
 		margin: 0;
-		font-size: 0.9rem;
+		font-size: 0.825rem;
 		color: var(--color-text-secondary);
 	}
 
 	.controls {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-		gap: 0.7rem;
+		gap: 0.5rem;
 	}
 
 	.control {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
-		padding: 0.75rem;
+		gap: 0.4rem;
+		padding: 0.6rem;
 		border-radius: var(--radius-md);
 		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
@@ -246,8 +246,8 @@
 	.summary {
 		display: flex;
 		flex-direction: column;
-		gap: 0.6rem;
-		padding: 0.85rem;
+		gap: 0.5rem;
+		padding: 0.65rem;
 		border-radius: var(--radius-md);
 		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
@@ -256,7 +256,7 @@
 	.summary-line {
 		display: flex;
 		justify-content: space-between;
-		font-size: 0.95rem;
+		font-size: 0.9rem;
 		color: var(--color-text-secondary);
 	}
 
@@ -271,8 +271,8 @@
 	.summary-callout {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-		gap: 0.85rem;
-		padding: 0.85rem;
+		gap: 0.65rem;
+		padding: 0.65rem;
 		border-radius: var(--radius-md);
 		border: 1px solid rgba(59, 130, 246, 0.24);
 		background: rgba(59, 130, 246, 0.1);
@@ -282,12 +282,12 @@
 	.summary-due {
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: 0.3rem;
 	}
 
 	.summary-total span,
 	.summary-due span {
-		font-size: 0.85rem;
+		font-size: 0.8rem;
 		letter-spacing: 0.02em;
 		text-transform: uppercase;
 		color: var(--color-text-secondary);
@@ -296,7 +296,7 @@
 
 	.summary-total strong,
 	.summary-due strong {
-		font-size: 1.25rem;
+		font-size: 1.1rem;
 		color: var(--color-text-primary);
 	}
 
@@ -306,11 +306,11 @@
 
 	@media (max-width: 640px) {
 		.total-summary {
-			padding: 0.9rem;
+			padding: 0.65rem;
 		}
 
 		.control {
-			padding: 0.6rem;
+			padding: 0.5rem;
 		}
 
 		.summary-callout {

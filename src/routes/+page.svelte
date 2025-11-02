@@ -13,6 +13,7 @@
 	let previewRef = $state(null); // Reference for the preview section
 	let isGeneratingPDF = $state(false); // State to track PDF generation status
 	let showMobilePreview = $state(false); // Track mobile preview visibility
+	let activeTab = $state('edit'); // Track active tab: 'edit' or 'preview'
 
 	let userEditedDueDate = $state(false); // Track if user has edited the due date
 
@@ -173,95 +174,114 @@
 </script>
 {#if invoice}
 	<div class="page-layout">
-		<div class="form-section">
-			<div class="sticky-button-wrapper">
-				<button
-					class="icon-button form-action"
-					aria-label={$_('invoice.new')}
-					title={$_('invoice.new')}
-					onclick={startNewInvoice}
-				>
-					<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							fill-rule="evenodd"
-							d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					<span class="sr-only">{$_('invoice.new')}</span>
-				</button>
-			</div>
-
-			<InvoiceFormComponent
-				{invoice}
-				{updateInvoiceItems}
-				{addInvoiceItem}
-				{updateInvoiceTerms}
-				{updateInvoiceNotes}
-				{updateInvoicePaidAmount}
-				{handleInvoiceDateChange}
-				{handleDueDateChange}
-				{onUpdateTax}
-				{onUpdateDiscount}
-				{onUpdateShipping}
-				{onUpdateLogo}
-				{togglePaidStatus}
-				{onInvoiceToInput}
-				{onInvoiceFromInput}
-			/>
+		<!-- Tab Navigation -->
+		<div class="tab-navigation">
+			<button
+				class="tab-button"
+				class:active={activeTab === 'edit'}
+				onclick={() => (activeTab = 'edit')}
+			>
+				<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v4A1.5 1.5 0 0 0 2.5 10h6A1.5 1.5 0 0 0 10 8.5v-4A1.5 1.5 0 0 0 8.5 3h-6Zm9 0A1.5 1.5 0 0 0 10 4.5v4A1.5 1.5 0 0 0 11.5 10h6A1.5 1.5 0 0 0 19 8.5v-4A1.5 1.5 0 0 0 17.5 3h-6Zm-9 7A1.5 1.5 0 0 0 1 11.5v4A1.5 1.5 0 0 0 2.5 17h6A1.5 1.5 0 0 0 10 15.5v-4A1.5 1.5 0 0 0 8.5 10h-6Zm9 0a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 0-1.5-1.5h-6Z" />
+				</svg>
+				Edit
+			</button>
+			<button
+				class="tab-button"
+				class:active={activeTab === 'preview'}
+				onclick={() => (activeTab = 'preview')}
+			>
+				<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+					<path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+				</svg>
+				Preview
+			</button>
 		</div>
 
-		<div class="preview-section" class:mobile-preview-open={showMobilePreview}>
-			<div class="sticky-button-wrapper">
-				<button
-					class="icon-button preview-action"
-					aria-label={$_('invoice.save_pdf')}
-					title={$_('invoice.save_pdf')}
-					onclick={saveAsPDF}
-					disabled={isGeneratingPDF}
-				>
-					{#if isGeneratingPDF}
-						<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-							<circle
-								cx="12"
-								cy="12"
-								r="9"
-								stroke-width="2"
-								stroke-dasharray="45 15"
-								stroke-dashoffset="0"
-								stroke-linecap="round"
-							/>
-						</svg>
-						<span class="sr-only">{$_('invoice.downloading')}</span>
-					{:else}
+		<!-- Edit View -->
+		{#if activeTab === 'edit'}
+			<div class="content-section form-section">
+				<div class="sticky-button-wrapper">
+					<button
+						class="icon-button form-action"
+						aria-label={$_('invoice.new')}
+						title={$_('invoice.new')}
+						onclick={startNewInvoice}
+					>
 						<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 							<path
 								fill-rule="evenodd"
-								d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
+								d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
 								clip-rule="evenodd"
 							/>
 						</svg>
-						<span class="sr-only">{$_('invoice.save_pdf')}</span>
-					{/if}
-				</button>
-			</div>
+						<span class="sr-only">{$_('invoice.new')}</span>
+					</button>
+				</div>
 
-			<div bind:this={previewRef}>
-				<InvoicePreviewComponent {invoice} />
+				<InvoiceFormComponent
+					{invoice}
+					{updateInvoiceItems}
+					{addInvoiceItem}
+					{updateInvoiceTerms}
+					{updateInvoiceNotes}
+					{updateInvoicePaidAmount}
+					{handleInvoiceDateChange}
+					{handleDueDateChange}
+					{onUpdateTax}
+					{onUpdateDiscount}
+					{onUpdateShipping}
+					{onUpdateLogo}
+					{togglePaidStatus}
+					{onInvoiceToInput}
+					{onInvoiceFromInput}
+				/>
 			</div>
-		</div>
+		{/if}
 
-		<!-- Mobile preview toggle button -->
-		<button
-			class="mobile-preview-toggle"
-			onclick={() => (showMobilePreview = !showMobilePreview)}
-		>
-			{#if showMobilePreview}
-				Close Preview
-			{:else}
-				Show Preview
-			{/if}
-		</button>
+		<!-- Preview View -->
+		{#if activeTab === 'preview'}
+			<div class="content-section preview-section">
+				<div class="sticky-button-wrapper">
+					<button
+						class="icon-button preview-action"
+						aria-label={$_('invoice.save_pdf')}
+						title={$_('invoice.save_pdf')}
+						onclick={saveAsPDF}
+						disabled={isGeneratingPDF}
+					>
+						{#if isGeneratingPDF}
+							<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+								<circle
+									cx="12"
+									cy="12"
+									r="9"
+									stroke-width="2"
+									stroke-dasharray="45 15"
+									stroke-dashoffset="0"
+									stroke-linecap="round"
+								/>
+							</svg>
+							<span class="sr-only">{$_('invoice.downloading')}</span>
+						{:else}
+							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path
+									fill-rule="evenodd"
+									d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							<span class="sr-only">{$_('invoice.save_pdf')}</span>
+						{/if}
+					</button>
+				</div>
+
+				<div bind:this={previewRef}>
+					<InvoicePreviewComponent {invoice} />
+				</div>
+			</div>
+		{/if}
 	</div>
 {:else}
 	<p class="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</p>
@@ -269,16 +289,59 @@
 
 <style>
 	.page-layout {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1.1rem;
-		padding: 2.5rem 1.25rem 1.25rem 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 1.5rem 1.5rem 1.25rem 1.5rem;
+		position: relative;
+		max-width: 1400px;
+		margin: 0 auto;
+	}
+
+	.tab-navigation {
+		display: flex;
+		gap: 0.375rem;
+		background: var(--color-bg-secondary);
+		padding: 0.25rem;
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--color-border-primary);
+		width: fit-content;
+	}
+
+	.tab-button {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border-radius: calc(var(--radius-lg) - 0.25rem);
+		font-weight: 500;
+		font-size: 0.9375rem;
+		color: var(--color-text-secondary);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		transition: all 0.2s ease;
 		position: relative;
 	}
 
-	.form-section,
-	.preview-section {
-		--section-padding: 1rem;
+	.tab-button:hover {
+		color: var(--color-text-primary);
+		background: var(--color-bg-tertiary);
+	}
+
+	.tab-button.active {
+		color: var(--color-text-primary);
+		background: var(--color-bg-primary);
+		box-shadow: var(--shadow-soft);
+	}
+
+	.tab-icon {
+		width: 1.125rem;
+		height: 1.125rem;
+	}
+
+	.content-section {
+		--section-padding: 0.875rem;
 		--section-radius: var(--radius-lg);
 		background: var(--color-bg-primary);
 		padding: var(--section-padding);
@@ -286,16 +349,6 @@
 		border: 1px solid var(--color-border-primary);
 		overflow: visible;
 		position: relative;
-		display: flex;
-		flex-direction: column;
-		max-height: 90vh;
-	}
-
-	.form-section > :global(:not(.sticky-button-wrapper)),
-	.preview-section > :global(div:not(.sticky-button-wrapper)) {
-		overflow-y: auto;
-		flex: 1;
-		min-height: 0;
 	}
 
 	.icon-button {
@@ -378,20 +431,13 @@
 		}
 	}
 
-	.mobile-preview-toggle {
-		display: none;
-	}
-
 	/* Tablet */
 	@media (max-width: 1024px) {
 		.page-layout {
-			grid-template-columns: 2fr 3fr;
-			gap: 0.9rem;
 			padding: 1.1rem;
 		}
 
-		.form-section,
-		.preview-section {
+		.content-section {
 			--section-padding: 0.9rem;
 		}
 	}
@@ -399,55 +445,23 @@
 	/* Mobile */
 	@media (max-width: 768px) {
 		.page-layout {
-			grid-template-columns: 1fr;
 			padding: 0.85rem;
+			gap: 0.75rem;
 		}
 
-		.form-section {
+		.tab-navigation {
+			width: 100%;
+		}
+
+		.tab-button {
+			flex: 1;
+			justify-content: center;
+			padding: 0.75rem 1rem;
+			font-size: 0.875rem;
+		}
+
+		.content-section {
 			--section-padding: 0.85rem;
-		}
-
-		.preview-section {
-			position: fixed;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			z-index: 50;
-			max-height: 100vh;
-			transform: translateY(100%);
-			transition: transform 0.3s ease;
-			border-radius: 0;
-			--section-radius: 0;
-			--section-padding: 1.1rem;
-		}
-
-		.preview-section.mobile-preview-open {
-			transform: translateY(0);
-		}
-
-		.mobile-preview-toggle {
-			display: block;
-			position: fixed;
-			bottom: 1rem;
-			right: 1rem;
-			z-index: 40;
-			padding: 0.75rem 1.5rem;
-			background: #3b82f6;
-			color: white;
-			border-radius: var(--radius-pill);
-			box-shadow: var(--shadow-soft);
-			font-weight: 500;
-			transition: background-color 0.2s ease, box-shadow 0.2s ease;
-		}
-
-		.mobile-preview-toggle:hover {
-			background: #2563eb;
-			box-shadow: var(--shadow-soft);
-		}
-
-		.form-section {
-			max-height: none;
 		}
 	}
 </style>

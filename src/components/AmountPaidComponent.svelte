@@ -28,32 +28,32 @@
 	.amount-paid {
 		display: flex;
 		flex-direction: column;
-		gap: 0.55rem;
-		padding: 1.05rem;
+		gap: 0.4rem;
+		padding: 0.75rem;
 		background: var(--color-bg-secondary);
 	}
 
 	.amount-label {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: 0.2rem;
 		color: var(--color-text-primary);
 	}
 
 	.label-title {
-		font-size: 1.05rem;
+		font-size: 0.95rem;
 		font-weight: 600;
 	}
 
 	.label-hint {
-		font-size: 0.85rem;
+		font-size: 0.8rem;
 		color: var(--color-text-secondary);
 	}
 
 	.amount-input {
 		width: 100%;
-		padding: 0.65rem 0.85rem;
-		font-size: 0.95rem;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.9rem;
 		color: var(--color-text-primary);
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-sm);

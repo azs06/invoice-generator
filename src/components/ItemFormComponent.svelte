@@ -72,8 +72,8 @@
 	.item-form {
 		display: flex;
 		flex-direction: column;
-		gap: 0.8rem;
-		padding: 1rem;
+		gap: 0.6rem;
+		padding: 0.75rem;
 		border-radius: var(--radius-lg);
 		background: var(--color-bg-secondary);
 		border: 1px solid var(--color-border-secondary);
@@ -82,13 +82,13 @@
 	.item-grid {
 		display: grid;
 		grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
-		gap: 0.8rem;
+		gap: 0.6rem;
 	}
 
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: 0.3rem;
 	}
 
 	.field--wide {
@@ -96,7 +96,7 @@
 	}
 
 	.field label {
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		letter-spacing: 0.01em;
 		color: var(--color-text-secondary);
@@ -104,12 +104,12 @@
 	}
 
 	.field input {
-		padding: 0.6rem 0.8rem;
+		padding: 0.5rem 0.65rem;
 		border-radius: var(--radius-sm);
 		border: 1px solid var(--color-border-primary);
 		background: var(--color-bg-primary);
 		color: var(--color-text-primary);
-		font-size: 0.95rem;
+		font-size: 0.9rem;
 		transition: border-color 0.2s ease, box-shadow 0.2s ease;
 	}
 
@@ -124,7 +124,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 0.65rem 0.9rem;
+		padding: 0.5rem 0.75rem;
 		border-radius: var(--radius-md);
 		background: rgba(59, 130, 246, 0.1);
 		color: var(--color-text-primary);

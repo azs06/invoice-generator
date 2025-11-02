@@ -3,6 +3,7 @@
 @theme {
 	--color-bg-primary: #ffffff;
 	--color-bg-secondary: #f9fafb;
+	--color-bg-tertiary: #f3f4f6;
 	--surface-page-background: #f8fafc;
 	--color-border-primary: #e5e7eb;
 	--color-border-secondary: #d1d5db;
@@ -32,6 +33,7 @@
 .dark {
 	--color-bg-primary: #0f172a;
 	--color-bg-secondary: #1e293b;
+	--color-bg-tertiary: #334155;
 	--surface-page-background: #020617;
 	--color-border-primary: #334155;
 	--color-border-secondary: #475569;

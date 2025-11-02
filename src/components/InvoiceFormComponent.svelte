@@ -182,25 +182,25 @@
 	.invoice-form {
 		display: flex;
 		flex-direction: column;
-		gap: 1.15rem;
+		gap: 0.75rem;
 	}
 
 	.panel {
 		display: flex;
 		flex-direction: column;
-		gap: 1.15rem;
-		padding: 1rem 1.35rem 1.35rem;
+		gap: 0.75rem;
+		padding: 0.75rem 1rem 1rem;
 		background: var(--color-bg-primary);
 	}
 
 	.panel-header {
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: 0.25rem;
 	}
 
 	.panel-eyebrow {
-		font-size: 0.7rem;
+		font-size: 0.65rem;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--color-text-secondary);
@@ -209,30 +209,30 @@
 
 	.panel-header h2 {
 		margin: 0;
-		font-size: 1.35rem;
+		font-size: 1.1rem;
 		color: var(--color-text-primary);
 	}
 
 	.panel-subtitle {
 		margin: 0;
 		color: var(--color-text-secondary);
-		font-size: 0.9rem;
+		font-size: 0.825rem;
 	}
 
 	.field-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 1rem;
+		gap: 0.65rem;
 	}
 
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.4rem;
+		gap: 0.3rem;
 	}
 
 	.field label {
-		font-size: 0.85rem;
+		font-size: 0.8rem;
 		font-weight: 600;
 		color: var(--color-text-primary);
 	}
@@ -241,12 +241,12 @@
 	.field input[type='date'],
 	.field input[type='number'],
 	.field input[type='file'] {
-		padding: 0.65rem 0.85rem;
+		padding: 0.5rem 0.75rem;
 		border-radius: var(--radius-sm);
 		border: 1px solid var(--color-border-secondary);
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
-		font-size: 0.95rem;
+		font-size: 0.9rem;
 		transition: border-color 0.2s ease, box-shadow 0.2s ease;
 	}
 
@@ -286,7 +286,7 @@
 	.items-stack {
 		display: flex;
 		flex-direction: column;
-		gap: 0.9rem;
+		gap: 0.65rem;
 	}
 
 	.add-item-btn {
@@ -311,7 +311,7 @@
 	.summary-section {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.7rem;
 	}
 
 	.paid-status {
@@ -343,16 +343,16 @@
 
 	@media (max-width: 900px) {
 		.panel {
-			padding: 1.2rem;
-			gap: 1.05rem;
+			padding: 0.85rem;
+			gap: 0.7rem;
 		}
 	}
 
 	@media (max-width: 640px) {
 		.panel {
-			padding: 1.1rem;
+			padding: 0.8rem;
 			border-radius: var(--radius-md);
-			gap: 1.05rem;
+			gap: 0.65rem;
 		}
 	}
 </style>
