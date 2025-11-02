@@ -36,15 +36,15 @@ export const TEMPLATES = {
 /**
  * Get template by ID
  * @param {string} templateId - The template ID
- * @returns {Object|null} Template object or null if not found
+ * @returns {any|null} Template object or null if not found
  */
 export function getTemplate(templateId) {
-	return TEMPLATES[templateId] || null;
+	return Object.values(TEMPLATES).find(template => template.id === templateId) || null;
 }
 
 /**
  * Get all templates
- * @returns {Object} All templates
+ * @returns {any} All templates
  */
 export function getAllTemplates() {
 	return TEMPLATES;
@@ -53,7 +53,7 @@ export function getAllTemplates() {
 /**
  * Get templates filtered by premium status
  * @param {boolean} isPremium - Filter by premium status
- * @returns {Array} Array of template objects
+ * @returns {Array<any>} Array of template objects
  */
 export function getTemplatesByPremium(isPremium = false) {
 	return Object.values(TEMPLATES).filter(template => template.premium === isPremium);
@@ -62,17 +62,17 @@ export function getTemplatesByPremium(isPremium = false) {
 /**
  * Get templates by tag
  * @param {string} tag - Tag to filter by
- * @returns {Array} Array of template objects
+ * @returns {Array<any>} Array of template objects
  */
 export function getTemplatesByTag(tag) {
-	return Object.values(TEMPLATES).filter(template => 
+	return Object.values(TEMPLATES).filter(template =>
 		template.tags.includes(tag)
 	);
 }
 
 /**
  * Get template options for dropdown/select components
- * @returns {Array} Array of template options with id and label
+ * @returns {Array<any>} Array of template options with id and label
  */
 export function getTemplateOptions() {
 	return Object.values(TEMPLATES).map(template => ({

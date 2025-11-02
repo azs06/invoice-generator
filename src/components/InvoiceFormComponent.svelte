@@ -1,37 +1,73 @@
+
 <script>
 	import ItemFormComponent from './ItemFormComponent.svelte';
 	import TermsAndNotesComponent from './TermsAndNotesComponent.svelte';
 	import AmountPaidComponent from './AmountPaidComponent.svelte';
 	import TotalComponent from './TotalComponent.svelte';
-	import { defaultInvoice } from '$lib';
+	import { DEFAULT_LOGO_PATH, defaultInvoice } from '$lib';
+	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
+	/** @typedef {import('$lib/types').InvoiceItem} InvoiceItem */
 
-	let {
-		invoice = defaultInvoice,
-		updateInvoiceItems,
-		addInvoiceItem,
-		updateInvoiceTerms,
-		updateInvoiceNotes,
-		updateInvoicePaidAmount,
-		handleInvoiceDateChange,
-		handleDueDateChange,
-		onUpdateTax,
-		onUpdateDiscount,
-		onUpdateShipping,
-		onUpdateLogo,
-		togglePaidStatus,
-		onInvoiceToInput,
-		onInvoiceFromInput,
-		onInvoiceNumberInput,
-		onInvoiceLabelInput,
-	} = $props();
+	/** @type {InvoiceData} */
+	export let invoice = defaultInvoice;
+	/** @type {(index: number, item: InvoiceItem) => void} */
+	export let updateInvoiceItems = () => {};
+	/** @type {() => void} */
+	export let addInvoiceItem = () => {};
+	/** @type {(value?: string) => void} */
+	export let updateInvoiceTerms = () => {};
+	/** @type {(value?: string) => void} */
+	export let updateInvoiceNotes = () => {};
+	/** @type {(value?: number) => void} */
+	export let updateInvoicePaidAmount = () => {};
+	/** @type {(event: Event) => void} */
+	export let handleInvoiceDateChange = () => {};
+	/** @type {(event: Event) => void} */
+	export let handleDueDateChange = () => {};
+	/** @type {(value: import('$lib/types').MonetaryAdjustment) => void} */
+	export let onUpdateTax = () => {};
+	/** @type {(value: import('$lib/types').MonetaryAdjustment) => void} */
+	export let onUpdateDiscount = () => {};
+	/** @type {(value: import('$lib/types').ShippingInfo) => void} */
+	export let onUpdateShipping = () => {};
+	/** @type {(value: File | string | null) => void} */
+	export let onUpdateLogo = () => {};
+	/** @type {(value: boolean) => void} */
+	export let togglePaidStatus = () => {};
+	/** @type {(event: Event) => void} */
+	export let onInvoiceToInput = () => {};
+	/** @type {(event: Event) => void} */
+	export let onInvoiceFromInput = () => {};
+	/** @type {(event: Event) => void} */
+	export let onInvoiceNumberInput = () => {};
+	/** @type {(event: Event) => void} */
+	export let onInvoiceLabelInput = () => {};
 
-	const handleFileChange = (e) => {
-		const file = e.target.files[0];
-		onUpdateLogo(file);
+	/**
+	 * @param {Event} event
+	 */
+	const handleFileChange = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement) || !target.files?.length) {
+			return;
+		}
+		onUpdateLogo(target.files[0]);
 	};
 
+	/**
+	 * @param {number} index
+	 * @param {import('$lib/types').InvoiceItem} updatedItem
+	 */
 	const updateItem = (index, updatedItem) => {
 		updateInvoiceItems(index, updatedItem);
+	};
+
+	/**
+	 * @param {number} index
+	 * @returns {(updatedItem: import('$lib/types').InvoiceItem) => void}
+	 */
+	const createItemUpdater = (index) => (updatedItem) => {
+		updateItem(index, updatedItem);
 	};
 
 	const addItem = () => {
@@ -50,6 +86,17 @@
 		updateInvoicePaidAmount(amountPaid);
 	};
 
+	/**
+	 * @param {Event} event
+	 */
+	const handlePaidToggle = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		togglePaidStatus(target.checked);
+	};
+
 </script>
 
 <form class="invoice-form" onsubmit={(e) => e.preventDefault()}>
@@ -65,7 +112,7 @@
 							<img src={URL.createObjectURL(invoice.logo)} alt="Uploaded logo" />
 						{/if}
 					{:else}
-						<img src="/logo.png" alt="Default logo" />
+						<img src={DEFAULT_LOGO_PATH} alt="Default logo" />
 					{/if}
 				</div>
 				<input
@@ -105,7 +152,7 @@
 			<label class="paid-status-inline">
 				<input
 					type="checkbox"
-					onchange={(e) => togglePaidStatus(e.target.checked)}
+					onchange={handlePaidToggle}
 					checked={invoice.paid}
 				/>
 				<span>Mark as paid</span>
@@ -165,11 +212,7 @@
 
 			<div class="items-table-body">
 				{#each invoice.items as item, index}
-					<ItemFormComponent
-						{item}
-						{index}
-						onUpdate={(updatedItem) => updateItem(index, updatedItem)}
-					/>
+					<ItemFormComponent {item} {index} onUpdate={createItemUpdater(index)} />
 				{/each}
 			</div>
 		</div>

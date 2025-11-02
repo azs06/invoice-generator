@@ -4,15 +4,31 @@ const INVOICE_PREFIX = 'ig.invoice.';
 
 // Helper function to convert a File object to a Base64 Data URL
 // This ensures the function is self-contained if needed, though +page.svelte also has similar logic.
+/**
+ * @param {any} file - File object to convert
+ * @returns {Promise<string | null>} Base64 data URL or null if failed
+ */
 async function fileToDataURL(file) {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onload = () => resolve(reader.result);
+		reader.onload = () => {
+			const result = reader.result;
+			if (typeof result === 'string') {
+				resolve(result);
+			} else {
+				resolve(null);
+			}
+		};
 		reader.onerror = (error) => reject(error);
 		reader.readAsDataURL(file);
 	});
 }
 
+/**
+ * @param {any} id - Invoice ID
+ * @param {any} invoiceData - Invoice data object
+ * @returns {Promise<void>}
+ */
 export async function saveInvoice(id, invoiceData) {
 	// invoiceData is likely a Svelte $state proxy.
 	// We need to convert it to a plain JavaScript object for IndexedDB.
@@ -46,14 +62,25 @@ export async function saveInvoice(id, invoiceData) {
 	return await set(INVOICE_PREFIX + id, plainInvoiceObject);
 }
 
+/**
+ * @param {any} id - Invoice ID
+ * @returns {Promise<any>} Invoice data
+ */
 export async function getInvoice(id) {
   return await get(INVOICE_PREFIX + id);
 }
 
+/**
+ * @param {any} id - Invoice ID
+ * @returns {Promise<void>}
+ */
 export async function deleteInvoice(id) {
   return await del(INVOICE_PREFIX + id);
 }
 
+/**
+ * @returns {Promise<Array<{id: string, invoice: any}>>} Array of invoices with IDs
+ */
 export async function getAllInvoices() {
   const allKeys = await keys();
   const invoices = [];
@@ -67,6 +94,9 @@ export async function getAllInvoices() {
   return invoices;
 }
 
+/**
+ * @returns {Promise<void>}
+ */
 export async function clearAllInvoices() {
   await clear();
 }

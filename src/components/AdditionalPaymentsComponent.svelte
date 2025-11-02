@@ -1,20 +1,88 @@
 <script>
-	let { additionalPayments, onUpdate } = $props();
+	/** @typedef {import('$lib/types').AdditionalPayment} AdditionalPayment */
+
+	/** @type {AdditionalPayment[]} */
+	export let additionalPayments = [];
+	/** @type {(payments: AdditionalPayment[]) => void} */
+	export let onUpdate = () => {};
+
+	const createEmptyPayment = () => ({ date: '', amount: 0, method: '' });
 
 	const addPayment = () => {
-		additionalPayments = [...additionalPayments, { date: '', amount: 0, method: '' }];
+		additionalPayments = [...additionalPayments, createEmptyPayment()];
 		onUpdate(additionalPayments);
 	};
 
+	/**
+	 * @param {number} index
+	 * @param {'date' | 'amount' | 'method'} field
+	 * @param {string | number} value
+	 */
 	const updatePayment = (index, field, value) => {
-		const updated = [...additionalPayments];
-		updated[index][field] = value;
+		if (index < 0 || index >= additionalPayments.length) {
+			return;
+		}
+		const updated = additionalPayments.map((payment) => ({ ...payment }));
+		const target = updated[index];
+		if (!target) {
+			return;
+		}
+
+		if (field === 'amount') {
+			target.amount = typeof value === 'number' ? value : Number(value) || 0;
+		} else if (field === 'date') {
+			target.date = typeof value === 'string' ? value : String(value ?? '');
+		} else {
+			target.method = typeof value === 'string' ? value : String(value ?? '');
+		}
+
+		additionalPayments = updated;
+		onUpdate(additionalPayments);
+	};
+
+	/**
+	 * @param {number} index
+	 */
+	const removePayment = (index) => {
+		const updated = additionalPayments.filter((_, i) => i !== index);
+		additionalPayments = updated;
 		onUpdate(updated);
 	};
 
-	const removePayment = (index) => {
-		const updated = additionalPayments.filter((_, i) => i !== index);
-		onUpdate(updated);
+	/**
+	 * @param {number} index
+	 * @param {Event} event
+	 */
+	const handleDateChange = (index, event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		updatePayment(index, 'date', target.value);
+	};
+
+	/**
+	 * @param {number} index
+	 * @param {Event} event
+	 */
+	const handleAmountChange = (index, event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		updatePayment(index, 'amount', Number(target.value));
+	};
+
+	/**
+	 * @param {number} index
+	 * @param {Event} event
+	 */
+	const handleMethodChange = (index, event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		updatePayment(index, 'method', target.value);
 	};
 </script>
 
@@ -43,7 +111,7 @@
 							id={`payment-date-${index}`}
 							type="date"
 							bind:value={payment.date}
-							oninput={(e) => updatePayment(index, 'date', e.target.value)}
+							oninput={(event) => handleDateChange(index, event)}
 						/>
 					</div>
 					<div class="field">
@@ -55,7 +123,7 @@
 							step="0.01"
 							placeholder="0.00"
 							bind:value={payment.amount}
-							oninput={(e) => updatePayment(index, 'amount', +e.target.value)}
+							oninput={(event) => handleAmountChange(index, event)}
 						/>
 					</div>
 					<div class="field field--wide">
@@ -65,7 +133,7 @@
 							type="text"
 							placeholder="Card, bank transfer, cash..."
 							bind:value={payment.method}
-							oninput={(e) => updatePayment(index, 'method', e.target.value)}
+							oninput={(event) => handleMethodChange(index, event)}
 						/>
 					</div>
 					<button

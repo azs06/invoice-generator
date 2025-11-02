@@ -6,6 +6,9 @@ const TEMPLATE_OPTIONS = getTemplateOptions();
 
 const selectedTemplateId = writable(DEFAULT_TEMPLATE_ID);
 
+/**
+ * @param {string} templateId
+ */
 const setTemplateId = (templateId) => {
 	const fallback = DEFAULT_TEMPLATE_ID;
 	// Validate template exists
@@ -18,8 +21,10 @@ const setTemplateId = (templateId) => {
 
 // Get current template info
 const getCurrentTemplate = () => {
-	let currentId;
-	const unsubscribe = selectedTemplateId.subscribe(value => currentId = value);
+	let currentId = DEFAULT_TEMPLATE_ID;
+	const unsubscribe = selectedTemplateId.subscribe((value) => {
+		currentId = value;
+	});
 	unsubscribe();
 	return getTemplate(currentId || DEFAULT_TEMPLATE_ID);
 };

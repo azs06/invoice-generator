@@ -1,18 +1,39 @@
 <script>
-    let {
-        terms = '',
-        notes = '',
-        onUpdateTerms = () => {},
-        onUpdateNotes = () => {}
-    } = $props();
+	/**
+	 * @typedef {(value: string) => void} UpdateHandler
+	 */
 
-    const handleTermsChange = (e) => {
-      onUpdateTerms(e.target.value);
-    };
-    const handleNotesChange = (e) => {
-      onUpdateNotes(e.target.value);
-    };
-  </script>
+	/** @type {string} */
+	export let terms = '';
+	/** @type {string} */
+	export let notes = '';
+	/** @type {UpdateHandler} */
+	export let onUpdateTerms = () => {};
+	/** @type {UpdateHandler} */
+	export let onUpdateNotes = () => {};
+
+	/**
+	 * @param {Event} event
+	 */
+	const handleTermsChange = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLTextAreaElement)) {
+			return;
+		}
+		onUpdateTerms(target.value);
+	};
+
+	/**
+	 * @param {Event} event
+	 */
+	const handleNotesChange = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLTextAreaElement)) {
+			return;
+		}
+		onUpdateNotes(target.value);
+	};
+</script>
   
 <div class="terms-notes">
 	<div class="field">

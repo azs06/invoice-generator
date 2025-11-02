@@ -1,10 +1,22 @@
 <script>
 	import { toUSCurrency } from '$lib/currency.js';
 
-	let { amountPaid, updatePaidAmount, invoice } = $props();
+	/** @type {number} */
+	export let amountPaid = 0;
+	/** @type {(value: number) => void} */
+	export let updatePaidAmount = () => {};
+	/** @type {{ balanceDue?: number } | null | undefined } */
+	export let invoice = null;
 
+	/**
+	 * @param {Event} event
+	 */
 	const handleOnChange = (event) => {
-		amountPaid = parseFloat(event.target.value) || 0;
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		amountPaid = parseFloat(target.value) || 0;
 		updatePaidAmount(amountPaid);
 	};
 </script>

@@ -1,11 +1,12 @@
+
 <script>
-	import { defaultInvoice } from '$lib/index.js';
+	import { DEFAULT_LOGO_PATH, defaultInvoice } from '$lib/index.js';
 	import { toUSCurrency } from '$lib/currency.js';
 	import { calculateDiscount, calculateTax } from '../lib/InvoiceCalculator.js';
+	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
 
-	let { invoice = defaultInvoice } = $props();
-
-	const DEFAULT_LOGO_PATH = '/logo.png';
+	/** @type {InvoiceData} */
+	export let invoice = defaultInvoice;
 
 	const totalAmount = () => invoice.total ?? 0;
 	const subTotal = () => invoice.subTotal ?? 0;

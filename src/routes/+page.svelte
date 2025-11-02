@@ -1,20 +1,26 @@
+
 <script>
+	'use runes';
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
 	import { saveInvoice, getAllInvoices, getInvoice } from '$lib/db.js';
+	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { totalAmounts  } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
+	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
+	/** @typedef {import('$lib/types').InvoiceItem} InvoiceItem */
+	/** @typedef {import('$lib/types').MonetaryAdjustment} MonetaryAdjustment */
+	/** @typedef {import('$lib/types').ShippingInfo} ShippingInfo */
 
-	export const prerender = true;
-
-	let invoice = $state(null); // Initialize invoice state as null
-	let previewRef = $state(null); // Reference for the preview section
+	let invoice = $state(/** @type {InvoiceData | null} */ (null));
+	let previewRef = $state(/** @type {HTMLElement | null} */ (null));
 	let isGeneratingPDF = $state(false); // State to track PDF generation status
+	let pdfAction = $state(/** @type {'download' | 'print' | null} */ (null));
 	let showMobilePreview = $state(false); // Track mobile preview visibility
 	let activeTab = $state('edit'); // Track active tab: 'edit' or 'preview'
 	const validTabs = new Set(['edit', 'preview']);
@@ -23,11 +29,14 @@
 	let showSaveDraftModal = $state(false); // Track save draft modal visibility
 	let draftName = $state(''); // Track draft name input
 
+	/**
+	 * @returns {InvoiceData}
+	 */
 	const createNewInvoice = () => ({
 		id: uuidv4(),
 		invoiceLabel: 'INVOICE',
 		invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
-		logo: '/logo.png',
+		logo: DEFAULT_LOGO_PATH,
 		logoFilename: 'logo.png',
 		invoiceFrom: '',
 		invoiceTo: '',
@@ -50,10 +59,23 @@
 		templateId: 'modern'
 	});
 
+	/**
+	 * @returns {InvoiceData}
+	 */
+	const ensureInvoice = () => {
+		if (!invoice) {
+			invoice = createNewInvoice();
+		}
+		return invoice;
+	};
+
 	const startNewInvoice = () => {
 		invoice = createNewInvoice();
 	};
 
+	/**
+	 * @param {any} tab - The tab to set
+	 */
 	const setActiveTab = (tab) => {
 		if (!validTabs.has(tab)) {
 			return;
@@ -83,23 +105,47 @@
 		}
 	};
 
+	/**
+	 * @returns {Promise<void>}
+	 */
+	const waitForPreviewImages = async () => {
+		if (!previewRef) {
+			return;
+		}
+
+		const images = Array.from(previewRef.querySelectorAll('img'));
+
+		if (images.length === 0) {
+			return;
+		}
+
+		await Promise.all(
+			images.map((img) => {
+				if (img.complete) {
+					return Promise.resolve();
+				}
+				return new Promise((resolve) => {
+					img.onload = resolve;
+					img.onerror = resolve;
+				});
+			})
+		);
+	};
+
+	/**
+	 * @returns {Promise<void>}
+	 */
 	const saveAsPDF = async () => {
-		if (typeof window === 'undefined' || !previewRef) return;
+		const currentInvoice = invoice;
+		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
+			return;
+		}
 
 		isGeneratingPDF = true; // 👈 start loading
+		pdfAction = 'download';
 
 		try {
-			// Wait for images to load
-			const images = previewRef?.querySelectorAll('img');
-			await Promise.all(
-				Array.from(images).map((img) => {
-					if (img.complete) return Promise.resolve();
-					return new Promise((resolve) => {
-						img.onload = resolve;
-						img.onerror = resolve;
-					});
-				})
-			);
+			await waitForPreviewImages();
 
 			const html2pdf = (await import('html2pdf.js')).default;
 
@@ -107,7 +153,7 @@
 				.from(previewRef)
 				.set({
 					margin: 0.5,
-					filename: `invoice-${invoice.invoiceTo || 'unknown'}.pdf`,
+					filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
 					html2canvas: {
 						scale: 3,
 						useCORS: true
@@ -123,6 +169,56 @@
 			console.error('Failed to export PDF:', error);
 		} finally {
 			isGeneratingPDF = false; // 👈 stop loading
+			pdfAction = null;
+		}
+	};
+
+	/**
+	 * @returns {Promise<void>}
+	 */
+	const printPDF = async () => {
+		const currentInvoice = invoice;
+		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
+			return;
+		}
+
+		isGeneratingPDF = true;
+		pdfAction = 'print';
+
+		try {
+			await waitForPreviewImages();
+
+			const html2pdf = (await import('html2pdf.js')).default;
+			const worker = html2pdf()
+				.from(previewRef)
+				.set({
+					margin: 0.5,
+					filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
+					html2canvas: {
+						scale: 3,
+						useCORS: true
+					},
+					jsPDF: {
+						unit: 'in',
+						format: 'letter',
+						orientation: 'portrait'
+					}
+				});
+
+			const pdfInstance = await worker.toPdf().get('pdf');
+			pdfInstance.autoPrint();
+
+			const blobUrl = pdfInstance.output('bloburl');
+			const printWindow = window.open(blobUrl, '_blank');
+
+			if (!printWindow) {
+				pdfInstance.output('dataurlnewwindow');
+			}
+		} catch (error) {
+			console.error('Failed to print PDF:', error);
+		} finally {
+			isGeneratingPDF = false;
+			pdfAction = null;
 		}
 	};
 
@@ -137,7 +233,7 @@
 			await runMigrationIfNeeded();
 
 			const invoicesFromDb = await getAllInvoices();
-			let loadedInvoice = null;
+			let loadedInvoice = /** @type {InvoiceData | null} */ (null);
 
 			if (typeof window !== 'undefined') {
 				const currentUrl = new URL(window.location.href);
@@ -146,10 +242,10 @@
 				if (invoiceIdFromQuery) {
 					const storedInvoice = await getInvoice(invoiceIdFromQuery);
 					if (storedInvoice) {
-						loadedInvoice = storedInvoice;
-						if (!loadedInvoice.id) {
-							loadedInvoice.id = invoiceIdFromQuery;
+						if (!storedInvoice.id) {
+							storedInvoice.id = invoiceIdFromQuery;
 						}
+						loadedInvoice = storedInvoice;
 					}
 
 					currentUrl.searchParams.delete('invoice');
@@ -169,7 +265,7 @@
 				invoice.id = uuidv4();
 			}
 			if (!invoice.logo) {
-				invoice.logo = '/logo.png';
+			invoice.logo = DEFAULT_LOGO_PATH;
 				invoice.logoFilename = 'logo.png';
 			}
 			if (!invoice.invoiceLabel) {
@@ -213,91 +309,224 @@
 		}
 	});
 
+	/**
+	 * @param {number} index
+	 * @param {InvoiceItem} updatedItem
+	 */
 	const updateInvoiceItems = (index, updatedItem) => {
-		invoice.items[index] = updatedItem;
+		const current = ensureInvoice();
+		current.items[index] = updatedItem;
 	};
+
 	const addInvoiceItem = () => {
-		invoice.items = [...invoice.items, { name: '', quantity: 1, price: 0, amount: 0 }];
+		const current = ensureInvoice();
+		current.items = [...current.items, { name: '', quantity: 1, price: 0, amount: 0 }];
 	};
+
 	const updateInvoiceTerms = (newTerms = '') => {
-		invoice.terms = newTerms;
+		const current = ensureInvoice();
+		current.terms = newTerms;
 	};
+
 	const updateInvoiceNotes = (newNotes = '') => {
-		invoice.notes = newNotes;
+		const current = ensureInvoice();
+		current.notes = newNotes;
 	};
+
 	const updateInvoicePaidAmount = (amountPaid = 0) => {
-		invoice.amountPaid = amountPaid;
+		const current = ensureInvoice();
+		current.amountPaid = amountPaid;
 	};
-	const handleInvoiceDateChange = (e) => {
-		invoice.date = e.target.value;
+
+	/**
+	 * @param {Event} event
+	 */
+	const handleInvoiceDateChange = (event) => {
+		const current = ensureInvoice();
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		current.date = target.value;
 		if (!userEditedDueDate) {
-			const newDueDate = new Date(invoice.date);
+			const newDueDate = new Date(current.date);
 			newDueDate.setDate(newDueDate.getDate() + 30);
-			invoice.dueDate = newDueDate.toISOString().split('T')[0];
+			current.dueDate = newDueDate.toISOString().split('T')[0];
 		}
 	};
-	const handleDueDateChange = (e) => {
-		invoice.dueDate = e.target.value;
+
+	/**
+	 * @param {Event} event
+	 */
+	const handleDueDateChange = (event) => {
+		const current = ensureInvoice();
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		current.dueDate = target.value;
 		userEditedDueDate = true;
 	};
 
+	/**
+	 * @param {MonetaryAdjustment} newTax
+	 */
 	const onUpdateTax = (newTax) => {
-		invoice.tax = newTax;
+		const current = ensureInvoice();
+		current.tax = newTax;
 	};
+
+	/**
+	 * @param {MonetaryAdjustment} newDiscount
+	 */
 	const onUpdateDiscount = (newDiscount) => {
-		invoice.discount = newDiscount;
+		const current = ensureInvoice();
+		current.discount = newDiscount;
 	};
 
+	/**
+	 * @param {ShippingInfo} newShipping
+	 */
 	const onUpdateShipping = (newShipping) => {
-		invoice.shipping = newShipping;
+		const current = ensureInvoice();
+		current.shipping = newShipping;
 	};
 
+	/**
+	 * @param {File | string | null} newFile
+	 */
 	const onUpdateLogo = (newFile) => {
-		if (newFile instanceof File || newFile === null) {
-			invoice.logo = newFile;
-		} else {
-			invoice.logo = null; // Handle explicit clearing of the logo
-			console.warn('onUpdateLogo received an unexpected type for newFile:', newFile);
+		const current = ensureInvoice();
+		if (newFile instanceof File) {
+			current.logo = newFile;
+			current.logoFilename = newFile.name;
+			return;
 		}
+
+		if (typeof newFile === 'string' || newFile === null) {
+			current.logo = newFile;
+			if (newFile === null) {
+				current.logoFilename = null;
+			}
+			return;
+		}
+
+		current.logo = null;
+		current.logoFilename = null;
+		console.warn('onUpdateLogo received an unexpected type for newFile:', newFile);
 	};
+
+	/**
+	 * @param {boolean} newStatus
+	 */
 	const togglePaidStatus = (newStatus) => {
-		invoice.paid = Boolean(newStatus);
-	}
-	const onInvoiceToInput = (e) => {
-		invoice.invoiceTo = e.target.value;
+		const current = ensureInvoice();
+		current.paid = Boolean(newStatus);
 	};
-	const onInvoiceFromInput = (e) => {
-		invoice.invoiceFrom = e.target.value;
+
+	/**
+	 * @param {Event} event
+	 */
+	const onInvoiceToInput = (event) => {
+		const current = ensureInvoice();
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		current.invoiceTo = target.value;
 	};
-	const onInvoiceNumberInput = (e) => {
-		invoice.invoiceNumber = e.target.value;
+
+	/**
+	 * @param {Event} event
+	 */
+	const onInvoiceFromInput = (event) => {
+		const current = ensureInvoice();
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		current.invoiceFrom = target.value;
 	};
-	const onInvoiceLabelInput = (e) => {
-		invoice.invoiceLabel = e.target.value;
+
+	/**
+	 * @param {Event} event
+	 */
+	const onInvoiceNumberInput = (event) => {
+		const current = ensureInvoice();
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		current.invoiceNumber = target.value;
+	};
+
+	/**
+	 * @param {Event} event
+	 */
+	const onInvoiceLabelInput = (event) => {
+		const current = ensureInvoice();
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		current.invoiceLabel = target.value;
 	};
 	const openSaveDraftModal = () => {
 		// Pre-fill with invoice label + number
-		draftName = `${invoice.invoiceLabel || 'INVOICE'} ${invoice.invoiceNumber || ''}`.trim();
+		if (invoice) {
+			draftName = `${invoice.invoiceLabel || 'INVOICE'} ${invoice.invoiceNumber || ''}`.trim();
+		}
 		showSaveDraftModal = true;
 	};
+	
 	const closeSaveDraftModal = () => {
 		showSaveDraftModal = false;
 		draftName = '';
 	};
+	
 	const saveDraftAndRedirect = async () => {
-		// Update invoice with draft name and mark as draft
-		invoice.draft = true;
-		invoice.draftName = draftName.trim();
+		if (invoice) {
+			// Update invoice with draft name and mark as draft
+			invoice.draft = true;
+			invoice.draftName = draftName.trim();
 
-		// Save to IndexedDB (happens automatically via $effect, but we'll ensure it)
-		await saveInvoice(invoice.id, invoice);
+			// Save to IndexedDB (happens automatically via $effect, but we'll ensure it)
+			await saveInvoice(invoice.id, invoice);
 
-		// Close modal
-		closeSaveDraftModal();
+			// Close modal
+			closeSaveDraftModal();
 
-		// Redirect to saved invoices page
-		if (typeof window !== 'undefined') {
-			window.location.href = '/saved-invoices';
+			// Redirect to saved invoices page
+			if (typeof window !== 'undefined') {
+				window.location.href = '/saved-invoices';
+			}
+		}
+	};
+
+	/**
+	 * @param {Event} event
+	 */
+	const stopModalPropagation = (event) => {
+		event.stopPropagation();
+	};
+
+	/**
+	 * @param {KeyboardEvent} event
+	 */
+	const handleBackdropKeydown = (event) => {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			closeSaveDraftModal();
+		}
+	};
+
+	/**
+	 * @param {KeyboardEvent} event
+	 */
+	const handleDraftInputKeydown = (event) => {
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			saveDraftAndRedirect();
 		}
 	};
 
@@ -330,7 +559,9 @@
 				</button>
 			</div>
 
-			<TemplateSelector />
+			{#if activeTab === 'preview'}
+				<TemplateSelector />
+			{/if}
 		</div>
 
 		<!-- Edit View -->
@@ -343,8 +574,7 @@
 							onclick={openSaveDraftModal}
 						>
 							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-								<path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
-								<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+								<path fill-rule="evenodd" d="M10 2c-1.716 0-3.408.106-5.07.31C3.806 2.45 3 3.414 3 4.517V17.25a.75.75 0 0 0 1.075.676L10 15.082l5.925 2.844A.75.75 0 0 0 17 17.25V4.517c0-1.103-.806-2.068-1.93-2.207A41.403 41.403 0 0 0 10 2Z" clip-rule="evenodd" />
 							</svg>
 							Save Draft
 						</button>
@@ -390,37 +620,72 @@
 		<!-- Preview View -->
 		<div class="content-section preview-section" class:hidden={activeTab !== 'preview'}>
 				<div class="sticky-button-wrapper">
-					<button
-						class="icon-button preview-action"
-						aria-label={$_('invoice.save_pdf')}
-						title={$_('invoice.save_pdf')}
-						onclick={saveAsPDF}
-						disabled={isGeneratingPDF}
-					>
-						{#if isGeneratingPDF}
-							<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-								<circle
-									cx="12"
-									cy="12"
-									r="9"
-									stroke-width="2"
-									stroke-dasharray="45 15"
-									stroke-dashoffset="0"
-									stroke-linecap="round"
-								/>
-							</svg>
-							<span class="sr-only">{$_('invoice.downloading')}</span>
-						{:else}
-							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-								<path
-									fill-rule="evenodd"
-									d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-							<span class="sr-only">{$_('invoice.save_pdf')}</span>
-						{/if}
-					</button>
+					<div class="button-group">
+						<button
+							class="icon-button preview-action"
+							aria-label={$_('invoice.print_pdf')}
+							title={$_('invoice.print_pdf')}
+							onclick={printPDF}
+							disabled={isGeneratingPDF}
+						>
+							{#if isGeneratingPDF && pdfAction === 'print'}
+								<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+									<circle
+										cx="12"
+										cy="12"
+										r="9"
+										stroke-width="2"
+										stroke-dasharray="45 15"
+										stroke-dashoffset="0"
+										stroke-linecap="round"
+									/>
+								</svg>
+								<span class="sr-only">{$_('invoice.printing')}</span>
+							{:else}
+								<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path d="M6 2a2 2 0 0 0-2 2v3h12V4a2 2 0 0 0-2-2H6Z" />
+									<path
+										fill-rule="evenodd"
+										d="M4 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3.5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15 12.5V16h1a3 3 0 0 0 3-3v-2a3 3 0 0 0-3-3H4Zm1.5 5.5V18a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2v-4.5a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5Z"
+										clip-rule="evenodd"
+									/>
+									<path d="M6 6.5h8v2H6v-2Z" />
+								</svg>
+								<span class="sr-only">{$_('invoice.print_pdf')}</span>
+							{/if}
+						</button>
+						<button
+							class="icon-button preview-action"
+							aria-label={$_('invoice.save_pdf')}
+							title={$_('invoice.save_pdf')}
+							onclick={saveAsPDF}
+							disabled={isGeneratingPDF}
+						>
+							{#if isGeneratingPDF && pdfAction === 'download'}
+								<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+									<circle
+										cx="12"
+										cy="12"
+										r="9"
+										stroke-width="2"
+										stroke-dasharray="45 15"
+										stroke-dashoffset="0"
+										stroke-linecap="round"
+									/>
+								</svg>
+								<span class="sr-only">{$_('invoice.downloading')}</span>
+							{:else}
+								<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path
+										fill-rule="evenodd"
+										d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
+										clip-rule="evenodd"
+									/>
+								</svg>
+								<span class="sr-only">{$_('invoice.save_pdf')}</span>
+							{/if}
+						</button>
+					</div>
 				</div>
 
 				<div bind:this={previewRef}>
@@ -433,9 +698,17 @@
 {/if}
 
 <!-- Save Draft Modal -->
+
 {#if showSaveDraftModal}
-	<div class="modal-backdrop" onclick={closeSaveDraftModal}>
-		<div class="modal" onclick={(e) => e.stopPropagation()}>
+	<div
+		class="modal-backdrop"
+		role="button"
+		aria-label="Close save draft modal"
+		tabindex="0"
+		onclick={closeSaveDraftModal}
+		onkeydown={handleBackdropKeydown}
+	>
+		<div class="modal" role="dialog" aria-modal="true" onpointerdown={stopModalPropagation}>
 			<h2 class="modal-title">Save Draft</h2>
 			<p class="modal-description">Give your draft a name (optional)</p>
 
@@ -444,7 +717,7 @@
 				class="modal-input"
 				placeholder="Draft name"
 				bind:value={draftName}
-				onkeydown={(e) => e.key === 'Enter' && saveDraftAndRedirect()}
+				onkeydown={handleDraftInputKeydown}
 			/>
 
 			<div class="modal-actions">
@@ -464,9 +737,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
-		padding: 1.5rem 1.5rem 1.25rem 1.5rem;
+		padding: 0.875rem 1.5rem 1.25rem 1.5rem;
 		position: relative;
-		max-width: 1400px;
+		max-width: 1280px;
 		margin: 0 auto;
 	}
 

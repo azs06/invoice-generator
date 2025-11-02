@@ -1,12 +1,30 @@
+
 <script>
+	/** @typedef {import('$lib/types').InvoiceItem} InvoiceItem */
 
-    let { item ={ name: '', quantity: 1, price: 0, amount: 0 }, onUpdate, index = 0 } = $props();
+	/** @type {InvoiceItem} */
+	export let item = { name: '', quantity: 1, price: 0, amount: 0 };
+	/** @type {(value: InvoiceItem) => void} */
+	export let onUpdate = () => {};
+	/** @type {number} */
+	export let index = 0;
 
-    const updateField = (field, value) => {
-      const updatedItem = { ...item, [field]: value };
-      updatedItem.amount = updatedItem.quantity * updatedItem.price;
-      onUpdate(updatedItem);
-    };
+	/**
+	 * @param {'name' | 'quantity' | 'price'} field
+	 * @param {string | number} rawValue
+	 */
+	const updateField = (field, rawValue) => {
+		const updatedItem = { ...item };
+		if (field === 'name') {
+			updatedItem.name = typeof rawValue === 'string' ? rawValue : String(rawValue ?? '');
+		} else if (field === 'quantity') {
+			updatedItem.quantity = typeof rawValue === 'number' ? rawValue : Number(rawValue) || 0;
+		} else {
+			updatedItem.price = typeof rawValue === 'number' ? rawValue : Number(rawValue) || 0;
+		}
+		updatedItem.amount = (updatedItem.quantity || 0) * (updatedItem.price || 0);
+		onUpdate(updatedItem);
+	};
 	const lineTotal = () => {
 		const qty = Number(item.quantity) || 0;
 		const price = Number(item.price) || 0;
@@ -14,6 +32,9 @@
 		return Number.isFinite(amount) ? amount : 0;
 	};
 
+	/**
+	 * @param {number} value
+	 */
 	const formatCurrency = (value) =>
 		new Intl.NumberFormat(undefined, {
 			style: 'currency',
@@ -30,8 +51,12 @@
 			id={`item-name-${index}`}
 			type="text"
 			placeholder="Describe the work or product"
-			value={item.name}
-			oninput={(e) => updateField('name', e.target.value)}
+			bind:value={item.name}
+			oninput={(event) => {
+				const target = event.currentTarget;
+				if (!(target instanceof HTMLInputElement)) return;
+				updateField('name', target.value);
+			}}
 			class="item-input"
 		/>
 	</div>
@@ -43,8 +68,12 @@
 			type="number"
 			min="1"
 			placeholder="1"
-			value={item.quantity}
-			oninput={(e) => updateField('quantity', +e.target.value)}
+			bind:value={item.quantity}
+			oninput={(event) => {
+				const target = event.currentTarget;
+				if (!(target instanceof HTMLInputElement)) return;
+				updateField('quantity', Number(target.value));
+			}}
 			class="item-input"
 		/>
 	</div>
@@ -57,8 +86,12 @@
 			min="0"
 			step="0.01"
 			placeholder="0.00"
-			value={item.price}
-			oninput={(e) => updateField('price', +e.target.value)}
+			bind:value={item.price}
+			oninput={(event) => {
+				const target = event.currentTarget;
+				if (!(target instanceof HTMLInputElement)) return;
+				updateField('price', Number(target.value));
+			}}
 			class="item-input"
 		/>
 	</div>
@@ -187,4 +220,3 @@
 		}
 	}
 </style>
-

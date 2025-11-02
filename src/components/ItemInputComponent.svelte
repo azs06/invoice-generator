@@ -1,9 +1,59 @@
 <script>
-	let { item = { name: '', quantity: 1, price: 0 }, onUpdate = () => {} } = $props();
+	/** @typedef {import('$lib/types').InvoiceItem} InvoiceItem */
 
-	const updateItem = (field, value) => {
-		const updatedItem = { ...item, [field]: value };
-		onUpdate(updatedItem);
+	/** @type {InvoiceItem} */
+	export let item = { name: '', quantity: 1, price: 0, amount: 0 };
+	/** @type {(item: InvoiceItem) => void} */
+	export let onUpdate = () => {};
+
+	/**
+	 * @param {'name' | 'quantity' | 'price'} field
+	 * @param {string | number} rawValue
+	 */
+	const updateItem = (field, rawValue) => {
+		const nextItem = { ...item };
+		if (field === 'name') {
+			nextItem.name = typeof rawValue === 'string' ? rawValue : String(rawValue ?? '');
+		} else if (field === 'quantity') {
+			nextItem.quantity = typeof rawValue === 'number' ? rawValue : Number(rawValue) || 0;
+		} else {
+			nextItem.price = typeof rawValue === 'number' ? rawValue : Number(rawValue) || 0;
+		}
+		nextItem.amount = (nextItem.price || 0) * (nextItem.quantity || 0);
+		onUpdate(nextItem);
+	};
+
+	/**
+	 * @param {Event} event
+	 */
+	const handleNameInput = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		updateItem('name', target.value);
+	};
+
+	/**
+	 * @param {Event} event
+	 */
+	const handleQuantityInput = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		updateItem('quantity', Number(target.value));
+	};
+
+	/**
+	 * @param {Event} event
+	 */
+	const handlePriceInput = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		updateItem('price', Number(target.value));
 	};
 </script>
 
@@ -12,7 +62,7 @@
 		type="text"
 		placeholder="Item Name"
 		bind:value={item.name}
-		oninput={(e) => updateItem('name', e.target.value)}
+		oninput={handleNameInput}
 	/>
 
 	<input
@@ -20,7 +70,7 @@
 		placeholder="Quantity"
 		min="1"
 		bind:value={item.quantity}
-		oninput={(e) => updateItem('quantity', +e.target.value)}
+		oninput={handleQuantityInput}
 	/>
 
 	<input
@@ -29,7 +79,7 @@
 		min="0"
 		step="0.01"
 		bind:value={item.price}
-		oninput={(e) => updateItem('price', +e.target.value)}
+		oninput={handlePriceInput}
 	/>
 </div>
 

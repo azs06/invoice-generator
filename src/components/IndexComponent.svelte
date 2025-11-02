@@ -1,39 +1,91 @@
 <script>
-    import AmountPaidComponent from './AmountPaidComponent.svelte';
-    import ItemInputComponent from './ItemInputComponent.svelte';
-    import TermsAndNotesComponent from './TermsAndNotesComponent.svelte';
-    import TotalComponent from './TotalComponent.svelte';
-  
-    export let invoice = {
-      items: [],
-      amountPaid: 0,
-      terms: '',
-      notes: '',
-      discount: { type: 'flat', rate: 0 },
-      tax: { type: 'flat', rate: 0 },
-      shipping: { amount: 0 },
-      totalPaid: 0,
-    };
-  
-    const updateItem = (index, updatedItem) => {
-      invoice.items[index] = updatedItem;
-    };
-  
-    const addItem = () => {
-      invoice.items = [...invoice.items, { name: '', quantity: 1, price: 0, amount: 0 }];
-    };
-  
-    const updateTerms = (newTerms) => {
-      invoice.terms = newTerms;
-    };
-  
-    const updateNotes = (newNotes) => {
-      invoice.notes = newNotes;
-    };
-    const updatePaidAmount = (amountPaid) => {
-      invoice.amountPaid = amountPaid
-    };
-  </script>
+	import AmountPaidComponent from './AmountPaidComponent.svelte';
+	import ItemInputComponent from './ItemInputComponent.svelte';
+	import TermsAndNotesComponent from './TermsAndNotesComponent.svelte';
+	import TotalComponent from './TotalComponent.svelte';
+	import { defaultInvoice } from '$lib/index.js';
+
+	/**
+	 * @typedef {typeof defaultInvoice} InvoiceData
+	 * @typedef {InvoiceData['items'][number]} InvoiceItem
+	 */
+
+	/** @type {InvoiceData} */
+	export let invoice = /** @type {InvoiceData} */ (structuredClone(defaultInvoice));
+
+	const ensureItems = () => {
+		if (!Array.isArray(invoice.items)) {
+			invoice.items = [];
+		}
+	};
+
+	/**
+	 * @param {number} index
+	 * @param {InvoiceItem} updatedItem
+	 */
+	const updateItem = (index, updatedItem) => {
+		ensureItems();
+		invoice.items[index] = updatedItem;
+	};
+
+	/**
+	 * @param {number} index
+	 * @returns {(updatedItem: InvoiceItem) => void}
+	 */
+	const createItemUpdater = (index) => (updatedItem) => {
+		updateItem(index, updatedItem);
+	};
+
+	const addItem = () => {
+		ensureItems();
+		invoice.items = [
+			...invoice.items,
+			{ name: '', quantity: 1, price: 0, amount: 0 }
+		];
+	};
+
+	/**
+	 * @param {string} [newTerms='']
+	 */
+	const updateTerms = (newTerms = '') => {
+		invoice.terms = newTerms;
+	};
+
+	/**
+	 * @param {string} [newNotes='']
+	 */
+	const updateNotes = (newNotes = '') => {
+		invoice.notes = newNotes;
+	};
+
+	/**
+	 * @param {number} [amountPaid=0]
+	 */
+	const updatePaidAmount = (amountPaid = 0) => {
+		invoice.amountPaid = amountPaid;
+	};
+
+	/**
+	 * @param {InvoiceData['discount']} next
+	 */
+	const handleDiscountChange = (next) => {
+		invoice.discount = next;
+	};
+
+	/**
+	 * @param {InvoiceData['tax']} next
+	 */
+	const handleTaxChange = (next) => {
+		invoice.tax = next;
+	};
+
+	/**
+	 * @param {InvoiceData['shipping']} next
+	 */
+	const handleShippingChange = (next) => {
+		invoice.shipping = next;
+	};
+</script>
   
   <div class="invoice-index">
     <h2>Invoice</h2>
@@ -42,25 +94,34 @@
       {#each invoice.items as item, index}
         <ItemInputComponent
           {item}
-          onUpdate={(updatedItem) => updateItem(index, updatedItem)}
+          onUpdate={createItemUpdater(index)}
         />
       {/each}
   
-      <button type="button" on:click={addItem} class="add-item-btn">
+      <button type="button" onclick={addItem} class="add-item-btn">
         Add Item
       </button>
     </div>
   
     <TermsAndNotesComponent
-      {terms}
-      {notes}
+      terms={invoice.terms}
+      notes={invoice.notes}
       onUpdateTerms={updateTerms}
       onUpdateNotes={updateNotes}
     />
+
+    <AmountPaidComponent
+      {invoice}
+      updatePaidAmount={updatePaidAmount}
+      amountPaid={invoice.amountPaid}
+    />
   
-    <AmountPaidComponent updatePaidAmount={updatePaidAmount} amountPaid={invoice.amountPaid} />
-  
-    <TotalComponent {invoice} />
+    <TotalComponent
+      {invoice}
+      onUpdateDiscount={handleDiscountChange}
+      onUpdateTax={handleTaxChange}
+      onUpdateShipping={handleShippingChange}
+    />
   </div>
   
   <style>

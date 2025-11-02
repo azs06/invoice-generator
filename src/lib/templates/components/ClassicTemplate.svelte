@@ -1,10 +1,9 @@
 <script>
 	import { toUSCurrency } from '$lib/currency.js';
 	import { calculateDiscount, calculateTax } from '$lib/InvoiceCalculator.js';
+	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 
 	let { invoice, totals = {} } = $props();
-
-	const DEFAULT_LOGO_PATH = '/logo.png';
 
 	const totalAmount = () => totals.total ?? invoice.total ?? 0;
 	const subTotal = () => totals.subTotal ?? invoice.subTotal ?? 0;

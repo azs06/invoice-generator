@@ -1,9 +1,27 @@
+
 <script>
+	'use runes';
 	import { totalAmounts, calculateDiscount, calculateTax } from '../lib/InvoiceCalculator.js';
 	import { toUSCurrency } from '$lib/currency.js';
 	import { defaultInvoice } from '$lib/index.js';
+	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
+	/** @typedef {import('$lib/types').MonetaryAdjustment} MonetaryAdjustment */
+	/** @typedef {import('$lib/types').ShippingInfo} ShippingInfo */
 
-	const { invoice = defaultInvoice, onUpdateDiscount, onUpdateTax, onUpdateShipping } = $props();
+	/**
+	 * @type {{
+	 *   invoice?: InvoiceData;
+	 *   onUpdateDiscount?: (value: MonetaryAdjustment) => void;
+	 *   onUpdateTax?: (value: MonetaryAdjustment) => void;
+	 *   onUpdateShipping?: (value: ShippingInfo) => void;
+	 * }}
+	 */
+	let {
+		invoice = /** @type {InvoiceData} */ (defaultInvoice),
+		onUpdateDiscount,
+		onUpdateTax,
+		onUpdateShipping
+	} = $props();
 
 	let tax = $state(invoice.tax || { type: 'flat', rate: 0 });
 	let discount = $state(invoice.discount || { type: 'flat', rate: 0 });

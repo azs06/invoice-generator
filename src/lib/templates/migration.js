@@ -36,9 +36,10 @@ export async function migrateInvoicesToIncludeTemplateId() {
 		};
 	} catch (error) {
 		console.error('Failed to migrate invoices:', error);
+		const errorMessage = error instanceof Error ? error.message : String(error);
 		return {
 			success: false,
-			error: error.message,
+			error: errorMessage,
 			migrated: 0,
 			total: 0
 		};
@@ -78,12 +79,13 @@ export async function getMigrationStatus() {
 		};
 	} catch (error) {
 		console.error('Failed to get migration status:', error);
+		const errorMessage = error instanceof Error ? error.message : String(error);
 		return {
 			totalInvoices: 0,
 			migratedInvoices: 0,
 			needsMigration: false,
 			percentage: 0,
-			error: error.message
+			error: errorMessage
 		};
 	}
 }

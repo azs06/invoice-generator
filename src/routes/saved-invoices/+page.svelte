@@ -1,3 +1,4 @@
+
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -9,24 +10,37 @@
 		getInvoice
 	} from '$lib/db.js';
 	import { toUSCurrency } from '$lib/currency.js';
-
-	export const prerender = true;
-
+	/** @type {import('$lib/types').SavedInvoiceRecord[]} */
 	let allInvoices = [];
+	/** @type {import('$lib/types').SavedInvoiceRecord[]} */
 	let savedInvoices = [];
+	/** @type {string} */
 	let search = '';
+	/** @type {boolean} */
 	let showInvoiceDeleteModal = false;
+	/** @type {string | null} */
 	let invoiceToDelete = null;
+	/** @type {boolean} */
 	let showArchived = false;
+	/** @type {import('$lib/types').SavedInvoicesFilterMode} */
 	let filterMode = 'all';
+	/** @type {boolean} */
 	let isLoading = true;
 
+	/**
+	 * @param {string | null | undefined} value
+	 * @returns {number}
+	 */
 	const parseDate = (value) => {
 		if (!value) return 0;
 		const parsed = Date.parse(value);
 		return Number.isNaN(parsed) ? 0 : parsed;
 	};
 
+	/**
+	 * @param {string | null | undefined} value
+	 * @returns {string}
+	 */
 	const formatDate = (value) => {
 		const parsed = parseDate(value);
 		if (!parsed) return 'Date not set';
@@ -37,18 +51,30 @@
 		}).format(parsed);
 	};
 
+	/**
+	 * @param {number | string | null | undefined} value
+	 * @returns {string}
+	 */
 	const formatAmount = (value = 0) => {
 		const amount = Number(value);
 		const safeAmount = Number.isFinite(amount) ? amount : 0;
 		return toUSCurrency(safeAmount);
 	};
 
+	/**
+	 * @param {import('$lib/types').InvoiceData | null | undefined} invoice
+	 * @returns {number}
+	 */
 	const balanceDueAmount = (invoice) => {
 		const value = Number(invoice?.balanceDue ?? invoice?.total ?? 0);
 		if (!Number.isFinite(value)) return 0;
 		return Math.max(value, 0);
 	};
 
+	/**
+	 * @param {import('$lib/types').InvoiceData | null | undefined} invoice
+	 * @returns {string}
+	 */
 	const invoiceTitle = (invoice) => {
 		if (!invoice) return 'Untitled invoice';
 		const draftName = invoice.draftName?.trim();
@@ -104,26 +130,42 @@
 	const loadInvoices = async () => {
 		isLoading = true;
 		const invoices = await getAllInvoices();
-		allInvoices = invoices;
+		allInvoices = /** @type {import('$lib/types').SavedInvoiceRecord[]} */ (invoices);
 		applyFilters();
 		isLoading = false;
 	};
 
+	/**
+	 * @param {Event} event
+	 */
 	const onSearchInput = (event) => {
-		search = event.target.value;
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+		search = target.value;
 		applyFilters();
 	};
 
+	/**
+	 * @param {boolean} value
+	 */
 	const setArchivedView = (value) => {
 		showArchived = value;
 		applyFilters();
 	};
 
+	/**
+	 * @param {import('$lib/types').SavedInvoicesFilterMode} mode
+	 */
 	const setFilterMode = (mode) => {
 		filterMode = mode;
 		applyFilters();
 	};
 
+	/**
+	 * @param {string | null} [id=invoiceToDelete]
+	 */
 	const removeInvoice = async (id = invoiceToDelete) => {
 		if (!id) return;
 		await deleteInvoice(id);
@@ -138,6 +180,9 @@
 		savedInvoices = [];
 	};
 
+	/**
+	 * @param {string} id
+	 */
 	const archiveInvoice = async (id) => {
 		const data = await getInvoice(id);
 		if (data) {
@@ -147,6 +192,9 @@
 		}
 	};
 
+	/**
+	 * @param {string} id
+	 */
 	const unarchiveInvoice = async (id) => {
 		const data = await getInvoice(id);
 		if (data) {
@@ -156,6 +204,9 @@
 		}
 	};
 
+	/**
+	 * @param {string} id
+	 */
 	const confirmDeleteInvoice = (id) => {
 		invoiceToDelete = id;
 		showInvoiceDeleteModal = true;
@@ -166,6 +217,9 @@
 		showInvoiceDeleteModal = false;
 	};
 
+	/**
+	 * @param {string} id
+	 */
 	const openInvoice = (id) => {
 		goto(`/?invoice=${id}`);
 	};
@@ -197,10 +251,10 @@
 						type="search"
 						placeholder="Search by client, label, or invoice #"
 						bind:value={search}
-						on:input={onSearchInput}
+						oninput={onSearchInput}
 					/>
 				</label>
-				<button class="primary-button" type="button" on:click={() => goto('/')}>
+				<button class="primary-button" type="button" onclick={() => goto('/') }>
 					<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
 							fill-rule="evenodd"
@@ -216,20 +270,20 @@
 				<div class="filter-group">
 					<span class="filter-label">Collection</span>
 					<div class="chip-group">
-						<button
-							type="button"
-							class:active={!showArchived}
-							on:click={() => setArchivedView(false)}
-							aria-pressed={!showArchived}
-						>
+					<button
+						type="button"
+						class:active={!showArchived}
+						onclick={() => setArchivedView(false)}
+						aria-pressed={!showArchived}
+					>
 							Active
 						</button>
-						<button
-							type="button"
-							class:active={showArchived}
-							on:click={() => setArchivedView(true)}
-							aria-pressed={showArchived}
-						>
+					<button
+						type="button"
+						class:active={showArchived}
+						onclick={() => setArchivedView(true)}
+						aria-pressed={showArchived}
+					>
 							Archived
 						</button>
 					</div>
@@ -238,28 +292,28 @@
 				<div class="filter-group">
 					<span class="filter-label">Status</span>
 					<div class="chip-group">
-						<button
-							type="button"
-							class:active={filterMode === 'all'}
-							on:click={() => setFilterMode('all')}
-							aria-pressed={filterMode === 'all'}
-						>
+					<button
+						type="button"
+						class:active={filterMode === 'all'}
+						onclick={() => setFilterMode('all')}
+						aria-pressed={filterMode === 'all'}
+					>
 							All
 						</button>
-						<button
-							type="button"
-							class:active={filterMode === 'draft'}
-							on:click={() => setFilterMode('draft')}
-							aria-pressed={filterMode === 'draft'}
-						>
+					<button
+						type="button"
+						class:active={filterMode === 'draft'}
+						onclick={() => setFilterMode('draft')}
+						aria-pressed={filterMode === 'draft'}
+					>
 							Drafts
 						</button>
-						<button
-							type="button"
-							class:active={filterMode === 'finalized'}
-							on:click={() => setFilterMode('finalized')}
-							aria-pressed={filterMode === 'finalized'}
-						>
+					<button
+						type="button"
+						class:active={filterMode === 'finalized'}
+						onclick={() => setFilterMode('finalized')}
+						aria-pressed={filterMode === 'finalized'}
+					>
 							Finalized
 						</button>
 					</div>
@@ -276,7 +330,7 @@
 			<div class="state-card">
 				<h2>No saved invoices yet</h2>
 				<p>Start a draft and it will appear here automatically.</p>
-				<button class="primary-button" type="button" on:click={() => goto('/')}>
+				<button class="primary-button" type="button" onclick={() => goto('/') }>
 					<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
 							fill-rule="evenodd"
@@ -330,7 +384,7 @@
 							<div class="card-divider"></div>
 
 							<div class="card-actions">
-								<button class="ghost-button" type="button" on:click={() => openInvoice(record.id)}>
+								<button class="ghost-button" type="button" onclick={() => openInvoice(record.id)}>
 									<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 										<path
 											fill-rule="evenodd"
@@ -346,7 +400,7 @@
 										<button
 											class="ghost-button ghost-button--success"
 											type="button"
-											on:click={() => unarchiveInvoice(record.id)}
+											onclick={() => unarchiveInvoice(record.id)}
 										>
 											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 												<path
@@ -361,7 +415,7 @@
 										<button
 											class="ghost-button"
 											type="button"
-											on:click={() => archiveInvoice(record.id)}
+											onclick={() => archiveInvoice(record.id)}
 										>
 											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 												<path d="M4 3a2 2 0 0 0-2 2v1.5A1.5 1.5 0 0 0 3.5 8H4v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8h.5A1.5 1.5 0 0 0 18 6.5V5a2 2 0 0 0-2-2H4Zm3 6.5A.5.5 0 0 1 7.5 9h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5ZM4 5h12v1.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V5Z" />
@@ -373,7 +427,7 @@
 									<button
 										class="ghost-button ghost-button--danger"
 										type="button"
-										on:click={() => confirmDeleteInvoice(record.id)}
+										onclick={() => confirmDeleteInvoice(record.id)}
 									>
 										<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 											<path
@@ -394,7 +448,7 @@
 
 		<footer class="page-footer">
 			<p>These invoices are stored on this device. Clearing your browser cache will remove them.</p>
-			<button class="ghost-button ghost-button--danger" type="button" on:click={clearData}>
+		<button class="ghost-button ghost-button--danger" type="button" onclick={clearData}>
 				Clear everything
 			</button>
 		</footer>
@@ -406,8 +460,8 @@
 				<h2>Delete this invoice?</h2>
 				<p>This action cannot be undone. You will need to recreate the invoice manually.</p>
 				<div class="modal-actions">
-					<button class="danger-button" type="button" on:click={removeInvoice}>Delete</button>
-					<button class="ghost-button" type="button" on:click={cancelDelete}>Cancel</button>
+					<button class="danger-button" type="button" onclick={() => removeInvoice()}>Delete</button>
+					<button class="ghost-button" type="button" onclick={cancelDelete}>Cancel</button>
 				</div>
 			</div>
 		</div>

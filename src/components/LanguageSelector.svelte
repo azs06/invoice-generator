@@ -6,27 +6,38 @@
 		bn: 'বাংলা'
 	};
 
+	/**
+	 * @typedef {'en' | 'bn'} SupportedLocale
+	 */
+
+	/**
+	 * @param {string | null | undefined} value
+	 * @returns {SupportedLocale}
+	 */
 	const normalizeLocale = (value) => {
 		if (!value) return 'en';
 		const base = value.split('-')[0];
-		return base in languages ? base : 'en';
+		return base in languages ? /** @type {SupportedLocale} */ (base) : 'en';
 	};
 
-	let selectedLocale = 'en';
-
-	$: {
+	$effect(() => {
 		const normalized = normalizeLocale($locale);
 		if ($locale && normalized !== $locale) {
 			locale.set(normalized);
 		}
-		selectedLocale = normalized;
-	}
+	});
 
-	function changeLanguage(event) {
-		const next = event.target.value;
-		selectedLocale = next;
+	/**
+	 * @param {Event} event
+	 */
+	const changeLanguage = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLSelectElement)) {
+			return;
+		}
+		const next = normalizeLocale(target.value);
 		locale.set(next);
-	}
+	};
 </script>
 
 <div class="language-selector">
@@ -46,7 +57,7 @@
 		/>
 	</svg>
 	<div class="select-wrapper">
-		<select onchange={changeLanguage} value={selectedLocale} aria-label="Select language">
+		<select onchange={changeLanguage} value={normalizeLocale($locale)} aria-label="Select language">
 			{#each Object.entries(languages) as [code, name]}
 				<option value={code}>{name}</option>
 			{/each}

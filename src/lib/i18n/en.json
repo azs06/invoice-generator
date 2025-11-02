@@ -13,6 +13,8 @@
 		"new": "New Invoice",
 		"save_pdf": "Save as PDF",
 		"downloading": "Downloading...",
+		"print_pdf": "Print PDF",
+		"printing": "Printing...",
 		"from": "From",
 		"to": "To",
 		"date": "Invoice Date",

@@ -6,5 +6,8 @@ export default defineConfig({
 	plugins: [
 		tailwindcss(),
 		sveltekit()
-	]
+	],
+	build: {
+		chunkSizeWarningLimit: 1500
+	}
 });

@@ -1,15 +1,16 @@
 <script>
 	import { TEMPLATE_OPTIONS, selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
 
-	let currentTemplateId = $selectedTemplateId;
-
+	/**
+	 * @param {Event} event
+	 */
 	const handleChange = (event) => {
-		setTemplateId(event.target.value);
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLSelectElement)) {
+			return;
+		}
+		setTemplateId(target.value);
 	};
-
-	$effect(() => {
-		currentTemplateId = $selectedTemplateId;
-	});
 </script>
 
 <div class="template-selector">
@@ -17,15 +18,12 @@
 	<select
 		id="template-select"
 		class="selector-control"
-		value={currentTemplateId}
-		on:change={handleChange}
+		value={$selectedTemplateId}
+		onchange={handleChange}
 	>
 		{#each TEMPLATE_OPTIONS as option}
 			<option value={option.id}>
-				{option.label}
-				{#if option.premium}
-					<span class="premium-indicator"> PRO</span>
-				{/if}
+				{option.premium ? `${option.label} (PRO)` : option.label}
 			</option>
 		{/each}
 	</select>
@@ -59,16 +57,6 @@
 		border-radius: var(--radius-sm);
 		cursor: pointer;
 		position: relative;
-	}
-
-	.premium-indicator {
-		font-size: 0.7rem;
-		font-weight: 700;
-		color: var(--color-accent, #2563eb);
-		margin-left: 0.5rem;
-		padding: 0.1rem 0.3rem;
-		border-radius: var(--radius-sm);
-		background: rgba(37, 99, 235, 0.1);
 	}
 
 	.selector-control:focus-visible {
