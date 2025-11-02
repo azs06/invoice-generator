@@ -17,6 +17,7 @@
 	let isGeneratingPDF = $state(false); // State to track PDF generation status
 	let showMobilePreview = $state(false); // Track mobile preview visibility
 	let activeTab = $state('edit'); // Track active tab: 'edit' or 'preview'
+	const validTabs = new Set(['edit', 'preview']);
 
 	let userEditedDueDate = $state(false); // Track if user has edited the due date
 	let showSaveDraftModal = $state(false); // Track save draft modal visibility
@@ -51,6 +52,35 @@
 
 	const startNewInvoice = () => {
 		invoice = createNewInvoice();
+	};
+
+	const setActiveTab = (tab) => {
+		if (!validTabs.has(tab)) {
+			return;
+		}
+
+		activeTab = tab;
+
+		if (typeof window !== 'undefined') {
+			const { pathname, search, hash } = window.location;
+			const nextHash = `#${tab}`;
+
+			if (hash !== nextHash) {
+				window.history.replaceState({}, '', `${pathname}${search}${nextHash}`);
+			}
+		}
+	};
+
+	const syncTabFromHash = () => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		const hashValue = window.location.hash?.slice(1).toLowerCase();
+
+		if (validTabs.has(hashValue)) {
+			activeTab = hashValue;
+		}
 	};
 
 	const saveAsPDF = async () => {
@@ -96,57 +126,70 @@
 		}
 	};
 
-	onMount(async () => {
-		// Run template migration for existing invoices
-		await runMigrationIfNeeded();
-
-		const invoicesFromDb = await getAllInvoices();
-		let loadedInvoice = null;
-
+	onMount(() => {
 		if (typeof window !== 'undefined') {
-			const currentUrl = new URL(window.location.href);
-			const invoiceIdFromQuery = currentUrl.searchParams.get('invoice');
+			syncTabFromHash();
+			window.addEventListener('hashchange', syncTabFromHash);
+		}
 
-			if (invoiceIdFromQuery) {
-				const storedInvoice = await getInvoice(invoiceIdFromQuery);
-				if (storedInvoice) {
-					loadedInvoice = storedInvoice;
-					if (!loadedInvoice.id) {
-						loadedInvoice.id = invoiceIdFromQuery;
+		(async () => {
+			// Run template migration for existing invoices
+			await runMigrationIfNeeded();
+
+			const invoicesFromDb = await getAllInvoices();
+			let loadedInvoice = null;
+
+			if (typeof window !== 'undefined') {
+				const currentUrl = new URL(window.location.href);
+				const invoiceIdFromQuery = currentUrl.searchParams.get('invoice');
+
+				if (invoiceIdFromQuery) {
+					const storedInvoice = await getInvoice(invoiceIdFromQuery);
+					if (storedInvoice) {
+						loadedInvoice = storedInvoice;
+						if (!loadedInvoice.id) {
+							loadedInvoice.id = invoiceIdFromQuery;
+						}
 					}
+
+					currentUrl.searchParams.delete('invoice');
+					const cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+					window.history.replaceState({}, '', cleanUrl);
 				}
-
-				currentUrl.searchParams.delete('invoice');
-				const cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
-				window.history.replaceState({}, '', cleanUrl);
 			}
-		}
 
-		if (!loadedInvoice && invoicesFromDb.length > 0) {
-			const latestInvoiceEntry = invoicesFromDb[invoicesFromDb.length - 1];
-			loadedInvoice = latestInvoiceEntry.invoice;
-		}
+			if (!loadedInvoice && invoicesFromDb.length > 0) {
+				const latestInvoiceEntry = invoicesFromDb[invoicesFromDb.length - 1];
+				loadedInvoice = latestInvoiceEntry.invoice;
+			}
 
-		invoice = loadedInvoice ?? createNewInvoice();
+			invoice = loadedInvoice ?? createNewInvoice();
 
-		if (!invoice.id) {
-			invoice.id = uuidv4();
-		}
-		if (!invoice.logo) {
-			invoice.logo = '/logo.png';
-			invoice.logoFilename = 'logo.png';
-		}
-		if (!invoice.invoiceLabel) {
-			invoice.invoiceLabel = 'INVOICE';
-		}
-		if (invoice.draft === undefined || invoice.draft === null) {
-			invoice.draft = true;
-		}
+			if (!invoice.id) {
+				invoice.id = uuidv4();
+			}
+			if (!invoice.logo) {
+				invoice.logo = '/logo.png';
+				invoice.logoFilename = 'logo.png';
+			}
+			if (!invoice.invoiceLabel) {
+				invoice.invoiceLabel = 'INVOICE';
+			}
+			if (invoice.draft === undefined || invoice.draft === null) {
+				invoice.draft = true;
+			}
 
-		// Sync template store with loaded invoice's templateId
-		if (invoice.templateId) {
-			setTemplateId(invoice.templateId);
-		}
+			// Sync template store with loaded invoice's templateId
+			if (invoice.templateId) {
+				setTemplateId(invoice.templateId);
+			}
+		})();
+
+		return () => {
+			if (typeof window !== 'undefined') {
+				window.removeEventListener('hashchange', syncTabFromHash);
+			}
+		};
 	});
 
 	// Sync invoice templateId when template selector changes
@@ -267,7 +310,7 @@
 				<button
 					class="tab-button"
 					class:active={activeTab === 'edit'}
-					onclick={() => (activeTab = 'edit')}
+					onclick={() => setActiveTab('edit')}
 				>
 					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v4A1.5 1.5 0 0 0 2.5 10h6A1.5 1.5 0 0 0 10 8.5v-4A1.5 1.5 0 0 0 8.5 3h-6Zm9 0A1.5 1.5 0 0 0 10 4.5v4A1.5 1.5 0 0 0 11.5 10h6A1.5 1.5 0 0 0 19 8.5v-4A1.5 1.5 0 0 0 17.5 3h-6Zm-9 7A1.5 1.5 0 0 0 1 11.5v4A1.5 1.5 0 0 0 2.5 17h6A1.5 1.5 0 0 0 10 15.5v-4A1.5 1.5 0 0 0 8.5 10h-6Zm9 0a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 0-1.5-1.5h-6Z" />
@@ -277,7 +320,7 @@
 				<button
 					class="tab-button"
 					class:active={activeTab === 'preview'}
-					onclick={() => (activeTab = 'preview')}
+					onclick={() => setActiveTab('preview')}
 				>
 					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
