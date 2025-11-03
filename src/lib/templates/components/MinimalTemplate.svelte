@@ -1,4 +1,5 @@
 <script>
+	import { _ } from 'svelte-i18n';
 	import { toUSCurrency } from '$lib/currency.js';
 	import { calculateDiscount, calculateTax } from '$lib/InvoiceCalculator.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
@@ -48,13 +49,13 @@
 	const statusLabel = () => {
 		switch (balanceState()) {
 			case 'credit':
-				return 'CREDIT';
+				return $_('status.credit');
 			case 'settled':
-				return 'PAID';
+				return $_('status.paid');
 			case 'partial':
-				return 'PARTIAL';
+				return $_('status.partial');
 			default:
-				return 'DUE';
+				return $_('status.due');
 		}
 	};
 </script>
@@ -72,7 +73,7 @@
 				{/if}
 			</div>
 			<div class="title-section">
-				<h1 class="invoice-title">{invoice.invoiceLabel || 'INVOICE'}</h1>
+				<h1 class="invoice-title">{invoice.invoiceLabel || $_('invoice.invoice_label')}</h1>
 				<div class="invoice-meta">
 					<span class="invoice-number">#{invoice.invoiceNumber || 'PENDING'}</span>
 					<span class="status {balanceState()}">{statusLabel()}</span>
@@ -83,22 +84,22 @@
 
 	<section class="parties-section">
 		<div class="party-block">
-			<h2>From</h2>
+			<h2>{$_('invoice.from')}</h2>
 			<div class="party-info">
 				{#if invoice.invoiceFrom}
 					<pre>{invoice.invoiceFrom}</pre>
 				{:else}
-					<span class="placeholder">Your company details</span>
+					<span class="placeholder">{$_('placeholders.from')}</span>
 				{/if}
 			</div>
 		</div>
 		<div class="party-block">
-			<h2>To</h2>
+			<h2>{$_('invoice.to')}</h2>
 			<div class="party-info">
 				{#if invoice.invoiceTo}
 					<pre>{invoice.invoiceTo}</pre>
 				{:else}
-					<span class="placeholder">Client details</span>
+					<span class="placeholder">{$_('placeholders.to')}</span>
 				{/if}
 			</div>
 		</div>
@@ -106,16 +107,16 @@
 
 	<section class="dates-section">
 		<div class="date-item">
-			<span class="date-label">Date</span>
+			<span class="date-label">{$_('invoice.date')}</span>
 			<span class="date-value">{invoice.date || '—'}</span>
 		</div>
 		<div class="date-item">
-			<span class="date-label">Due</span>
+			<span class="date-label">{$_('summary.due')}</span>
 			<span class="date-value">{invoice.dueDate || '—'}</span>
 		</div>
 		{#if invoice.terms}
 			<div class="date-item">
-				<span class="date-label">Terms</span>
+				<span class="date-label">{$_('fields.terms')}</span>
 				<span class="date-value">{invoice.terms}</span>
 			</div>
 		{/if}
@@ -127,7 +128,7 @@
 				{#each invoice.items as item, index (index)}
 					<div class="item-row">
 						<div class="item-details">
-							<span class="item-name">{item.name || `Item ${index + 1}`}</span>
+							<span class="item-name">{item.name || `${$_('items.item')} ${index + 1}`}</span>
 							<span class="item-quantity">× {item.quantity ?? 0}</span>
 						</div>
 						<span class="item-amount"
@@ -138,46 +139,46 @@
 			</div>
 		{:else}
 			<div class="empty-items">
-				<span>No items added</span>
+				<span>{$_('items.no_items')}</span>
 			</div>
 		{/if}
 	</section>
 
 	<section class="summary-section">
 		<div class="summary-row">
-			<span>Subtotal</span>
+			<span>{$_('summary.subtotal')}</span>
 			<span>{$toUSCurrency(subTotal())}</span>
 		</div>
 		{#if discountDisplayValue() > 0}
 			<div class="summary-row">
-				<span>Discount</span>
+				<span>{$_('summary.discount')}</span>
 				<span>-{$toUSCurrency(discountDisplayValue())}</span>
 			</div>
 		{/if}
 		{#if taxDisplayValue() > 0}
 			<div class="summary-row">
-				<span>Tax</span>
+				<span>{$_('summary.tax')}</span>
 				<span>+{$toUSCurrency(taxDisplayValue())}</span>
 			</div>
 		{/if}
 		{#if shippingDisplayValue() > 0}
 			<div class="summary-row">
-				<span>Shipping</span>
+				<span>{$_('summary.shipping')}</span>
 				<span>+{$toUSCurrency(shippingDisplayValue())}</span>
 			</div>
 		{/if}
 		<div class="summary-row total">
-			<span>Total</span>
+			<span>{$_('summary.total')}</span>
 			<span>{$toUSCurrency(totalAmount())}</span>
 		</div>
 		{#if amountPaid() > 0}
 			<div class="summary-row">
-				<span>Paid</span>
+				<span>{$_('summary.amount_paid')}</span>
 				<span>{$toUSCurrency(amountPaid())}</span>
 			</div>
 		{/if}
 		<div class="summary-row balance">
-			<span>{balanceDue() < 0 ? 'Credit' : 'Balance'}</span>
+			<span>{balanceDue() < 0 ? $_('summary.credit_balance') : $_('summary.balance_due')}</span>
 			<span>{$toUSCurrency(Math.abs(balanceDue()))}</span>
 		</div>
 	</section>

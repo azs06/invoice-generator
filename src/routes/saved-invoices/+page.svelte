@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
 	import { goto } from '$app/navigation';
 	import {
 		getAllInvoices,
@@ -45,7 +46,7 @@
 	 */
 	const formatDate = (value) => {
 		const parsed = parseDate(value);
-		if (!parsed) return 'Date not set';
+		if (!parsed) return $_('saved_invoices.date_not_set');
 		return new Intl.DateTimeFormat(undefined, {
 			month: 'short',
 			day: 'numeric',
@@ -78,10 +79,10 @@
 	 * @returns {string}
 	 */
 	const invoiceTitle = (invoice) => {
-		if (!invoice) return 'Untitled invoice';
+		if (!invoice) return $_('saved_invoices.untitled_invoice');
 		const draftName = invoice.draftName?.trim();
 		if (draftName) return draftName;
-		const label = invoice.invoiceLabel?.trim() || 'Invoice';
+		const label = invoice.invoiceLabel?.trim() || $_('saved_invoices.invoice');
 		const number = invoice.invoiceNumber?.trim();
 		return number ? `${label} ${number}` : label;
 	};
@@ -234,13 +235,13 @@
 <section class="saved-page">
 	<div class="page-shell">
 		<header class="page-header">
-			<span class="page-badge">Saved invoices</span>
-			<h1 class="page-title">My invoices</h1>
+			<span class="page-badge">{$_('nav.saved_invoices')}</span>
+			<h1 class="page-title">{$_('saved_invoices.title')}</h1>
 			<p class="page-subtitle">We automatically save your invoice drafts to your device.</p>
 
 			<div class="header-controls">
 				<label class="search-field">
-					<span class="sr-only">Search saved invoices</span>
+					<span class="sr-only">{$_('saved_invoices.search_placeholder')}</span>
 					<svg
 						class="search-icon"
 						viewBox="0 0 20 20"
@@ -257,7 +258,7 @@
 					</svg>
 					<input
 						type="search"
-						placeholder="Search by client, label, or invoice #"
+						placeholder={$_('saved_invoices.search_placeholder')}
 						bind:value={search}
 						oninput={onSearchInput}
 					/>
@@ -270,13 +271,13 @@
 							clip-rule="evenodd"
 						/>
 					</svg>
-					<span>New invoice</span>
+					<span>{$_('saved_invoices.new_invoice')}</span>
 				</button>
 			</div>
 
 			<div class="filter-toolbar">
 				<div class="filter-group">
-					<span class="filter-label">Collection</span>
+					<span class="filter-label">{$_('saved_invoices.collection')}</span>
 					<div class="chip-group">
 						<button
 							type="button"
@@ -284,7 +285,7 @@
 							onclick={() => setArchivedView(false)}
 							aria-pressed={!showArchived}
 						>
-							Active
+							{$_('saved_invoices.active')}
 						</button>
 						<button
 							type="button"
@@ -292,13 +293,13 @@
 							onclick={() => setArchivedView(true)}
 							aria-pressed={showArchived}
 						>
-							Archived
+							{$_('saved_invoices.archived')}
 						</button>
 					</div>
 				</div>
 
 				<div class="filter-group">
-					<span class="filter-label">Status</span>
+					<span class="filter-label">{$_('saved_invoices.status')}</span>
 					<div class="chip-group">
 						<button
 							type="button"
@@ -306,7 +307,7 @@
 							onclick={() => setFilterMode('all')}
 							aria-pressed={filterMode === 'all'}
 						>
-							All
+							{$_('saved_invoices.all')}
 						</button>
 						<button
 							type="button"
@@ -314,7 +315,7 @@
 							onclick={() => setFilterMode('draft')}
 							aria-pressed={filterMode === 'draft'}
 						>
-							Drafts
+							{$_('saved_invoices.drafts')}
 						</button>
 						<button
 							type="button"
@@ -322,7 +323,7 @@
 							onclick={() => setFilterMode('finalized')}
 							aria-pressed={filterMode === 'finalized'}
 						>
-							Finalized
+							{$_('saved_invoices.finalized')}
 						</button>
 					</div>
 				</div>
@@ -332,12 +333,12 @@
 		{#if isLoading}
 			<div class="state-card">
 				<div class="state-spinner" aria-hidden="true"></div>
-				<p>Loading saved invoices…</p>
+				<p>{$_('saved_invoices.loading')}</p>
 			</div>
 		{:else if savedInvoices.length === 0}
 			<div class="state-card">
-				<h2>No saved invoices yet</h2>
-				<p>Start a draft and it will appear here automatically.</p>
+				<h2>{$_('saved_invoices.no_invoices_title')}</h2>
+				<p>{$_('saved_invoices.no_invoices_description')}</p>
 				<button class="primary-button" type="button" onclick={() => goto('/')}>
 					<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
@@ -346,7 +347,7 @@
 							clip-rule="evenodd"
 						/>
 					</svg>
-					<span>Create invoice</span>
+					<span>{$_('saved_invoices.create_invoice')}</span>
 				</button>
 			</div>
 		{:else}

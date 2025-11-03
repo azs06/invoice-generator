@@ -37,7 +37,8 @@
 		"amount": "Amount",
 		"add_item": "Add Item",
 		"add_another_line": "Add another line",
-		"add_item_prompt": "Add line items to populate your invoice."
+		"add_item_prompt": "Add line items to populate your invoice.",
+		"no_items": "No items added to this invoice."
 	},
 	"summary": {
 		"subtotal": "Subtotal",
@@ -59,7 +60,10 @@
 		"paid": "PAID",
 		"unpaid": "UNPAID",
 		"credit_owed": "CREDIT OWED",
-		"partially_paid": "PARTIALLY PAID"
+		"partially_paid": "PARTIALLY PAID",
+		"credit": "CREDIT",
+		"due": "DUE",
+		"partial": "PARTIAL"
 	},
 	"placeholders": {
 		"from": "Your business name and address",
@@ -84,5 +88,31 @@
 		"save_draft_title": "Save Draft",
 		"save_draft_description": "Give your draft a name (optional)",
 		"draft_name_placeholder": "Draft name"
+	},
+	"saved_invoices": {
+		"title": "Saved Invoices",
+		"search_placeholder": "Search by client, label, or invoice #",
+		"new_invoice": "New invoice",
+		"create_invoice": "Create invoice",
+		"collection": "Collection",
+		"active": "Active",
+		"archived": "Archived",
+		"status": "Status",
+		"all": "All",
+		"drafts": "Drafts",
+		"finalized": "Finalized",
+		"loading": "Loading saved invoices…",
+		"no_invoices_title": "No saved invoices yet",
+		"no_invoices_description": "Start a draft and it will appear here automatically.",
+		"edit": "Edit",
+		"archive": "Archive",
+		"unarchive": "Unarchive",
+		"delete": "Delete",
+		"finalize": "Finalize",
+		"total": "Total",
+		"balance_due": "Balance Due",
+		"date_not_set": "Date not set",
+		"untitled_invoice": "Untitled invoice",
+		"invoice": "Invoice"
 	}
 }
