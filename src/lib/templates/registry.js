@@ -30,7 +30,26 @@ export const TEMPLATES = {
 		tags: ['simple', 'clean', 'essential'],
 		premium: false,
 		preview: '/templates/minimal-preview.png'
+	},
+	compact: {
+		id: 'compact',
+		name: 'Compact',
+		description: 'Condensed layout optimized for fitting more on a page',
+		component: () => import('./components/CompactTemplate.svelte'),
+		tags: ['compact', 'condensed', 'dense'],
+		premium: false,
+		preview: '/templates/compact-preview.png'
+	},
+	atlantic: {
+		id: 'atlantic',
+		name: 'Atlantic',
+		description: 'Editorial serif layout with warm neutral palette',
+		component: () => import('./components/AtlanticTemplate.svelte'),
+		tags: ['serif', 'editorial', 'warm'],
+		premium: false,
+		preview: '/templates/atlantic-preview.png'
 	}
+	
 };
 
 /**

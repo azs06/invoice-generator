@@ -41,3 +41,22 @@
 - Keep secrets in project-local `.env` files (ignored by git) and load them through the provided scripts.
 - Tailwind tokens come from the Vite plugin; extend them centrally rather than scattering ad-hoc colors.
 - Treat `build/` as ephemeral output—clean it locally and rely on `npm run build` in CI/CD.
+
+## Multi-Template System (updated 2025-11-03)
+
+- Registry-driven templates live in `src/lib/templates/`.
+  - Components: `src/lib/templates/components/{Modern,Classic,Minimal,Compact}Template.svelte`
+  - Registry: `src/lib/templates/registry.js` (ids: `modern` [default], `classic`, `minimal`, `compact`)
+  - Docs: `src/lib/templates/README.md`
+- Runtime selection
+  - UI selector: `src/components/TemplateSelector.svelte`
+  - Store: `src/stores/templateStore.js` exports `TEMPLATE_OPTIONS`, `selectedTemplateId`, `setTemplateId`
+  - Loader: `src/components/InvoicePreviewWrapper.svelte` dynamically imports the selected component via `getTemplate()` and falls back to `modern` on error; totals are computed there.
+  - Persistence: `src/lib/db.js` saves `templateId` with fallback to `modern`.
+- Adding a template
+  1) Create `src/lib/templates/components/MyTemplate.svelte` (accepts `{ invoice, totals }`, uses i18n keys and `$lib/currency`), include print styles.
+  2) Register in `registry.js` with `{ id, name, description, component: () => import('./components/MyTemplate.svelte'), tags, premium, preview }`.
+  3) Optional preview image at `static/templates/<id>-preview.png`.
+- Notes
+  - Premium flag surfaces as “(PRO)” in the selector; access control is UI-only unless enforced elsewhere.
+  - i18n strings used by templates are under `src/lib/i18n/{en,bn}.json` (`status.*`, `summary.*`, etc.).

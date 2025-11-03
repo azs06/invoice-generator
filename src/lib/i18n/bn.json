@@ -5,7 +5,11 @@
 	},
 	"nav": {
 		"home": "হোম",
-		"saved_invoices": "সংরক্ষিত ইনভয়েস"
+		"saved_invoices": "সংরক্ষিত ইনভয়েস",
+		"about": "সম্পর্কে",
+		"how_it_works": "কিভাবে এটি কাজ করে",
+		"create_invoice": "ইনভয়েস তৈরি করুন",
+		"access_invoices": "আপনার ইনভয়েস অ্যাক্সেস করুন"
 	},
 	"invoice": {
 		"edit": "ইনভয়েস এডিট করুন",

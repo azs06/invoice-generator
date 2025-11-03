@@ -5,7 +5,11 @@
 	},
 	"nav": {
 		"home": "Home",
-		"saved_invoices": "Saved Invoices"
+		"saved_invoices": "Saved Invoices",
+		"about": "About",
+		"how_it_works": "How It Works",
+		"create_invoice": "Create Invoice",
+		"access_invoices": "Access Your Invoices"
 	},
 	"invoice": {
 		"edit": "Edit Invoice",
