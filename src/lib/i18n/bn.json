@@ -1,0 +1,122 @@
+{
+	"app": {
+		"title": "FreeInvoice",
+		"tagline": "বিনামূল্যে ইনভয়েস জেনারেটর"
+	},
+	"nav": {
+		"home": "হোম",
+		"saved_invoices": "সংরক্ষিত ইনভয়েস",
+		"about": "সম্পর্কে",
+		"how_it_works": "কিভাবে এটি কাজ করে",
+		"create_invoice": "ইনভয়েস তৈরি করুন",
+		"access_invoices": "আপনার ইনভয়েস অ্যাক্সেস করুন"
+	},
+	"invoice": {
+		"edit": "ইনভয়েস এডিট করুন",
+		"preview": "ইনভয়েস প্রিভিউ",
+		"new": "নতুন ইনভয়েস",
+		"save_pdf": "PDF সেভ করুন",
+		"downloading": "ডাউনলোড হচ্ছে...",
+		"print_pdf": "PDF প্রিন্ট করুন",
+		"printing": "প্রিন্ট হচ্ছে...",
+		"from": "প্রেরক",
+		"to": "প্রাপক",
+		"date": "ইনভয়েস তারিখ",
+		"due_date": "ডিউ ডেট",
+		"number": "ইনভয়েস #",
+		"invoice_label": "ইনভয়েস",
+		"invoice_number": "ইনভয়েস নম্বর",
+		"upload_logo": "লোগো আপলোড করুন",
+		"change_logo": "লোগো চেঞ্জ করুন",
+		"choose_file": "ফাইল সিলেক্ট করুন",
+		"no_file": "কোন ফাইল সিলেক্ট করা নেই",
+		"current_logo": "বর্তমান লোগো",
+		"your_company": "আপনার কোম্পানি",
+		"client_name": "ক্লায়েন্টের নাম"
+	},
+	"items": {
+		"item": "আইটেম",
+		"quantity": "পরিমাণ",
+		"price": "মূল্য",
+		"amount": "মোট",
+		"add_item": "আইটেম যোগ করুন",
+		"add_another_line": "আরও একটি লাইন যোগ করুন",
+		"add_item_prompt": "আপনার ইনভয়েস পূরণ করতে লাইন আইটেম যোগ করুন।",
+		"no_items": "এই ইনভয়েসে কোন আইটেম যোগ করা হয়নি।"
+	},
+	"summary": {
+		"subtotal": "উপমোট",
+		"discount": "ছাড়",
+		"tax": "ট্যাক্স",
+		"shipping": "শিপিং",
+		"total": "সর্বমোট",
+		"amount_paid": "পেইড অ্যামাউন্ট",
+		"balance_due": "বকেয়া",
+		"due": "বকেয়া",
+		"credit_balance": "ক্রেডিট ব্যালেন্স"
+	},
+	"fields": {
+		"terms": "শর্তাবলী",
+		"notes": "নোট",
+		"paid_status": "পেইড হিসেবে মার্ক করুন"
+	},
+	"status": {
+		"paid": "পেইড",
+		"unpaid": "আনপেইড",
+		"credit_owed": "ক্রেডিট পাওনা",
+		"partially_paid": "আংশিক পেইড",
+		"credit": "ক্রেডিট",
+		"due": "বকেয়া",
+		"partial": "আংশিক"
+	},
+	"placeholders": {
+		"from": "আপনার ব্যবসার নাম এবং ঠিকানা",
+		"to": "ক্লায়েন্টের নাম এবং ঠিকানা",
+		"item_name": "আইটেমের বিবরণ",
+		"terms": "পেমেন্ট শর্ত, বিলম্ব ফি, ইত্যাদি",
+		"notes": "অতিরিক্ত নোট বা ধন্যবাদ বার্তা",
+		"invoice_label": "ইনভয়েস",
+		"invoice_number": "ইনভয়েস নম্বর",
+		"your_company": "আপনার কোম্পানি",
+		"client_name": "ক্লায়েন্টের নাম"
+	},
+	"helpers": {
+		"due_date_auto": "ইনভয়েস তারিখ থেকে স্বয়ংক্রিয়ভাবে +৩০ দিন যোগ হয় যদি না আপনি ম্যানুয়ালি এডিট করেন।"
+	},
+	"actions": {
+		"save_draft": "ড্রাফট সেভ করুন",
+		"cancel": "বাতিল করুন",
+		"save": "সেভ করুন"
+	},
+	"modal": {
+		"save_draft_title": "ড্রাফট সেভ করুন",
+		"save_draft_description": "আপনার ড্রাফটে একটি নাম দিন (ঐচ্ছিক)",
+		"draft_name_placeholder": "ড্রাফটের নাম"
+	},
+	"saved_invoices": {
+		"title": "সংরক্ষিত ইনভয়েস",
+		"search_placeholder": "ক্লায়েন্ট, লেবেল বা ইনভয়েস # দ্বারা অনুসন্ধান করুন",
+		"new_invoice": "নতুন ইনভয়েস",
+		"create_invoice": "ইনভয়েস তৈরি করুন",
+		"collection": "সংগ্রহ",
+		"active": "সক্রিয়",
+		"archived": "আর্কাইভকৃত",
+		"status": "স্ট্যাটাস",
+		"all": "অল",
+		"drafts": "ড্রাফট",
+		"finalized": "চূড়ান্ত",
+		"loading": "ইনভয়েস লোড হচ্ছে...",
+		"no_invoices_title": "কোনো সংরক্ষিত ইনভয়েস নেই",
+		"no_invoices_description": "একটি ইনভয়েস তৈরি করুন, এটি স্বয়ংক্রিয়ভাবে এখানে চলে আসবে।",
+		"edit": "এডিট করুন",
+		"archive": "আর্কাইভ করুন",
+		"unarchive": "আন-আর্কাইভ করুন",
+		"delete": "মুছে ফেলুন",
+		"finalize": "চূড়ান্ত করুন",
+		"total": "সর্বমোট",
+		"balance_due": "বকেয়া",
+		"date_not_set": "তারিখ নির্ধারিত নয়",
+		"untitled_invoice": "টাইটেল বিহীন ইনভয়েস",
+		"invoice": "ইনভয়েস"
+	}
+}

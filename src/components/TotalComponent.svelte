@@ -1,9 +1,27 @@
 <script>
+	'use runes';
+	import { _ } from 'svelte-i18n';
 	import { totalAmounts, calculateDiscount, calculateTax } from '../lib/InvoiceCalculator.js';
-	import { toUSCurrency } from '$lib/currency.js';
+	import { toUSCurrency, currencySymbol } from '$lib/currency.js';
 	import { defaultInvoice } from '$lib/index.js';
+	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
+	/** @typedef {import('$lib/types').MonetaryAdjustment} MonetaryAdjustment */
+	/** @typedef {import('$lib/types').ShippingInfo} ShippingInfo */
 
-	const { invoice = defaultInvoice, onUpdateDiscount, onUpdateTax, onUpdateShipping } = $props();
+	/**
+	 * @type {{
+	 *   invoice?: InvoiceData;
+	 *   onUpdateDiscount?: (value: MonetaryAdjustment) => void;
+	 *   onUpdateTax?: (value: MonetaryAdjustment) => void;
+	 *   onUpdateShipping?: (value: ShippingInfo) => void;
+	 * }}
+	 */
+	let {
+		invoice = /** @type {InvoiceData} */ (defaultInvoice),
+		onUpdateDiscount,
+		onUpdateTax,
+		onUpdateShipping
+	} = $props();
 
 	let tax = $state(invoice.tax || { type: 'flat', rate: 0 });
 	let discount = $state(invoice.discount || { type: 'flat', rate: 0 });
@@ -25,220 +43,213 @@
 </script>
 
 <div class="total-summary">
-	<h3>Invoice Summary</h3>
+	<!-- Summary Display -->
+	<div class="summary-row">
+		<span class="summary-label">{$_('summary.subtotal')}:</span>
+		<span class="summary-value">{$toUSCurrency(subTotal())}</span>
+	</div>
 
-	<!-- Puts all three controls in one row -->
-	<div class="controls invoice-summary-controls">
-		<!-- DISCOUNT CONTROL -->
-		<div class="control">
-			<label class="control-label" for="discount-rate">Discount</label>
+	<!-- Discount Control -->
+	<div class="summary-row with-control">
+		<div class="control-group">
+			<span class="summary-label">{$_('summary.discount')}:</span>
 			<div class="type-toggle">
-				<button
-					type="button"
-					class:selected={discount.type === 'flat'}
-					on:click={() => (discount.type = 'flat')}
-				>
-					Flat
-				</button>
-				<button
-					type="button"
-					class:selected={discount.type === 'percent'}
-					on:click={() => (discount.type = 'percent')}
-				>
-					%
-				</button>
+				<label class:active={discount.type === 'flat'}>
+					<input type="radio" value="flat" bind:group={discount.type} />
+					<span>{$currencySymbol}</span>
+				</label>
+				<label class:active={discount.type === 'percent'}>
+					<input type="radio" value="percent" bind:group={discount.type} />
+					<span>%</span>
+				</label>
 			</div>
+		</div>
+		<div class="input-with-value">
 			<input
-				id="discount-rate"
 				type="number"
 				bind:value={discount.rate}
 				min="0"
 				step="0.01"
-				placeholder="0.00"
-				class="number-input"
+				placeholder="0"
+				class="summary-input"
 			/>
+			<span class="summary-value">-{$toUSCurrency(discountAmount())}</span>
 		</div>
+	</div>
 
-		<!-- TAX CONTROL -->
-		<div class="control">
-			<label class="control-label" for="tax-rate">Tax</label>
+	<!-- Tax Control -->
+	<div class="summary-row with-control">
+		<div class="control-group">
+			<span class="summary-label">{$_('summary.tax')}:</span>
 			<div class="type-toggle">
-				<button
-					type="button"
-					class:selected={tax.type === 'flat'}
-					on:click={() => (tax.type = 'flat')}
-				>
-					Flat
-				</button>
-				<button
-					type="button"
-					class:selected={tax.type === 'percent'}
-					on:click={() => (tax.type = 'percent')}
-				>
-					%
-				</button>
+				<label class:active={tax.type === 'flat'}>
+					<input type="radio" value="flat" bind:group={tax.type} />
+					<span>{$currencySymbol}</span>
+				</label>
+				<label class:active={tax.type === 'percent'}>
+					<input type="radio" value="percent" bind:group={tax.type} />
+					<span>%</span>
+				</label>
 			</div>
+		</div>
+		<div class="input-with-value">
 			<input
-				id="tax-rate"
 				type="number"
 				bind:value={tax.rate}
 				min="0"
 				step="0.01"
-				placeholder="0.00"
-				class="number-input"
+				placeholder="0"
+				class="summary-input"
 			/>
+			<span class="summary-value">+{$toUSCurrency(taxAmount())}</span>
 		</div>
+	</div>
 
-		<!-- SHIPPING CONTROL -->
-		<div class="control">
-			<label class="control-label" for="shipping-amount">Shipping</label>
+	<!-- Shipping Control -->
+	<div class="summary-row with-control">
+		<span class="summary-label">{$_('summary.shipping')}:</span>
+		<div class="input-with-value">
 			<input
-				id="shipping-amount"
 				type="number"
 				bind:value={shipping.amount}
 				min="0"
 				step="0.01"
-				placeholder="0.00"
-				class="number-input shipping-input"
+				placeholder="0"
+				class="summary-input"
 			/>
+			<span class="summary-value">+{$toUSCurrency(invoice.shipping?.amount || 0)}</span>
 		</div>
 	</div>
 
-	<!-- SUMMARY LINES -->
-	<div class="summary-line">
-		<span>Subtotal:</span>
-		<span>${subTotal().toFixed(2)}</span>
-	</div>
-	<div class="summary-line">
-		<span>Discount:</span>
-		<span class="negative">-${discountAmount().toFixed(2)}</span>
-	</div>
-	<div class="summary-line">
-		<span>Tax:</span>
-		<span class="positive">+${taxAmount().toFixed(2)}</span>
-	</div>
-	<div class="summary-line">
-		<span>Shipping:</span>
-		<span class="positive">+${invoice.shipping?.amount?.toFixed(2) ?? '0.00'}</span>
-	</div>
-
-	<div class="summary-total">
-		<strong>Total:</strong>
-		<strong>{toUSCurrency(totalAmount().toFixed(2))}</strong>
-	</div>
-	<div class="summary-total-due">
-		<strong>Balance Due:</strong>
-		<strong>{toUSCurrency(invoice.balanceDue)}</strong>
+	<!-- Total -->
+	<div class="summary-row total-row">
+		<span class="summary-label">{$_('summary.total')}:</span>
+		<span class="summary-value">{$toUSCurrency(totalAmount())}</span>
 	</div>
 </div>
 
 <style>
 	.total-summary {
-		margin-top: 2rem;
-		padding: 1.5rem;
-		background-color: #f9fafb;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.5rem;
-	}
-	.total-summary h3 {
-		margin-bottom: 1rem;
-		font-size: 1.25rem;
-		color: #111827;
-	}
-
-	/* Flex container for all three controls in one row */
-	.controls {
-		display: flex;
-		flex-wrap: nowrap;
-		gap: 1rem;
-		margin-bottom: 1.5rem;
-	}
-
-	/* Each control will flex equally to share the row */
-	.control {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
-		flex: 1 1 0;
+		gap: 0.65rem;
 	}
-	.control-label {
-		font-size: 0.875rem;
-		color: #374151;
+
+	.summary-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.5rem 0;
+		font-size: 0.95rem;
+		gap: 1rem;
+	}
+
+	.summary-row.with-control {
+		flex-wrap: wrap;
+	}
+
+	.summary-label {
+		color: var(--color-text-secondary);
 		font-weight: 500;
 	}
 
-	/* ------- TYPE TOGGLE STYLES ------- */
+	.summary-value {
+		color: var(--color-text-primary);
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.control-group {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
 	.type-toggle {
-		display: flex;
-		border: 1px solid #d1d5db;
-		border-radius: 0.375rem;
-		overflow: hidden;
-		width: 100%;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.15rem;
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border-secondary);
 	}
-	.type-toggle button {
-		flex: 1;
-		padding: 0.5rem 0;
-		background-color: #ffffff;
-		border: none;
-		font-size: 0.875rem;
-		color: #374151;
+
+	.type-toggle label {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.5rem;
+		padding: 0.2rem 0.4rem;
+		border-radius: var(--radius-xs);
+		background: transparent;
+		color: var(--color-text-secondary);
+		font-size: 0.75rem;
+		font-weight: 600;
 		cursor: pointer;
-		transition: background-color 0.1s ease-in-out, color 0.1s;
-	}
-	.type-toggle button:hover {
-		background-color: #f3f4f6;
-	}
-	.type-toggle button.selected {
-		background-color: #3b82f6;
-		color: #ffffff;
+		transition: all 0.15s ease;
 	}
 
-	/* ------- NUMBER INPUT STYLES ------- */
-	.number-input {
-		padding: 0.5rem;
-		font-size: 1rem;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.375rem;
-		color: #111827;
+	.type-toggle label.active {
+		background: var(--color-accent-blue);
+		color: #fff;
 	}
-	.number-input:focus {
-		border-color: #3b82f6;
+
+	.type-toggle input {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.input-with-value {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex: 1;
+		justify-content: flex-end;
+	}
+
+	.summary-input {
+		width: 80px;
+		padding: 0.35rem 0.5rem;
+		font-size: 0.875rem;
+		border: 1px solid var(--color-border-secondary);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-secondary);
+		color: var(--color-text-primary);
+		text-align: right;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
+	}
+
+	.summary-input:focus {
 		outline: none;
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+		border-color: var(--color-accent-blue);
+		box-shadow: var(--shadow-focus);
 	}
 
-	.shipping-input {
-		width: 100%;
+	.total-row {
+		padding-top: 0.75rem;
+		margin-top: 0.5rem;
+		border-top: 1px solid var(--color-border-primary);
+		font-size: 1.05rem;
 	}
 
-	/* ------- SUMMARY LINES ------- */
-	.summary-line {
-		display: flex;
-		justify-content: space-between;
-		margin-bottom: 0.5rem;
-		font-size: 1rem;
-		color: #374151;
-	}
-	.summary-line .negative {
-		color: #dc2626;
-	}
-	.summary-line .positive {
-		color: #047857;
+	.total-row .summary-label,
+	.total-row .summary-value {
+		font-weight: 700;
+		color: var(--color-text-primary);
 	}
 
-	.summary-total {
-		display: flex;
-		justify-content: space-between;
-		font-size: 1.25rem;
-		margin-top: 1.25rem;
-		font-weight: bold;
-		color: #111827;
-	}
-	.summary-total-due {
-		display: flex;
-		justify-content: space-between;
-		font-size: 1rem;
-		margin-top: 0.75rem;
-		color: #b91c1c;
+	@media (max-width: 640px) {
+		.summary-row {
+			font-size: 0.9rem;
+		}
+
+		.summary-input {
+			width: 70px;
+			font-size: 0.825rem;
+		}
 	}
 </style>

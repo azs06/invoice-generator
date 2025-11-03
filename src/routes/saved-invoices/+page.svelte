@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
 	import { goto } from '$app/navigation';
 	import {
 		getAllInvoices,
@@ -8,46 +9,183 @@
 		saveInvoice,
 		getInvoice
 	} from '$lib/db.js';
-
-	export const prerender = true;
-
+	import { toUSCurrency } from '$lib/currency.js';
+	/** @type {import('$lib/types').SavedInvoiceRecord[]} */
+	let allInvoices = [];
+	/** @type {import('$lib/types').SavedInvoiceRecord[]} */
 	let savedInvoices = [];
+	/** @type {string} */
 	let search = '';
+	/** @type {boolean} */
 	let showInvoiceDeleteModal = false;
+	/** @type {string | null} */
 	let invoiceToDelete = null;
+	/** @type {boolean} */
 	let showArchived = false;
+	/** @type {import('$lib/types').SavedInvoicesFilterMode} */
+	let filterMode = 'all';
+	/** @type {boolean} */
+	let isLoading = true;
+	/** @type {(value: number) => string} */
+	let formatCurrencyFn = (value) => '';
+	$: formatCurrencyFn = $toUSCurrency;
+
+	/**
+	 * @param {string | null | undefined} value
+	 * @returns {number}
+	 */
+	const parseDate = (value) => {
+		if (!value) return 0;
+		const parsed = Date.parse(value);
+		return Number.isNaN(parsed) ? 0 : parsed;
+	};
+
+	/**
+	 * @param {string | null | undefined} value
+	 * @returns {string}
+	 */
+	const formatDate = (value) => {
+		const parsed = parseDate(value);
+		if (!parsed) return $_('saved_invoices.date_not_set');
+		return new Intl.DateTimeFormat(undefined, {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		}).format(parsed);
+	};
+
+	/**
+	 * @param {number | string | null | undefined} value
+	 * @returns {string}
+	 */
+	const formatAmount = (value = 0) => {
+		const amount = Number(value);
+		const safeAmount = Number.isFinite(amount) ? amount : 0;
+		return formatCurrencyFn(safeAmount);
+	};
+
+	/**
+	 * @param {import('$lib/types').InvoiceData | null | undefined} invoice
+	 * @returns {number}
+	 */
+	const balanceDueAmount = (invoice) => {
+		const value = Number(invoice?.balanceDue ?? invoice?.total ?? 0);
+		if (!Number.isFinite(value)) return 0;
+		return Math.max(value, 0);
+	};
+
+	/**
+	 * @param {import('$lib/types').InvoiceData | null | undefined} invoice
+	 * @returns {string}
+	 */
+	const invoiceTitle = (invoice) => {
+		if (!invoice) return $_('saved_invoices.untitled_invoice');
+		const draftName = invoice.draftName?.trim();
+		if (draftName) return draftName;
+		const label = invoice.invoiceLabel?.trim() || $_('saved_invoices.invoice');
+		const number = invoice.invoiceNumber?.trim();
+		return number ? `${label} ${number}` : label;
+	};
+
+	const applyFilters = () => {
+		let filtered = allInvoices.filter(({ invoice }) => {
+			const archived = invoice?.archived === true;
+			return showArchived ? archived : !archived;
+		});
+
+		filtered = filtered.filter(({ invoice }) => {
+			if (!invoice) return false;
+			if (filterMode === 'draft') return invoice.draft === true;
+			if (filterMode === 'finalized') return invoice.draft === false;
+			return true;
+		});
+
+		const term = search.trim().toLowerCase();
+		if (term) {
+			filtered = filtered.filter(({ invoice }) => {
+				if (!invoice) return false;
+				const haystack = [
+					invoice.draftName,
+					invoice.invoiceLabel,
+					invoice.invoiceNumber,
+					invoice.invoiceTo,
+					invoice.invoiceFrom
+				]
+					.filter(Boolean)
+					.join(' ')
+					.toLowerCase();
+				return haystack.includes(term);
+			});
+		}
+
+		filtered.sort((a, b) => {
+			const dateA = parseDate(a.invoice?.date);
+			const dateB = parseDate(b.invoice?.date);
+			if (dateA === dateB) {
+				return (b.invoice?.invoiceNumber || '').localeCompare(a.invoice?.invoiceNumber || '');
+			}
+			return dateB - dateA;
+		});
+
+		savedInvoices = filtered;
+	};
 
 	const loadInvoices = async () => {
+		isLoading = true;
 		const invoices = await getAllInvoices();
-		if (showArchived) {
-			savedInvoices = invoices.filter(({ invoice }) => invoice?.archived);
-		} else {
-			savedInvoices = invoices.filter(({ invoice }) => !invoice?.archived);
-		}
+		allInvoices = /** @type {import('$lib/types').SavedInvoiceRecord[]} */ (invoices);
+		applyFilters();
+		isLoading = false;
 	};
 
-	const searchItems = async () => {
-		const invoices = await getAllInvoices();
-		if (search.trim()) {
-			savedInvoices = invoices.filter(({ invoice }) =>
-				invoice?.invoiceTo?.toLowerCase().includes(search.toLowerCase())
-			);
-		} else {
-			savedInvoices = invoices;
+	/**
+	 * @param {Event} event
+	 */
+	const onSearchInput = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
 		}
+		search = target.value;
+		applyFilters();
 	};
 
+	/**
+	 * @param {boolean} value
+	 */
+	const setArchivedView = (value) => {
+		showArchived = value;
+		applyFilters();
+	};
+
+	/**
+	 * @param {import('$lib/types').SavedInvoicesFilterMode} mode
+	 */
+	const setFilterMode = (mode) => {
+		filterMode = mode;
+		applyFilters();
+	};
+
+	/**
+	 * @param {string | null} [id=invoiceToDelete]
+	 */
 	const removeInvoice = async (id = invoiceToDelete) => {
 		if (!id) return;
 		await deleteInvoice(id);
+		invoiceToDelete = null;
+		showInvoiceDeleteModal = false;
 		await loadInvoices();
 	};
 
 	const clearData = async () => {
 		await clearAllInvoices();
+		allInvoices = [];
 		savedInvoices = [];
 	};
 
+	/**
+	 * @param {string} id
+	 */
 	const archiveInvoice = async (id) => {
 		const data = await getInvoice(id);
 		if (data) {
@@ -56,6 +194,10 @@
 			await loadInvoices();
 		}
 	};
+
+	/**
+	 * @param {string} id
+	 */
 	const unarchiveInvoice = async (id) => {
 		const data = await getInvoice(id);
 		if (data) {
@@ -65,6 +207,9 @@
 		}
 	};
 
+	/**
+	 * @param {string} id
+	 */
 	const confirmDeleteInvoice = (id) => {
 		invoiceToDelete = id;
 		showInvoiceDeleteModal = true;
@@ -75,124 +220,262 @@
 		showInvoiceDeleteModal = false;
 	};
 
+	/**
+	 * @param {string} id
+	 */
+	const openInvoice = (id) => {
+		goto(`/?invoice=${id}`);
+	};
+
 	onMount(() => {
 		loadInvoices();
 	});
 </script>
 
-<section class="container myinvoicePart">
-	<div class="columns is-mobile myinvoicePart">
-		<div
-			class="column is-offset-2-desktop is-8-desktop is-offset-2-tablet is-8-tablet is-offset-1-mobile is-10-mobile myinvoicePart-Color"
-		>
-			<div class="has-text-centered myInvoice-Font">My Invoice</div>
-			<p class="has-text-centered weAutomatically">
-				We automatically save your invoice drafts to your device.
-			</p>
-			<div class="filter-toggle">
-				<button
-					class:active={!showArchived}
-					on:click={() => {
-						showArchived = false;
-						loadInvoices();
-					}}
-				>
-					Active Invoices
-				</button>
-				<button
-					class:active={showArchived}
-					on:click={() => {
-						showArchived = true;
-						loadInvoices();
-					}}
-				>
-					Archived Invoices
+<section class="saved-page">
+	<div class="page-shell">
+		<header class="page-header">
+			<span class="page-badge">{$_('nav.saved_invoices')}</span>
+			<h1 class="page-title">{$_('saved_invoices.title')}</h1>
+			<p class="page-subtitle">We automatically save your invoice drafts to your device.</p>
+
+			<div class="header-controls">
+				<label class="search-field">
+					<span class="sr-only">{$_('saved_invoices.search_placeholder')}</span>
+					<svg
+						class="search-icon"
+						viewBox="0 0 20 20"
+						fill="none"
+						stroke="currentColor"
+						aria-hidden="true"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="1.6"
+							d="m17.5 17.5-3.6-3.6m1.1-4.4a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0Z"
+						/>
+					</svg>
+					<input
+						type="search"
+						placeholder={$_('saved_invoices.search_placeholder')}
+						bind:value={search}
+						oninput={onSearchInput}
+					/>
+				</label>
+				<button class="primary-button" type="button" onclick={() => goto('/')}>
+					<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path
+							fill-rule="evenodd"
+							d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 0 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					<span>{$_('saved_invoices.new_invoice')}</span>
 				</button>
 			</div>
-			<nav class="field navPart">
-				<div class="control has-icons-right inputPart">
-					<input
-						class="input"
-						type="text"
-						placeholder="Search by invoice to name"
-						bind:value={search}
-						on:input={searchItems}
-					/>
-					<span class="icon is-right">
-						<i class="fas fa-search"></i>
-					</span>
+
+			<div class="filter-toolbar">
+				<div class="filter-group">
+					<span class="filter-label">{$_('saved_invoices.collection')}</span>
+					<div class="chip-group">
+						<button
+							type="button"
+							class:active={!showArchived}
+							onclick={() => setArchivedView(false)}
+							aria-pressed={!showArchived}
+						>
+							{$_('saved_invoices.active')}
+						</button>
+						<button
+							type="button"
+							class:active={showArchived}
+							onclick={() => setArchivedView(true)}
+							aria-pressed={showArchived}
+						>
+							{$_('saved_invoices.archived')}
+						</button>
+					</div>
 				</div>
 
-				<div class="control newInvoice-Button">
-					<a class="button is-success" on:click={() => goto('/')}> New Invoice </a>
+				<div class="filter-group">
+					<span class="filter-label">{$_('saved_invoices.status')}</span>
+					<div class="chip-group">
+						<button
+							type="button"
+							class:active={filterMode === 'all'}
+							onclick={() => setFilterMode('all')}
+							aria-pressed={filterMode === 'all'}
+						>
+							{$_('saved_invoices.all')}
+						</button>
+						<button
+							type="button"
+							class:active={filterMode === 'draft'}
+							onclick={() => setFilterMode('draft')}
+							aria-pressed={filterMode === 'draft'}
+						>
+							{$_('saved_invoices.drafts')}
+						</button>
+						<button
+							type="button"
+							class:active={filterMode === 'finalized'}
+							onclick={() => setFilterMode('finalized')}
+							aria-pressed={filterMode === 'finalized'}
+						>
+							{$_('saved_invoices.finalized')}
+						</button>
+					</div>
 				</div>
-			</nav>
+			</div>
+		</header>
 
-			{#each Object.entries(savedInvoices) as [key, invoice]}
-				{#if invoice}
-					<div class="columns is-centered invoicespdf-part">
-						<div class="box column is-7">
-							<div class="testPart">
-								<div class="itemPartBlock">
-									<a href={`/#/${key}`}>
-										<div class="boxDesign">
-											<figure class="image is-64x64 boxImage">
-												<img
-													src="https://eosillumination.com/wp-content/uploads/2017/11/Pdf-image-281x300.png"
-													alt="PDF Icon"
-												/>
-											</figure>
-											<div class="boxContent">
-												<p>${invoice.dueAmount}</p>
-												<p>{invoice.invoiceTo}</p>
-												<p>{invoice.date}</p>
-											</div>
-										</div>
-									</a>
+		{#if isLoading}
+			<div class="state-card">
+				<div class="state-spinner" aria-hidden="true"></div>
+				<p>{$_('saved_invoices.loading')}</p>
+			</div>
+		{:else if savedInvoices.length === 0}
+			<div class="state-card">
+				<h2>{$_('saved_invoices.no_invoices_title')}</h2>
+				<p>{$_('saved_invoices.no_invoices_description')}</p>
+				<button class="primary-button" type="button" onclick={() => goto('/')}>
+					<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path
+							fill-rule="evenodd"
+							d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 0 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					<span>{$_('saved_invoices.create_invoice')}</span>
+				</button>
+			</div>
+		{:else}
+			<div class="invoice-grid">
+				{#each savedInvoices as record (record.id)}
+					{#if record.invoice}
+						<article class="invoice-card">
+							<div class="invoice-card__top">
+								<div>
+									<h3 class="invoice-card__title">{invoiceTitle(record.invoice)}</h3>
+									<div class="invoice-card__badges">
+										<span
+											class="status-badge {record.invoice.draft
+												? 'status-badge--draft'
+												: 'status-badge--finalized'}"
+										>
+											{record.invoice.draft ? 'Draft' : 'Finalized'}
+										</span>
+										{#if record.invoice.archived}
+											<span class="status-badge status-badge--archived">Archived</span>
+										{/if}
+									</div>
 								</div>
-								<div class="removeIconButton actions">
-									<button
-										class="iconButton delete-btn"
-										on:click={() => confirmDeleteInvoice(invoice.id)}
-										aria-label="Remove Invoice"
-									>
-										<i class="fas fa-times"></i>
-									</button>
-									{#if showArchived}
-										<button class="unarchive-btn" on:click={() => unarchiveInvoice(invoice.id)}
-											>Unarchive</button
-										>
-									{:else}
-										<button class="archive-btn" on:click={() => archiveInvoice(invoice.id)}
-											>Archive</button
-										>
-									{/if}
+								<div class="invoice-card__amount">
+									<span class="meta-label">Balance due</span>
+									<span class="amount-value">{formatAmount(balanceDueAmount(record.invoice))}</span>
 								</div>
 							</div>
-						</div>
-					</div>
-				{/if}
-			{/each}
 
-			<div class="linePart"></div>
+							<div class="invoice-card__meta">
+								<div>
+									<span class="meta-label">Client</span>
+									<span class="meta-value">{record.invoice.invoiceTo || 'Client not set'}</span>
+								</div>
+								<div>
+									<span class="meta-label">Invoice #</span>
+									<span class="meta-value">{record.invoice.invoiceNumber || 'Not assigned'}</span>
+								</div>
+								<div>
+									<span class="meta-label">Issued</span>
+									<span class="meta-value">{formatDate(record.invoice.date)}</span>
+								</div>
+							</div>
 
-			<p class="theseInvoice">
-				These invoices are stored in your device and not online. Clearing your browser cache could
-				cause you to lose these invoices. We recommend keeping a copy of each invoice.
-			</p>
+							<div class="card-divider"></div>
 
-			<div class="clearEverything">
-				<button class="button is-link" on:click={clearData}> Clear Everything </button>
+							<div class="card-actions">
+								<button class="ghost-button" type="button" onclick={() => openInvoice(record.id)}>
+									<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+										<path
+											fill-rule="evenodd"
+											d="M10 3c-5 0-9 4.03-9 7s4 7 9 7 9-4.03 9-7-4-7-9-7Zm0 11.25a4.25 4.25 0 1 1 0-8.5 4.25 4.25 0 0 1 0 8.5Zm0-1.5a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5Z"
+											clip-rule="evenodd"
+										/>
+									</svg>
+									<span>Open</span>
+								</button>
+
+								<div class="card-actions__secondary">
+									{#if record.invoice.archived}
+										<button
+											class="ghost-button ghost-button--success"
+											type="button"
+											onclick={() => unarchiveInvoice(record.id)}
+										>
+											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+												<path
+													fill-rule="evenodd"
+													d="M10 3a7 7 0 0 0-6.492 4.41.75.75 0 0 0 1.384.558A5.5 5.5 0 1 1 4.5 10H3a.75.75 0 0 0 0 1.5h3.75a.75.75 0 0 0 .75-.75V7a.75.75 0 0 0-1.5 0v1.332A7.001 7.001 0 0 1 17 10a7 7 0 0 0-7-7Z"
+													clip-rule="evenodd"
+												/>
+											</svg>
+											<span>Unarchive</span>
+										</button>
+									{:else}
+										<button
+											class="ghost-button"
+											type="button"
+											onclick={() => archiveInvoice(record.id)}
+										>
+											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+												<path
+													d="M4 3a2 2 0 0 0-2 2v1.5A1.5 1.5 0 0 0 3.5 8H4v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8h.5A1.5 1.5 0 0 0 18 6.5V5a2 2 0 0 0-2-2H4Zm3 6.5A.5.5 0 0 1 7.5 9h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5ZM4 5h12v1.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V5Z"
+												/>
+											</svg>
+											<span>Archive</span>
+										</button>
+									{/if}
+
+									<button
+										class="ghost-button ghost-button--danger"
+										type="button"
+										onclick={() => confirmDeleteInvoice(record.id)}
+									>
+										<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+											<path
+												fill-rule="evenodd"
+												d="M8.75 3a1.75 1.75 0 0 0-1.744 1.61l-.067.676H4a.75.75 0 0 0 0 1.5h.577l.641 9.137A2.25 2.25 0 0 0 7.463 18h5.074a2.25 2.25 0 0 0 2.245-2.077l.641-9.137H16a.75.75 0 0 0 0-1.5h-2.94l-.067-.676A1.75 1.75 0 0 0 11.25 3h-2.5Zm3.146 3.286-.036-.36A.25.25 0 0 0 11.25 5.5h-2.5a.25.25 0 0 0-.249.226l-.036.36h3.432Zm-3.146 3.964a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5Zm4 0a.75.75 0 0 0-1.5 0v3.5a.75.75 0 0 0 1.5 0v-3.5Z"
+												clip-rule="evenodd"
+											/>
+										</svg>
+										<span>Delete</span>
+									</button>
+								</div>
+							</div>
+						</article>
+					{/if}
+				{/each}
 			</div>
-		</div>
+		{/if}
+
+		<footer class="page-footer">
+			<p>These invoices are stored on this device. Clearing your browser cache will remove them.</p>
+			<button class="ghost-button ghost-button--danger" type="button" onclick={clearData}>
+				Clear everything
+			</button>
+		</footer>
 	</div>
+
 	{#if showInvoiceDeleteModal}
-		<div class="modal-backdrop">
-			<div class="modal">
-				<p>Are you sure you want to delete this invoice?</p>
+		<div class="modal-backdrop" role="dialog" aria-modal="true">
+			<div class="modal" role="document">
+				<h2>Delete this invoice?</h2>
+				<p>This action cannot be undone. You will need to recreate the invoice manually.</p>
 				<div class="modal-actions">
-					<button class="confirm-btn" on:click={removeInvoice}>Yes, Delete</button>
-					<button class="cancel-btn" on:click={cancelDelete}>Cancel</button>
+					<button class="danger-button" type="button" onclick={() => removeInvoice()}>Delete</button
+					>
+					<button class="ghost-button" type="button" onclick={cancelDelete}>Cancel</button>
 				</div>
 			</div>
 		</div>
@@ -200,217 +483,576 @@
 </section>
 
 <style>
-	/* Include your exact same CSS you posted earlier */
-	/* (You can copy-paste the previous <style> block here) */
+	.saved-page {
+		padding: clamp(2rem, 4vw, 3rem) 1.5rem 3rem;
+	}
 
-	.myinvoicePart {
-		padding: 50px;
-	}
-	.myinvoicePart-Color {
-		background-color: cornsilk;
-	}
-	.weAutomatically {
-		padding: 10px;
-		padding-bottom: 30px;
-	}
-	.myInvoice-Font {
-		font-size: 24px;
-	}
-	.navPart {
-		padding-bottom: 30px;
-		text-align: center;
-	}
-	.inputPart {
-		width: 40%;
-		display: inline-block;
-	}
-	.inputPart .input {
-		box-shadow: none;
-		border-radius: 0;
-	}
-	.newInvoice-Button {
-		width: 20%;
-		display: inline-block;
-		margin-left: 5px;
-	}
-	.newInvoice-Button .button {
-		width: 100%;
-		border-radius: 0;
-	}
-	@media (max-width: 680px) {
-		.inputPart {
-			width: 85%;
-		}
-		.newInvoice-Button {
-			width: 42%;
-			margin: 0 auto;
-			margin-top: 5px;
-		}
-	}
-	.linePart {
-		width: 100%;
-		border-bottom: 1px solid #ccc;
-	}
-	.theseInvoice {
-		padding: 20px 0;
-	}
-	.clearEverything {
-		text-align: center;
-	}
-	.clearEverything button {
-		padding: 0 25px;
-		border-radius: 0;
-	}
-	.invoicespdf-part {
-		margin-bottom: 20px;
-	}
-	.box {
-		cursor: pointer;
-	}
-	.boxDesign {
-		border-radius: 0;
+	.page-shell {
+		max-width: 1120px;
 		margin: 0 auto;
 		display: flex;
+		flex-direction: column;
+		gap: 2.5rem;
 	}
-	.boxImage {
-		margin-right: 50px;
-	}
-	.boxContent {
-		text-align: left;
-		width: 72%;
-	}
-	@media (max-width: 600px) {
-		.myinvoicePart {
-			padding: 50px 0;
-		}
-		.boxDesign {
-			width: 275px;
-			padding: 10px 0;
-		}
-		.boxImage {
-			margin-right: 10px;
-		}
-		.myinvoicePart-Color {
-			padding: 12px 6px;
-		}
-		.boxContent {
-			width: 71%;
-			font-size: 15px;
-		}
-	}
-	.iconButton {
-		cursor: pointer;
-	}
-	.testPart {
+
+	.page-header {
+		position: relative;
 		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+		padding: clamp(1.75rem, 3vw, 2.5rem);
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--surface-card-border);
+		background: linear-gradient(
+			135deg,
+			var(--surface-card-gradient-top),
+			var(--surface-card-gradient-bottom)
+		);
+		box-shadow: var(--shadow-medium);
+		overflow: hidden;
 	}
-	.removeIconButton {
+
+	.page-header::after {
+		content: '';
+		position: absolute;
+		inset: -40% -30% auto auto;
+		width: 320px;
+		height: 320px;
+		background: radial-gradient(circle at center, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+		pointer-events: none;
+	}
+
+	.page-badge {
+		align-self: flex-start;
+		padding: 0.25rem 0.85rem;
+		border-radius: var(--radius-pill);
+		background: rgba(59, 130, 246, 0.12);
+		color: var(--color-accent-blue);
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+
+	.page-title {
+		margin: 0;
+		font-size: clamp(1.75rem, 3vw, 2.4rem);
+		font-weight: 700;
+		color: var(--color-text-primary);
+	}
+
+	.page-subtitle {
+		margin: 0;
+		max-width: 520px;
+		color: var(--color-text-secondary);
+	}
+
+	.header-controls {
 		display: flex;
-		justify-content: flex-end;
-		width: 10%;
+		flex-wrap: wrap;
+		gap: 1rem;
+		align-items: center;
 	}
-	.itemPartBlock {
+
+	.search-field {
+		position: relative;
+		display: flex;
+		align-items: center;
+		flex: 1 1 240px;
+		background: var(--color-bg-primary);
+		border: 1px solid var(--color-border-primary);
+		border-radius: var(--radius-pill);
+		padding: 0.35rem 1rem 0.35rem 2.75rem;
+		box-shadow: var(--shadow-soft);
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
+	}
+
+	.search-field:focus-within {
+		border-color: var(--color-accent-blue);
+		box-shadow: var(--shadow-focus);
+	}
+
+	.search-field input {
 		width: 100%;
-	}
-	.actions {
-		display: flex;
-		gap: 0.5rem;
-		margin-top: 0.5rem;
-	}
-	.archive-btn,
-	.delete-btn {
-		padding: 0.3rem 0.8rem;
-		font-size: 0.875rem;
-		border-radius: 0.375rem;
 		border: none;
+		outline: none;
+		background: transparent;
+		color: var(--color-text-primary);
+		font-size: 0.95rem;
+		padding: 0.35rem 0;
+	}
+
+	.search-icon {
+		position: absolute;
+		left: 1rem;
+		width: 1.1rem;
+		height: 1.1rem;
+		color: var(--color-text-secondary);
+	}
+
+	.primary-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		border-radius: var(--radius-pill);
+		border: none;
+		background: var(--color-accent-blue);
+		color: #ffffff;
+		padding: 0.6rem 1.3rem;
+		font-weight: 600;
 		cursor: pointer;
+		box-shadow: var(--shadow-medium);
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease;
 	}
-	.archive-btn {
-		background-color: #3b82f6; /* Blue */
-		color: white;
+
+	.primary-button:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 12px 28px -18px rgba(59, 130, 246, 0.8);
 	}
-	.archive-btn:hover {
-		background-color: #2563eb;
+
+	.primary-button:active {
+		transform: translateY(0);
 	}
-	.delete-btn {
-		background-color: #ef4444; /* Red */
-		color: white;
+
+	.button-icon {
+		width: 1rem;
+		height: 1rem;
 	}
-	.delete-btn:hover {
-		background-color: #dc2626;
+
+	.filter-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.5rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid rgba(148, 163, 184, 0.2);
 	}
+
+	.filter-group {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.filter-label {
+		font-size: 0.8rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: var(--color-text-secondary);
+		letter-spacing: 0.08em;
+	}
+
+	.chip-group {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.chip-group button {
+		padding: 0.35rem 0.9rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid var(--color-border-secondary);
+		background: rgba(255, 255, 255, 0.65);
+		color: var(--color-text-secondary);
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease,
+			border-color 0.2s ease,
+			transform 0.2s ease;
+	}
+
+	.chip-group button:hover {
+		transform: translateY(-1px);
+	}
+
+	.chip-group button.active {
+		background: rgba(59, 130, 246, 0.12);
+		border-color: rgba(59, 130, 246, 0.45);
+		color: var(--color-accent-blue);
+		box-shadow: var(--shadow-soft);
+	}
+
+	.invoice-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1.75rem;
+	}
+
+	.invoice-card {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		padding: 1.5rem;
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--surface-card-border);
+		background: linear-gradient(
+			180deg,
+			var(--surface-card-gradient-top),
+			var(--surface-card-gradient-bottom)
+		);
+		box-shadow: var(--shadow-soft);
+		overflow: hidden;
+		min-height: 220px;
+	}
+
+	.invoice-card::before {
+		content: '';
+		position: absolute;
+		inset: -40% auto auto -40%;
+		width: 160px;
+		height: 160px;
+		background: radial-gradient(circle at center, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+		pointer-events: none;
+	}
+
+	.invoice-card__top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1rem;
+		position: relative;
+		z-index: 1;
+	}
+
+	.invoice-card__title {
+		margin: 0;
+		font-size: 1.05rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.invoice-card__badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-top: 0.45rem;
+	}
+
+	.status-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.25rem 0.6rem;
+		border-radius: var(--radius-pill);
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+
+	.status-badge--draft {
+		background: rgba(251, 191, 36, 0.2);
+		color: #92400e;
+	}
+
+	.status-badge--finalized {
+		background: rgba(16, 185, 129, 0.2);
+		color: #047857;
+	}
+
+	.status-badge--archived {
+		background: rgba(148, 163, 184, 0.25);
+		color: var(--color-text-secondary);
+	}
+
+	.invoice-card__amount {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.25rem;
+		min-width: 120px;
+		text-align: right;
+	}
+
+	.meta-label {
+		display: block;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--color-text-secondary);
+	}
+
+	.amount-value {
+		font-size: 1.3rem;
+		font-weight: 700;
+		color: var(--color-text-primary);
+	}
+
+	.invoice-card__meta {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		gap: 1rem;
+		position: relative;
+		z-index: 1;
+	}
+
+	.meta-value {
+		font-weight: 600;
+		color: var(--color-text-primary);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.card-divider {
+		height: 1px;
+		background: rgba(148, 163, 184, 0.25);
+		position: relative;
+		z-index: 1;
+	}
+
+	.card-actions {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+		position: relative;
+		z-index: 1;
+	}
+
+	.card-actions__secondary {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.ghost-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid rgba(148, 163, 184, 0.6);
+		background: rgba(255, 255, 255, 0.75);
+		color: var(--color-text-primary);
+		padding: 0.45rem 0.95rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease,
+			color 0.2s ease,
+			transform 0.2s ease;
+	}
+
+	.ghost-button:hover {
+		transform: translateY(-1px);
+		border-color: var(--color-accent-blue);
+		color: var(--color-accent-blue);
+	}
+
+	.ghost-button svg {
+		width: 0.95rem;
+		height: 0.95rem;
+	}
+
+	.ghost-button--danger {
+		border-color: rgba(239, 68, 68, 0.55);
+		color: #b91c1c;
+	}
+
+	.ghost-button--danger:hover {
+		background: rgba(239, 68, 68, 0.08);
+		border-color: #ef4444;
+		color: #ef4444;
+	}
+
+	.ghost-button--success {
+		border-color: rgba(16, 185, 129, 0.45);
+		color: #047857;
+	}
+
+	.ghost-button--success:hover {
+		background: rgba(16, 185, 129, 0.1);
+		border-color: #10b981;
+		color: #047857;
+	}
+
+	.state-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1rem;
+		padding: 2.5rem 2rem;
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--surface-card-border);
+		background: linear-gradient(
+			180deg,
+			var(--surface-glass-overlay-top),
+			var(--surface-glass-overlay-bottom)
+		);
+		box-shadow: var(--shadow-soft);
+		text-align: center;
+	}
+
+	.state-card h2 {
+		margin: 0;
+		font-size: 1.3rem;
+	}
+
+	.state-card p {
+		margin: 0;
+		color: var(--color-text-secondary);
+		max-width: 420px;
+	}
+
+	.state-spinner {
+		width: 2.2rem;
+		height: 2.2rem;
+		border-radius: 50%;
+		border: 3px solid rgba(148, 163, 184, 0.35);
+		border-top-color: var(--color-accent-blue);
+		animation: spin 1s linear infinite;
+	}
+
+	.page-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 1rem;
+		color: var(--color-text-secondary);
+		font-size: 0.9rem;
+	}
+
+	.page-footer button {
+		align-self: flex-start;
+	}
+
 	.modal-backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		z-index: 50;
+		background: rgba(15, 23, 42, 0.35);
+		backdrop-filter: blur(2px);
+		z-index: 100;
+		padding: 1.5rem;
 	}
+
 	.modal {
-		background: white;
+		background: var(--color-bg-primary);
 		padding: 2rem;
-		border-radius: 0.5rem;
-		text-align: center;
-		max-width: 400px;
-		width: 90%;
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--color-border-primary);
+		box-shadow: var(--shadow-medium);
+		max-width: 360px;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
+
+	.modal h2 {
+		margin: 0;
+		font-size: 1.2rem;
+		color: var(--color-text-primary);
+	}
+
+	.modal p {
+		margin: 0;
+		color: var(--color-text-secondary);
+	}
+
 	.modal-actions {
 		display: flex;
-		justify-content: space-between;
-		margin-top: 1.5rem;
+		justify-content: flex-end;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
 	}
-	.confirm-btn {
-		background-color: #ef4444;
-		color: white;
+
+	.danger-button {
 		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 0.375rem;
+		border-radius: var(--radius-pill);
+		background: #ef4444;
+		color: #ffffff;
+		padding: 0.55rem 1.2rem;
+		font-weight: 600;
 		cursor: pointer;
+		transition:
+			background-color 0.2s ease,
+			transform 0.2s ease;
 	}
-	.confirm-btn:hover {
-		background-color: #dc2626;
+
+	.danger-button:hover {
+		background: #dc2626;
+		transform: translateY(-1px);
 	}
-	.cancel-btn {
-		background-color: #9ca3af;
-		color: white;
-		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 0.375rem;
-		cursor: pointer;
+
+	.danger-button:active {
+		transform: translateY(0);
 	}
-	.cancel-btn:hover {
-		background-color: #6b7280;
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
-	.filter-toggle {
-		display: flex;
-		gap: 1rem;
-		margin-bottom: 2rem;
-		justify-content: center;
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
-	.filter-toggle button {
-		padding: 0.5rem 1rem;
-		border: 1px solid #d1d5db;
-		background-color: white;
-		color: #374151;
-		cursor: pointer;
-		border-radius: 0.375rem;
+
+	@media (max-width: 900px) {
+		.page-header {
+			padding: 1.75rem;
+		}
 	}
-	.filter-toggle button.active {
-		background-color: #3b82f6;
-		color: white;
-		border-color: #3b82f6;
+
+	@media (max-width: 768px) {
+		.header-controls {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.primary-button {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.card-actions {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.card-actions__secondary {
+			width: 100%;
+			justify-content: stretch;
+		}
+
+		.ghost-button,
+		.ghost-button--danger,
+		.ghost-button--success {
+			justify-content: center;
+			width: 100%;
+		}
 	}
-	.unarchive-btn {
-		background-color: #10b981;
-		color: white;
-		border: none;
-		padding: 0.3rem 0.8rem;
-		border-radius: 0.375rem;
-		cursor: pointer;
-	}
-	.unarchive-btn:hover {
-		background-color: #059669;
+
+	@media (max-width: 580px) {
+		.invoice-card__top {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.invoice-card__amount {
+			text-align: left;
+			align-items: flex-start;
+		}
 	}
 </style>

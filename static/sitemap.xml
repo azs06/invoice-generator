@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Homepage -->
+  <url>
+    <loc>https://freeinvoice.info/</loc>
+    <lastmod>2025-11-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://freeinvoice.info/" />
+    <xhtml:link rel="alternate" hreflang="bn" href="https://freeinvoice.info/?lang=bn" />
+  </url>
+
+  <!-- Invoice Application -->
+  <url>
+    <loc>https://freeinvoice.info/app</loc>
+    <lastmod>2025-11-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://freeinvoice.info/app" />
+    <xhtml:link rel="alternate" hreflang="bn" href="https://freeinvoice.info/app?lang=bn" />
+  </url>
+
+  <!-- Saved Invoices -->
+  <url>
+    <loc>https://freeinvoice.info/saved-invoices</loc>
+    <lastmod>2025-11-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://freeinvoice.info/saved-invoices" />
+    <xhtml:link rel="alternate" hreflang="bn" href="https://freeinvoice.info/saved-invoices?lang=bn" />
+  </url>
+
+  <!-- Features Page -->
+  <url>
+    <loc>https://freeinvoice.info/features</loc>
+    <lastmod>2025-11-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://freeinvoice.info/features" />
+    <xhtml:link rel="alternate" hreflang="bn" href="https://freeinvoice.info/features?lang=bn" />
+  </url>
+
+  <!-- About Page -->
+  <url>
+    <loc>https://freeinvoice.info/about</loc>
+    <lastmod>2025-11-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://freeinvoice.info/about" />
+    <xhtml:link rel="alternate" hreflang="bn" href="https://freeinvoice.info/about?lang=bn" />
+  </url>
+
+  <!-- How It Works Page -->
+  <url>
+    <loc>https://freeinvoice.info/how-it-works</loc>
+    <lastmod>2025-11-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://freeinvoice.info/how-it-works" />
+    <xhtml:link rel="alternate" hreflang="bn" href="https://freeinvoice.info/how-it-works?lang=bn" />
+  </url>
+
+  <!-- FAQ Page -->
+  <url>
+    <loc>https://freeinvoice.info/faq</loc>
+    <lastmod>2025-11-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://freeinvoice.info/faq" />
+    <xhtml:link rel="alternate" hreflang="bn" href="https://freeinvoice.info/faq?lang=bn" />
+  </url>
+
+</urlset>

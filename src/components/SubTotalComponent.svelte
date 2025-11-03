@@ -1,32 +1,64 @@
 <script>
+	import { toUSCurrency } from '$lib/currency.js';
+
 	let { items = [] } = $props();
 
-	const calculateSubTotal = () => {
-		return items.reduce((sum, item) => sum + (item.amount || item.price * item.quantity), 0);
-	};
+	const calculateSubTotal = () =>
+		items.reduce((sum, item) => sum + (item.amount || (item.price || 0) * (item.quantity || 0)), 0);
 </script>
 
 <div class="subtotal">
-	<h3>Subtotal</h3>
-	<p>${calculateSubTotal().toFixed(2)}</p>
+	<div class="subtotal-meta">
+		<span class="subtotal-eyebrow">Running total</span>
+		<h3>Subtotal</h3>
+	</div>
+	<p>{$toUSCurrency(calculateSubTotal())}</p>
 </div>
 
 <style>
 	.subtotal {
-		margin-top: 1rem;
-		padding: 1rem;
-		background-color: #f9fafb;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.5rem;
-		text-align: right;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.5rem;
+		padding: 1.25rem 1.5rem;
+		border-radius: var(--radius-lg);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border-secondary);
 	}
+
+	.subtotal-meta {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.subtotal-eyebrow {
+		font-size: 0.7rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--color-text-secondary);
+		font-weight: 600;
+	}
+
 	.subtotal h3 {
-		margin-bottom: 0.25rem;
-		font-size: 1.125rem;
-		font-weight: bold;
+		margin: 0;
+		font-size: 1.2rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
 	}
+
 	.subtotal p {
-		font-size: 1.25rem;
-		color: #1f2937;
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--color-accent-blue);
+	}
+
+	@media (max-width: 640px) {
+		.subtotal {
+			flex-direction: column;
+			align-items: flex-start;
+		}
 	}
 </style>

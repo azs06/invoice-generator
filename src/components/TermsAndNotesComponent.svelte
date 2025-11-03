@@ -1,64 +1,101 @@
 <script>
-    let {
-        terms = '',
-        notes = '',
-        onUpdateTerms = () => {},
-        onUpdateNotes = () => {}
-    } = $props();
+	import { _ } from 'svelte-i18n';
+	/**
+	 * @typedef {(value: string) => void} UpdateHandler
+	 */
 
-    const handleTermsChange = (e) => {
-      onUpdateTerms(e.target.value);
-    };
-    const handleNotesChange = (e) => {
-      onUpdateNotes(e.target.value);
-    };
-  </script>
-  
-  <div class="terms-notes">
-    <div class="field">
-      <label for="terms-textarea">Terms</label>
-      <textarea
-        id="terms-textarea"
-        rows="4"
-        bind:value={terms}
-        oninput={handleTermsChange}
-        placeholder="Enter payment terms..."
-      ></textarea>
-    </div>
+	/** @type {string} */
+	export let terms = '';
+	/** @type {string} */
+	export let notes = '';
+	/** @type {UpdateHandler} */
+	export let onUpdateTerms = () => {};
+	/** @type {UpdateHandler} */
+	export let onUpdateNotes = () => {};
 
-    <div class="field">
-      <label for="notes-textarea">Notes</label>
-      <textarea
-        id="notes-textarea"
-        rows="4"
-        bind:value={notes}
-        oninput={handleNotesChange}
-        placeholder="Additional notes..."
-      ></textarea>
-    </div>
-  </div>
-  
-  <style>
-    .terms-notes {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .field {
-      display: flex;
-      flex-direction: column;
-    }
-    label {
-      margin-bottom: 0.5rem;
-      font-weight: bold;
-      color: #374151;
-    }
-    textarea {
-      padding: 0.5rem;
-      border: 1px solid #d1d5db;
-      border-radius: 0.375rem;
-      font-size: 1rem;
-    }
-  </style>
-  
+	/**
+	 * @param {Event} event
+	 */
+	const handleTermsChange = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLTextAreaElement)) {
+			return;
+		}
+		onUpdateTerms(target.value);
+	};
+
+	/**
+	 * @param {Event} event
+	 */
+	const handleNotesChange = (event) => {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLTextAreaElement)) {
+			return;
+		}
+		onUpdateNotes(target.value);
+	};
+</script>
+
+<div class="terms-notes">
+	<div class="field">
+		<label for="terms-textarea">{$_('fields.terms')}</label>
+		<textarea
+			id="terms-textarea"
+			rows="4"
+			bind:value={terms}
+			oninput={handleTermsChange}
+			placeholder={$_('placeholders.terms')}
+		></textarea>
+	</div>
+
+	<div class="field">
+		<label for="notes-textarea">{$_('fields.notes')}</label>
+		<textarea
+			id="notes-textarea"
+			rows="4"
+			bind:value={notes}
+			oninput={handleNotesChange}
+			placeholder={$_('placeholders.notes')}
+		></textarea>
+	</div>
+</div>
+
+<style>
+	.terms-notes {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1rem;
+	}
+
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	label {
+		font-weight: 600;
+		color: var(--color-text-secondary);
+		font-size: 0.8125rem;
+	}
+
+	textarea {
+		padding: 0.55rem 0.75rem;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border-secondary);
+		background: var(--color-bg-secondary);
+		color: var(--color-text-primary);
+		min-height: 100px;
+		font-size: 0.875rem;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
+		resize: vertical;
+	}
+
+	textarea:focus {
+		outline: none;
+		border-color: var(--color-accent-blue);
+		box-shadow: var(--shadow-focus);
+	}
+</style>
