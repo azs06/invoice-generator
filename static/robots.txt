@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://freeinvoice.info/sitemap.xml
+
+# Block crawling of dynamic invoice URLs with query parameters
+Disallow: /*?invoice=*
+
+# Allow crawling of static invoice pages
+Allow: /invoice/*
