@@ -31,15 +31,6 @@ export const TEMPLATES = {
 		premium: false,
 		preview: '/templates/minimal-preview.png'
 	},
-	compact: {
-		id: 'compact',
-		name: 'Compact',
-		description: 'Condensed layout optimized for fitting more on a page',
-		component: () => import('./components/CompactTemplate.svelte'),
-		tags: ['compact', 'condensed', 'dense'],
-		premium: false,
-		preview: '/templates/compact-preview.png'
-	},
 	atlantic: {
 		id: 'atlantic',
 		name: 'Atlantic',

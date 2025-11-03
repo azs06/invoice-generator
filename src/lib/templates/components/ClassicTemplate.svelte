@@ -287,29 +287,30 @@
 	}
 
 	.status-badge {
-		display: inline-block;
-		padding: 0.25rem 0.75rem;
-		font-size: 0.8rem;
-		font-weight: bold;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.78rem;
+		font-weight: 700;
 		text-transform: uppercase;
-		border-radius: 4px;
+		letter-spacing: 0.12em;
+		color: #6b7280;
+		padding: 0;
+	}
+	.status-badge::before {
+		content: '';
+		display: inline-block;
+		width: 0.45rem;
+		height: 0.45rem;
+		border-radius: 999px;
+		background: currentColor;
+		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
 	}
 
-	.status-badge.due {
-		background-color: #fee2e2;
-		color: #b91c1c;
-	}
-
-	.status-badge.partial {
-		background-color: #dbeafe;
-		color: #1d4ed8;
-	}
-
+	.status-badge.due { color: #dc2626; }
+	.status-badge.partial { color: #2563eb; }
 	.status-badge.settled,
-	.status-badge.credit {
-		background-color: #d1fae5;
-		color: #047857;
-	}
+	.status-badge.credit { color: #059669; }
 
 	.billing-details {
 		display: flex;
@@ -468,10 +469,8 @@
 			color: black !important;
 		}
 
-		.status-badge {
-			background: #f0f0f0 !important;
-			color: black !important;
-		}
+		.status-badge { color: #1f2937 !important; }
+		.status-badge::before { box-shadow: none !important; }
 	}
 
 	@media (max-width: 768px) {

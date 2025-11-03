@@ -261,29 +261,30 @@
 	}
 
 	.status {
-		padding: 0.25rem 0.5rem;
-		border-radius: 0.25rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
 		font-size: 0.8rem;
-		font-weight: 500;
+		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.08em;
+		color: #6b7280;
+		padding: 0;
+	}
+	.status::before {
+		content: '';
+		display: inline-block;
+		width: 0.45rem;
+		height: 0.45rem;
+		border-radius: 50%;
+		background: currentColor;
+		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
 	}
 
-	.status.due {
-		background: #fef2f2;
-		color: #dc2626;
-	}
-
-	.status.partial {
-		background: #eff6ff;
-		color: #2563eb;
-	}
-
+	.status.due { color: #ef4444; }
+	.status.partial { color: #3b82f6; }
 	.status.settled,
-	.status.credit {
-		background: #f0fdf4;
-		color: #16a34a;
-	}
+	.status.credit { color: #10b981; }
 
 	.parties-section {
 		display: grid;
@@ -432,10 +433,8 @@
 			color: black !important;
 		}
 
-		.status {
-			background: #f0f0f0 !important;
-			color: black !important;
-		}
+		.status { color: #1f2937 !important; }
+		.status::before { box-shadow: none !important; }
 
 		.item-row {
 			border-bottom: 1px solid #e5e5e5 !important;

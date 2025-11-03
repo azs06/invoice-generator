@@ -24,6 +24,30 @@
 		const fallback = totalAmount() - amountPaid();
 		return Number.isFinite(fallback) ? fallback : 0;
 	};
+
+	const balanceLabel = () =>
+		balanceDue() < 0 ? $_('summary.credit_balance') : $_('summary.balance_due');
+
+	const balanceState = () => {
+		const balance = balanceDue();
+		if (balance < 0) return 'credit';
+		if (invoice.paid === true || balance === 0) return 'settled';
+		if (amountPaid() > 0 && balance > 0) return 'partial';
+		return 'due';
+	};
+
+	const statusLabel = () => {
+		switch (balanceState()) {
+			case 'credit':
+				return $_('status.credit_owed');
+			case 'settled':
+				return $_('status.paid');
+			case 'partial':
+				return $_('status.partially_paid');
+			default:
+				return $_('status.unpaid');
+		}
+	};
 </script>
 
 <div class="invoice-preview atlantic-template">
@@ -41,13 +65,15 @@
 				{/if}
 			</div>
 			<div class="from" aria-label="From">
-				{#if invoice.invoiceFrom}
-					<pre>{invoice.invoiceFrom}</pre>
-				{/if}
+				<span class="from-label">{$_('invoice.from')}</span>
+				<pre>{invoice.invoiceFrom || $_('placeholders.from')}</pre>
 			</div>
 		</div>
 		<div class="titleblock">
-			<h1 class="title">{invoice.invoiceLabel || $_('invoice.invoice_label')}</h1>
+			<div class="title-header">
+				<h1 class="title">{invoice.invoiceLabel || $_('invoice.invoice_label')}</h1>
+				<span class={`status ${balanceState()}`}>{statusLabel()}</span>
+			</div>
 			<div class="meta">
 				<div class="meta-item">
 					<span class="label">{$_('invoice.number')}:</span>
@@ -76,9 +102,9 @@
 			<div class="party-label">{$_('invoice.to')}</div>
 			<div class="party-value"><pre>{invoice.invoiceTo || '\u2014'}</pre></div>
 		</div>
-		<div class="balance">
-			<div class="balance-label">{$_('summary.balance_due')}</div>
-			<div class="balance-amount">{$toUSCurrency(Math.abs((totals.total ?? 0) - (invoice.amountPaid ?? 0)))}</div>
+		<div class={`balance ${balanceDue() < 0 ? 'credit' : ''}`}>
+			<div class="balance-label">{balanceLabel()}</div>
+			<div class="balance-amount">{$toUSCurrency(Math.abs(balanceDue()))}</div>
 		</div>
 	</section>
 
@@ -118,9 +144,11 @@
 			<div class="row"><span>{$_('summary.tax')}</span><span>+{$toUSCurrency(taxDisplayValue())}</span></div>
 			<div class="row"><span>{$_('summary.shipping')}</span><span>+{$toUSCurrency(shippingDisplayValue())}</span></div>
 			<div class="row total"><span>{$_('summary.total')}</span><span>{$toUSCurrency(totalAmount())}</span></div>
-			{#if (invoice.amountPaid ?? 0) > 0}
-				<div class="row"><span>{$_('summary.amount_paid')}</span><span>{$toUSCurrency(invoice.amountPaid || 0)}</span></div>
-			{/if}
+			<div class="row"><span>{$_('summary.amount_paid')}</span><span>{$toUSCurrency(amountPaid())}</span></div>
+			<div class={`row grand-total ${balanceDue() < 0 ? 'credit' : ''}`}>
+				<span>{balanceLabel()}</span>
+				<span>{$toUSCurrency(Math.abs(balanceDue()))}</span>
+			</div>
 		</div>
 	</section>
 
@@ -134,81 +162,294 @@
 
 <style>
 	.invoice-preview {
-		/* Palette */
 		--bg: #faf9f5;
 		--text: #141413;
-		--border: #b0aea5;
+		--muted: #5f5e59;
+		--border: #d6d2c6;
+		--border-strong: #c7c2b6;
+		--surface: rgba(255, 255, 255, 0.85);
+		--surface-alt: rgba(20, 20, 19, 0.06);
 
-		/* Typography */
-		font-family: "Tiempos Text", "Times New Roman", sans-serif;
-		letter-spacing: -0.02em;
+		font-family: "Tiempos Text", "Times New Roman", serif;
+		letter-spacing: -0.01em;
 		text-wrap: pretty;
+		line-height: 1.5;
+		font-variant-numeric: tabular-nums;
+		-webkit-font-smoothing: antialiased;
 
 		background: var(--bg);
 		color: var(--text);
-		/* no outer border per design */
 		border-radius: 12px;
-		padding: 24px;
+		border: 1px solid var(--border);
+		padding: 28px;
 		max-width: 960px;
 		margin: 0 auto;
+		box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
 	}
 
 	.header {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 16px;
-		padding-bottom: 16px;
-		/* no section divider border per design */
+		gap: 24px;
+		padding-bottom: 20px;
 	}
-	.brand { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; }
-	.logo { width: 96px; height: 64px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); border-radius: 8px; overflow: hidden; }
+
+	.brand {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 14px;
+		align-items: start;
+	}
+	.logo {
+		width: 96px;
+		height: 64px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--surface);
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		overflow: hidden;
+	}
 	.logo img { width: 100%; height: 100%; object-fit: contain; }
 	.logo.is-placeholder { opacity: 0.9; }
-	.from pre { margin: 0; white-space: pre-wrap; font-size: 0.95rem; }
+	.from { display: flex; flex-direction: column; gap: 6px; }
+	.from-label {
+		font-size: 0.7rem;
+		color: var(--muted);
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+	}
+	.from pre { margin: 0; white-space: pre-wrap; font-size: 0.95rem; color: var(--text); }
 
-	.titleblock { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
-	.title { margin: 0; font-size: 2rem; font-weight: 600; }
-	.meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-self: stretch; }
+	.titleblock {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		align-items: stretch;
+	}
+	.title-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+	.title {
+		margin: 0;
+		font-size: 2.15rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+	}
+	.status {
+		align-self: flex-start;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.72rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		font-weight: 600;
+		color: var(--muted);
+		padding: 0;
+	}
+	.status::before {
+		content: '';
+		display: inline-block;
+		width: 0.42rem;
+		height: 0.42rem;
+		border-radius: 999px;
+		background: currentColor;
+		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+	}
+	.status.due { color: #e11d48; }
+	.status.partial { color: #1d4ed8; }
+	.status.settled,
+	.status.credit { color: #047857; }
+
+	.meta {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 6px 18px;
+		align-self: stretch;
+	}
 	.meta-item { display: contents; }
-	.label { color: #5f5e59; font-size: 0.8rem; text-transform: uppercase; }
-	.value { font-size: 0.95rem; justify-self: end; }
+	.label {
+		color: var(--muted);
+		font-size: 0.78rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+	.value {
+		font-size: 0.95rem;
+		justify-self: end;
+	}
 	.terms .value { white-space: pre-wrap; }
 
-	.parties { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
-	.party-label { font-size: 0.85rem; color: #5f5e59; text-transform: uppercase; }
-	.party-value pre { margin: 0; white-space: pre-wrap; font-size: 1rem; }
-	.balance { text-align: right; }
-	.balance-label { font-size: 0.85rem; color: #5f5e59; text-transform: uppercase; }
-	.balance-amount { font-size: 1.5rem; font-weight: 700; }
+	.parties {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 20px;
+		padding: 20px 0;
+		border-top: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+	}
+	.party-label {
+		font-size: 0.8rem;
+		color: var(--muted);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+	.party-value pre {
+		margin: 0;
+		white-space: pre-wrap;
+		font-size: 1rem;
+	}
 
-	.items { padding-top: 8px; }
+	.balance {
+		text-align: right;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 6px;
+		padding: 14px 18px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: var(--surface);
+	}
+	.balance-label {
+		font-size: 0.75rem;
+		color: var(--muted);
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+	}
+	.balance-amount { font-size: 1.8rem; font-weight: 700; }
+	.balance.credit .balance-amount { color: #047857; }
+
+	.items {
+		margin-top: 24px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		overflow: hidden;
+		background: var(--surface);
+	}
 	.table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-	.table thead th { text-align: left; font-size: 0.8rem; color: #3e3d3a; background: rgba(0,0,0,0.03); padding: 10px 8px; }
-	.table td { padding: 10px 8px; }
-	.table th.qty, .table td.qty, .table th.price, .table td.price, .table th.amount, .table td.amount { text-align: right; }
-	.table .empty td { text-align: center; font-style: italic; color: #5f5e59; padding: 16px; }
+	.table thead th {
+		text-align: left;
+		font-size: 0.78rem;
+		color: var(--muted);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		background: var(--surface-alt);
+		padding: 12px 16px;
+		font-weight: 600;
+		border-bottom: 1px solid var(--border-strong);
+	}
+	.table td {
+		padding: 12px 16px;
+		font-size: 0.95rem;
+		color: var(--text);
+	}
+	.table tbody tr { border-bottom: 1px solid var(--border); }
+	.table tbody tr:last-child { border-bottom: none; }
+	.table tbody tr:nth-child(even) { background: rgba(20, 20, 19, 0.04); }
+	.table tr.empty { background: transparent; }
+	.table .empty td {
+		text-align: center;
+		font-style: italic;
+		color: var(--muted);
+		padding: 18px;
+	}
+	.table th.qty,
+	.table td.qty,
+	.table th.price,
+	.table td.price,
+	.table th.amount,
+	.table td.amount {
+		text-align: right;
+	}
 
-	.summary { display: flex; justify-content: flex-end; padding-top: 8px; }
-	.rows { width: 100%; max-width: 380px; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; }
+	.summary {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 24px;
+		padding-top: 18px;
+		border-top: 1px solid var(--border);
+	}
+	.rows {
+		width: 100%;
+		max-width: 380px;
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 8px 18px;
+	}
 	.row { display: contents; }
-	.row span:first-child { color: #5f5e59; }
+	.row span:first-child { color: var(--muted); }
 	.total span:first-child { color: var(--text); font-weight: 600; }
-	.total span:last-child { font-weight: 700; }
+	.total span:last-child { font-weight: 600; }
+	.grand-total span:first-child { color: var(--text); font-weight: 700; }
+	.grand-total span:last-child { font-weight: 700; font-size: 1.1rem; }
+	.grand-total.credit span:last-child { color: #047857; }
 
-	.notes { margin-top: 12px; padding-top: 12px; }
-	.notes .label { font-size: 0.85rem; color: #5f5e59; text-transform: uppercase; margin-bottom: 6px; }
-	.notes .text { white-space: pre-wrap; }
+	.notes {
+		margin-top: 28px;
+		padding-top: 18px;
+		border-top: 1px solid var(--border);
+	}
+	.notes .label {
+		font-size: 0.78rem;
+		color: var(--muted);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		margin-bottom: 8px;
+	}
+	.notes .text { white-space: pre-wrap; font-size: 0.95rem; }
 
 	@media (max-width: 768px) {
-		.header { grid-template-columns: 1fr; align-items: start; }
+		.invoice-preview { padding: 20px; }
+		.header { grid-template-columns: 1fr; gap: 20px; }
 		.titleblock { align-items: flex-start; }
+		.title-header { flex-direction: column; align-items: flex-start; gap: 8px; }
 		.parties { grid-template-columns: 1fr; }
+		.balance { text-align: left; }
 		.summary { justify-content: stretch; }
 		.rows { max-width: 100%; }
 	}
 
 	@media print {
-		.invoice-preview { background: #fff !important; color: #000 !important; border-color: var(--border) !important; }
-		.table thead th { background: #f5f5f5 !important; color: #000 !important; }
+		.invoice-preview {
+			--bg: #ffffff;
+			--text: #1f2937;
+			--muted: #4b5563;
+			--border: #d1d5db;
+			--border-strong: #cbd5f5;
+			--surface: #ffffff;
+			--surface-alt: #f5f5f5;
+
+			background: #fff !important;
+			color: #000 !important;
+			max-width: none !important;
+			width: 100% !important;
+			margin: 0 !important;
+			border-radius: 0 !important;
+			border: none !important;
+			box-shadow: none !important;
+			page-break-inside: avoid;
+			-webkit-print-color-adjust: exact;
+			print-color-adjust: exact;
+		}
+		.items {
+			background: #fff !important;
+			border-color: #d1d5db !important;
+		}
+		.table thead th {
+			background: #f5f5f5 !important;
+			color: #000 !important;
+			border-color: #d1d5db !important;
+		}
+		.table tbody tr {
+			background: transparent !important;
+			border-color: #e5e7eb !important;
+		}
+		.balance {
+			background: #fff !important;
+			border-color: #d1d5db !important;
+		}
+		.status { color: #1f2937 !important; }
+		.status::before { box-shadow: none !important; }
 	}
 </style>

@@ -8,7 +8,6 @@ import {
 
 const DEFAULT_TEMPLATE_ID = getDefaultTemplateId();
 const TEMPLATE_OPTIONS = getTemplateOptions();
-
 const selectedTemplateId = writable(DEFAULT_TEMPLATE_ID);
 
 /**

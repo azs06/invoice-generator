@@ -2,6 +2,7 @@
 	import { isLoading } from 'svelte-i18n';
 	import '$lib/i18n/setup.js'; // Initialize i18n at module load
 	import Header from '$components/Header.svelte';
+	import AppFooter from '$components/AppFooter.svelte';
 	import '../app.css';
 
 	let { children } = $props();
@@ -17,6 +18,7 @@
 		<main>
 			{@render children()}
 		</main>
+		<AppFooter />
 	</div>
 {/if}
 

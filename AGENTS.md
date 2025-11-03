@@ -45,8 +45,8 @@
 ## Multi-Template System (updated 2025-11-03)
 
 - Registry-driven templates live in `src/lib/templates/`.
-  - Components: `src/lib/templates/components/{Modern,Classic,Minimal,Compact}Template.svelte`
-  - Registry: `src/lib/templates/registry.js` (ids: `modern` [default], `classic`, `minimal`, `compact`)
+  - Components: `src/lib/templates/components/{Modern,Classic,Minimal,Atlantic}Template.svelte`
+  - Registry: `src/lib/templates/registry.js` (ids: `modern` [default], `classic`, `minimal`, `atlantic`)
   - Docs: `src/lib/templates/README.md`
 - Runtime selection
   - UI selector: `src/components/TemplateSelector.svelte`

@@ -9,7 +9,8 @@ src/lib/templates/
 ├── components/          # Template Svelte components
 │   ├── ModernTemplate.svelte
 │   ├── ClassicTemplate.svelte
-│   └── MinimalTemplate.svelte
+│   ├── MinimalTemplate.svelte
+│   └── AtlanticTemplate.svelte
 ├── registry.js          # Template registry and metadata
 ├── migration.js         # Template migration utilities
 └── README.md           # This file

@@ -531,6 +531,18 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Free Invoice Generator - Create Professional Invoices Online | FreeInvoice.info</title>
+	<meta
+		name="description"
+		content="Create professional invoices for free in seconds. No signup required. Multiple templates, PDF export, multi-language support. Perfect for freelancers and small businesses."
+	/>
+	<meta
+		name="keywords"
+		content="free invoice generator, online invoice maker, create invoice, PDF invoice, invoice template, freelance invoice, small business invoicing, no signup invoice"
+	/>
+</svelte:head>
+
 {#if invoice}
 	<div class="page-layout">
 		<div class="page-toolbar">
