@@ -1405,7 +1405,9 @@ export async function onRequestPost(context) {
 **Phase 8:** 1 week - Email integration
 **Phase 9:** 2-3 weeks - Advanced features
 
-**Total: 2-3 months to full launch**
+**Phase 10:** 2-3 weeks - AI-Powered Features
+
+**Total: 3-4 months to full launch**
 
 ### Success Criteria
 
@@ -1418,6 +1420,39 @@ export async function onRequestPost(context) {
 - [ ] 10+ premium templates available
 - [ ] Email sending with 95%+ delivery rate
 - [ ] All advanced features tested and stable
+- [ ] AI features implemented and provide significant value
+
+---
+
+## 🤖 Phase 10: AI-Powered Features (2-3 weeks)
+
+### Smart Invoicing Tools
+
+Leverage Large Language Models (LLMs) to automate data entry, enhance professionalism, and save users significant time.
+
+**1. AI-Powered Invoice Generation from Text**
+
+-   **Description:** Users can paste unstructured text (from emails, notes, etc.) into a prompt, and the AI will automatically parse the content and fill out the entire invoice form.
+-   **Tier:** Freemium (3-5 free uses for free users, unlimited for Premium).
+-   **Benefit:** Drastically reduces manual data entry and speeds up invoice creation.
+
+**2. Smart Line-Item Suggestions**
+
+-   **Description:** As a user types a line item, AI suggests a more professional, detailed description. For example, "Consulting" could be expanded to "Hourly consulting services for strategic planning and project management."
+-   **Tier:** Premium.
+-   **Benefit:** Improves the quality and professionalism of invoices.
+
+**3. AI-Powered Expense Recognition from Receipts**
+
+-   **Description:** Users can upload a photo of a receipt. A multimodal AI will use OCR to extract the vendor, date, items, and total, then automatically add them as billable expenses to the invoice.
+-   **Tier:** Premium.
+-   **Benefit:** Eliminates tedious manual expense tracking.
+
+**4. Automated Invoice Reminders & Personalized Messages**
+
+-   **Description:** The system uses AI to generate polite but firm reminder emails for overdue invoices. It can also generate personalized "thank you" notes or the initial email body when sending an invoice.
+-   **Tier:** Premium (requires Phase 8: Email Integration).
+-   **Benefit:** Saves time on administrative follow-up and improves client communication.
 
 ---
 
@@ -1432,7 +1467,8 @@ export async function onRequestPost(context) {
 - [ ] **Phase 7:** Premium Templates (0%)
 - [ ] **Phase 8:** Email Integration (0%)
 - [ ] **Phase 9:** Advanced Features (0%)
+- [ ] **Phase 10:** AI-Powered Features (0%)
 
-**Current Progress: 11% Complete (Phase 1 only)**
+**Current Progress: 10% Complete (Phase 1 only)**
 
 **Next Action:** Begin Phase 2 (Authentication System)
