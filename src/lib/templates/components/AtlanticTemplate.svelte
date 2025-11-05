@@ -1,34 +1,42 @@
-<script>
+<script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import { toUSCurrency } from '$lib/currency.js';
 	import { calculateDiscount, calculateTax } from '$lib/InvoiceCalculator.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
+	import type { InvoiceData, InvoiceTotals } from '$lib/types';
 
-	let { invoice, totals = {} } = $props();
+	interface Props {
+		invoice: InvoiceData;
+		totals?: InvoiceTotals;
+	}
 
-	const totalAmount = () => totals.total ?? invoice.total ?? 0;
-	const subTotal = () => totals.subTotal ?? invoice.subTotal ?? 0;
+	let { invoice, totals = {} as InvoiceTotals }: Props = $props();
 
-	const discountDisplayValue = () => calculateDiscount(invoice.discount, subTotal());
+	type BalanceState = 'credit' | 'settled' | 'partial' | 'due';
 
-	const taxDisplayValue = () => {
+	const totalAmount = (): number => totals.total ?? invoice.total ?? 0;
+	const subTotal = (): number => totals.subTotal ?? invoice.subTotal ?? 0;
+
+	const discountDisplayValue = (): number => calculateDiscount(invoice.discount, subTotal());
+
+	const taxDisplayValue = (): number => {
 		const amountAfterDiscount = subTotal() - discountDisplayValue();
 		return calculateTax(invoice.tax, amountAfterDiscount);
 	};
 
-	const shippingDisplayValue = () => invoice.shipping?.amount ?? 0;
-	const amountPaid = () => invoice.amountPaid ?? 0;
+	const shippingDisplayValue = (): number => invoice.shipping?.amount ?? 0;
+	const amountPaid = (): number => invoice.amountPaid ?? 0;
 
-	const balanceDue = () => {
+	const balanceDue = (): number => {
 		if (typeof invoice.balanceDue === 'number') return invoice.balanceDue;
 		const fallback = totalAmount() - amountPaid();
 		return Number.isFinite(fallback) ? fallback : 0;
 	};
 
-	const balanceLabel = () =>
+	const balanceLabel = (): string =>
 		balanceDue() < 0 ? $_('summary.credit_balance') : $_('summary.balance_due');
 
-	const balanceState = () => {
+	const balanceState = (): BalanceState => {
 		const balance = balanceDue();
 		if (balance < 0) return 'credit';
 		if (invoice.paid === true || balance === 0) return 'settled';
@@ -36,7 +44,7 @@
 		return 'due';
 	};
 
-	const statusLabel = () => {
+	const statusLabel = (): string => {
 		switch (balanceState()) {
 			case 'credit':
 				return $_('status.credit_owed');
