@@ -1,11 +1,16 @@
-<script>
+<script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { isLoading } from 'svelte-i18n';
 	import '$lib/i18n/setup.js'; // Initialize i18n at module load
 	import Header from '$components/Header.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
 	import '../app.css';
 
-	let { children } = $props();
+	interface Props {
+		children: Snippet;
+	}
+
+	let { children }: Props = $props();
 </script>
 
 {#if $isLoading}

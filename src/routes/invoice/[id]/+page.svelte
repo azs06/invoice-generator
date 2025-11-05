@@ -1,13 +1,11 @@
-<script>
-	'use runes';
+<script lang="ts">
 	import { page } from '$app/state';
-	// onMount is no longer needed for this data loading pattern with runes
 	import { getInvoice } from '$lib/db.js';
 	import { goto } from '$app/navigation';
 	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
-	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
+	import type { InvoiceData } from '$lib/types';
 
-	let invoice = $state(/** @type {InvoiceData | null} */ (null)); // Use $state for reactive invoice data
+	let invoice = $state<InvoiceData | null>(null);
 
 	// This effect will run when `id` changes, and also on initial mount if `id` is present.
 	$effect(() => {
@@ -18,13 +16,10 @@
 		}
 	});
 
-	/**
-	 * @param {string} currentId
-	 */
-	const loadInvoiceData = async (currentId) => {
+	const loadInvoiceData = async (currentId: string): Promise<void> => {
 		const data = await getInvoice(currentId);
 		if (data) {
-			invoice = /** @type {InvoiceData} */ (data);
+			invoice = data as InvoiceData;
 		} else {
 			// Invoice not found, or error during fetch
 			goto('/saved-invoices');
