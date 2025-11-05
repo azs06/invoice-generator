@@ -1,5 +1,10 @@
-<script>
-	let { companyName, year } = $props();
+<script lang="ts">
+	interface Props {
+		companyName: string;
+		year: number | string;
+	}
+
+	let { companyName, year }: Props = $props();
 </script>
 
 <footer class="footer">

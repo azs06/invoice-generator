@@ -1,10 +1,7 @@
-<script>
+<script lang="ts">
 	import { TEMPLATE_OPTIONS, selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
 
-	/**
-	 * @param {Event} event
-	 */
-	const handleChange = (event) => {
+	const handleChange = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLSelectElement)) {
 			return;
