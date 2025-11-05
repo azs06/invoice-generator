@@ -1,52 +1,58 @@
-<script>
+<script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import ItemFormComponent from './ItemFormComponent.svelte';
 	import TermsAndNotesComponent from './TermsAndNotesComponent.svelte';
 	import AmountPaidComponent from './AmountPaidComponent.svelte';
 	import TotalComponent from './TotalComponent.svelte';
 	import { DEFAULT_LOGO_PATH, defaultInvoice } from '$lib';
-	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
-	/** @typedef {import('$lib/types').InvoiceItem} InvoiceItem */
+	import type {
+		InvoiceData,
+		InvoiceItem,
+		MonetaryAdjustment,
+		ShippingInfo
+	} from '$lib/types';
 
-	/** @type {InvoiceData} */
-	export let invoice = defaultInvoice;
-	/** @type {(index: number, item: InvoiceItem) => void} */
-	export let updateInvoiceItems = () => {};
-	/** @type {() => void} */
-	export let addInvoiceItem = () => {};
-	/** @type {(value?: string) => void} */
-	export let updateInvoiceTerms = () => {};
-	/** @type {(value?: string) => void} */
-	export let updateInvoiceNotes = () => {};
-	/** @type {(value?: number) => void} */
-	export let updateInvoicePaidAmount = () => {};
-	/** @type {(event: Event) => void} */
-	export let handleInvoiceDateChange = () => {};
-	/** @type {(event: Event) => void} */
-	export let handleDueDateChange = () => {};
-	/** @type {(value: import('$lib/types').MonetaryAdjustment) => void} */
-	export let onUpdateTax = () => {};
-	/** @type {(value: import('$lib/types').MonetaryAdjustment) => void} */
-	export let onUpdateDiscount = () => {};
-	/** @type {(value: import('$lib/types').ShippingInfo) => void} */
-	export let onUpdateShipping = () => {};
-	/** @type {(value: File | string | null) => void} */
-	export let onUpdateLogo = () => {};
-	/** @type {(value: boolean) => void} */
-	export let togglePaidStatus = () => {};
-	/** @type {(event: Event) => void} */
-	export let onInvoiceToInput = () => {};
-	/** @type {(event: Event) => void} */
-	export let onInvoiceFromInput = () => {};
-	/** @type {(event: Event) => void} */
-	export let onInvoiceNumberInput = () => {};
-	/** @type {(event: Event) => void} */
-	export let onInvoiceLabelInput = () => {};
+	interface Props {
+		invoice?: InvoiceData;
+		updateInvoiceItems?: (index: number, item: InvoiceItem) => void;
+		addInvoiceItem?: () => void;
+		updateInvoiceTerms?: (value?: string) => void;
+		updateInvoiceNotes?: (value?: string) => void;
+		updateInvoicePaidAmount?: (value?: number) => void;
+		handleInvoiceDateChange?: (event: Event) => void;
+		handleDueDateChange?: (event: Event) => void;
+		onUpdateTax?: (value: MonetaryAdjustment) => void;
+		onUpdateDiscount?: (value: MonetaryAdjustment) => void;
+		onUpdateShipping?: (value: ShippingInfo) => void;
+		onUpdateLogo?: (value: File | string | null) => void;
+		togglePaidStatus?: (value: boolean) => void;
+		onInvoiceToInput?: (event: Event) => void;
+		onInvoiceFromInput?: (event: Event) => void;
+		onInvoiceNumberInput?: (event: Event) => void;
+		onInvoiceLabelInput?: (event: Event) => void;
+	}
 
-	/**
-	 * @param {Event} event
-	 */
-	const handleFileChange = (event) => {
+	let {
+		invoice = defaultInvoice,
+		updateInvoiceItems = () => {},
+		addInvoiceItem = () => {},
+		updateInvoiceTerms = () => {},
+		updateInvoiceNotes = () => {},
+		updateInvoicePaidAmount = () => {},
+		handleInvoiceDateChange = () => {},
+		handleDueDateChange = () => {},
+		onUpdateTax = () => {},
+		onUpdateDiscount = () => {},
+		onUpdateShipping = () => {},
+		onUpdateLogo = () => {},
+		togglePaidStatus = () => {},
+		onInvoiceToInput = () => {},
+		onInvoiceFromInput = () => {},
+		onInvoiceNumberInput = () => {},
+		onInvoiceLabelInput = () => {}
+	}: Props = $props();
+
+	const handleFileChange = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement) || !target.files?.length) {
 			return;
@@ -54,42 +60,33 @@
 		onUpdateLogo(target.files[0]);
 	};
 
-	/**
-	 * @param {number} index
-	 * @param {import('$lib/types').InvoiceItem} updatedItem
-	 */
-	const updateItem = (index, updatedItem) => {
+	const updateItem = (index: number, updatedItem: InvoiceItem): void => {
 		updateInvoiceItems(index, updatedItem);
 	};
 
-	/**
-	 * @param {number} index
-	 * @returns {(updatedItem: import('$lib/types').InvoiceItem) => void}
-	 */
-	const createItemUpdater = (index) => (updatedItem) => {
-		updateItem(index, updatedItem);
+	const createItemUpdater = (index: number): ((updatedItem: InvoiceItem) => void) => {
+		return (updatedItem: InvoiceItem): void => {
+			updateItem(index, updatedItem);
+		};
 	};
 
-	const addItem = () => {
+	const addItem = (): void => {
 		addInvoiceItem();
 	};
 
-	const updateTerms = (newTerms = '') => {
+	const updateTerms = (newTerms: string = ''): void => {
 		updateInvoiceTerms(newTerms);
 	};
 
-	const updateNotes = (newNotes = '') => {
+	const updateNotes = (newNotes: string = ''): void => {
 		updateInvoiceNotes(newNotes);
 	};
 
-	const updatePaidAmount = (amountPaid = 0) => {
+	const updatePaidAmount = (amountPaid: number = 0): void => {
 		updateInvoicePaidAmount(amountPaid);
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const handlePaidToggle = (event) => {
+	const handlePaidToggle = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
 			return;
