@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import { goto } from '$app/navigation';
@@ -10,41 +10,29 @@
 		getInvoice
 	} from '$lib/db.js';
 	import { toUSCurrency } from '$lib/currency.js';
-	/** @type {import('$lib/types').SavedInvoiceRecord[]} */
-	let allInvoices = [];
-	/** @type {import('$lib/types').SavedInvoiceRecord[]} */
-	let savedInvoices = [];
-	/** @type {string} */
-	let search = '';
-	/** @type {boolean} */
-	let showInvoiceDeleteModal = false;
-	/** @type {string | null} */
-	let invoiceToDelete = null;
-	/** @type {boolean} */
-	let showArchived = false;
-	/** @type {import('$lib/types').SavedInvoicesFilterMode} */
-	let filterMode = 'all';
-	/** @type {boolean} */
-	let isLoading = true;
-	/** @type {(value: number) => string} */
-	let formatCurrencyFn = (value) => '';
-	$: formatCurrencyFn = $toUSCurrency;
+	import type { SavedInvoiceRecord, SavedInvoicesFilterMode, InvoiceData } from '$lib/types';
 
-	/**
-	 * @param {string | null | undefined} value
-	 * @returns {number}
-	 */
-	const parseDate = (value) => {
+	let allInvoices = $state<SavedInvoiceRecord[]>([]);
+	let savedInvoices = $state<SavedInvoiceRecord[]>([]);
+	let search = $state<string>('');
+	let showInvoiceDeleteModal = $state<boolean>(false);
+	let invoiceToDelete = $state<string | null>(null);
+	let showArchived = $state<boolean>(false);
+	let filterMode = $state<SavedInvoicesFilterMode>('all');
+	let isLoading = $state<boolean>(true);
+	let formatCurrencyFn = $state<(value: number) => string>((value) => '');
+
+	$effect(() => {
+		formatCurrencyFn = $toUSCurrency;
+	});
+
+	const parseDate = (value: string | null | undefined): number => {
 		if (!value) return 0;
 		const parsed = Date.parse(value);
 		return Number.isNaN(parsed) ? 0 : parsed;
 	};
 
-	/**
-	 * @param {string | null | undefined} value
-	 * @returns {string}
-	 */
-	const formatDate = (value) => {
+	const formatDate = (value: string | null | undefined): string => {
 		const parsed = parseDate(value);
 		if (!parsed) return $_('saved_invoices.date_not_set');
 		return new Intl.DateTimeFormat(undefined, {
@@ -54,31 +42,19 @@
 		}).format(parsed);
 	};
 
-	/**
-	 * @param {number | string | null | undefined} value
-	 * @returns {string}
-	 */
-	const formatAmount = (value = 0) => {
+	const formatAmount = (value: number | string | null | undefined = 0): string => {
 		const amount = Number(value);
 		const safeAmount = Number.isFinite(amount) ? amount : 0;
 		return formatCurrencyFn(safeAmount);
 	};
 
-	/**
-	 * @param {import('$lib/types').InvoiceData | null | undefined} invoice
-	 * @returns {number}
-	 */
-	const balanceDueAmount = (invoice) => {
+	const balanceDueAmount = (invoice: InvoiceData | null | undefined): number => {
 		const value = Number(invoice?.balanceDue ?? invoice?.total ?? 0);
 		if (!Number.isFinite(value)) return 0;
 		return Math.max(value, 0);
 	};
 
-	/**
-	 * @param {import('$lib/types').InvoiceData | null | undefined} invoice
-	 * @returns {string}
-	 */
-	const invoiceTitle = (invoice) => {
+	const invoiceTitle = (invoice: InvoiceData | null | undefined): string => {
 		if (!invoice) return $_('saved_invoices.untitled_invoice');
 		const draftName = invoice.draftName?.trim();
 		if (draftName) return draftName;
@@ -87,7 +63,7 @@
 		return number ? `${label} ${number}` : label;
 	};
 
-	const applyFilters = () => {
+	const applyFilters = (): void => {
 		let filtered = allInvoices.filter(({ invoice }) => {
 			const archived = invoice?.archived === true;
 			return showArchived ? archived : !archived;
@@ -130,18 +106,15 @@
 		savedInvoices = filtered;
 	};
 
-	const loadInvoices = async () => {
+	const loadInvoices = async (): Promise<void> => {
 		isLoading = true;
 		const invoices = await getAllInvoices();
-		allInvoices = /** @type {import('$lib/types').SavedInvoiceRecord[]} */ (invoices);
+		allInvoices = invoices as SavedInvoiceRecord[];
 		applyFilters();
 		isLoading = false;
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const onSearchInput = (event) => {
+	const onSearchInput = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
 			return;
@@ -150,26 +123,17 @@
 		applyFilters();
 	};
 
-	/**
-	 * @param {boolean} value
-	 */
-	const setArchivedView = (value) => {
+	const setArchivedView = (value: boolean): void => {
 		showArchived = value;
 		applyFilters();
 	};
 
-	/**
-	 * @param {import('$lib/types').SavedInvoicesFilterMode} mode
-	 */
-	const setFilterMode = (mode) => {
+	const setFilterMode = (mode: SavedInvoicesFilterMode): void => {
 		filterMode = mode;
 		applyFilters();
 	};
 
-	/**
-	 * @param {string | null} [id=invoiceToDelete]
-	 */
-	const removeInvoice = async (id = invoiceToDelete) => {
+	const removeInvoice = async (id: string | null = invoiceToDelete): Promise<void> => {
 		if (!id) return;
 		await deleteInvoice(id);
 		invoiceToDelete = null;
@@ -177,16 +141,13 @@
 		await loadInvoices();
 	};
 
-	const clearData = async () => {
+	const clearData = async (): Promise<void> => {
 		await clearAllInvoices();
 		allInvoices = [];
 		savedInvoices = [];
 	};
 
-	/**
-	 * @param {string} id
-	 */
-	const archiveInvoice = async (id) => {
+	const archiveInvoice = async (id: string): Promise<void> => {
 		const data = await getInvoice(id);
 		if (data) {
 			data.archived = true;
@@ -195,10 +156,7 @@
 		}
 	};
 
-	/**
-	 * @param {string} id
-	 */
-	const unarchiveInvoice = async (id) => {
+	const unarchiveInvoice = async (id: string): Promise<void> => {
 		const data = await getInvoice(id);
 		if (data) {
 			data.archived = false;
@@ -207,23 +165,17 @@
 		}
 	};
 
-	/**
-	 * @param {string} id
-	 */
-	const confirmDeleteInvoice = (id) => {
+	const confirmDeleteInvoice = (id: string): void => {
 		invoiceToDelete = id;
 		showInvoiceDeleteModal = true;
 	};
 
-	const cancelDelete = () => {
+	const cancelDelete = (): void => {
 		invoiceToDelete = null;
 		showInvoiceDeleteModal = false;
 	};
 
-	/**
-	 * @param {string} id
-	 */
-	const openInvoice = (id) => {
+	const openInvoice = (id: string): void => {
 		goto(`/?invoice=${id}`);
 	};
 
