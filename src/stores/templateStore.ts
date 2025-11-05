@@ -8,12 +8,9 @@ import {
 
 const DEFAULT_TEMPLATE_ID = getDefaultTemplateId();
 const TEMPLATE_OPTIONS = getTemplateOptions();
-const selectedTemplateId = writable(DEFAULT_TEMPLATE_ID);
+const selectedTemplateId = writable<string>(DEFAULT_TEMPLATE_ID);
 
-/**
- * @param {string} templateId
- */
-const setTemplateId = (templateId) => {
+const setTemplateId = (templateId: string): void => {
 	const fallback = DEFAULT_TEMPLATE_ID;
 	// Validate template exists
 	if (templateExists(templateId)) {
@@ -24,6 +21,7 @@ const setTemplateId = (templateId) => {
 };
 
 // Get current template info
+// Return type will be properly typed when registry.js is migrated to TypeScript
 const getCurrentTemplate = () => {
 	let currentId = DEFAULT_TEMPLATE_ID;
 	const unsubscribe = selectedTemplateId.subscribe((value) => {
