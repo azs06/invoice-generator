@@ -1,85 +1,56 @@
-<script>
+<script lang="ts">
 	import AmountPaidComponent from './AmountPaidComponent.svelte';
 	import ItemInputComponent from './ItemInputComponent.svelte';
 	import TermsAndNotesComponent from './TermsAndNotesComponent.svelte';
 	import TotalComponent from './TotalComponent.svelte';
 	import { defaultInvoice } from '$lib/index.js';
+	import type { InvoiceData, InvoiceItem, MonetaryAdjustment } from '$lib/types';
 
-	/**
-	 * @typedef {typeof defaultInvoice} InvoiceData
-	 * @typedef {InvoiceData['items'][number]} InvoiceItem
-	 */
+	export let invoice: InvoiceData = structuredClone(defaultInvoice);
 
-	/** @type {InvoiceData} */
-	export let invoice = /** @type {InvoiceData} */ (structuredClone(defaultInvoice));
-
-	const ensureItems = () => {
+	const ensureItems = (): void => {
 		if (!Array.isArray(invoice.items)) {
 			invoice.items = [];
 		}
 	};
 
-	/**
-	 * @param {number} index
-	 * @param {InvoiceItem} updatedItem
-	 */
-	const updateItem = (index, updatedItem) => {
+	const updateItem = (index: number, updatedItem: InvoiceItem): void => {
 		ensureItems();
 		invoice.items[index] = updatedItem;
 	};
 
-	/**
-	 * @param {number} index
-	 * @returns {(updatedItem: InvoiceItem) => void}
-	 */
-	const createItemUpdater = (index) => (updatedItem) => {
-		updateItem(index, updatedItem);
+	const createItemUpdater = (index: number): ((updatedItem: InvoiceItem) => void) => {
+		return (updatedItem: InvoiceItem) => {
+			updateItem(index, updatedItem);
+		};
 	};
 
-	const addItem = () => {
+	const addItem = (): void => {
 		ensureItems();
 		invoice.items = [...invoice.items, { name: '', quantity: 1, price: 0, amount: 0 }];
 	};
 
-	/**
-	 * @param {string} [newTerms='']
-	 */
-	const updateTerms = (newTerms = '') => {
+	const updateTerms = (newTerms: string = ''): void => {
 		invoice.terms = newTerms;
 	};
 
-	/**
-	 * @param {string} [newNotes='']
-	 */
-	const updateNotes = (newNotes = '') => {
+	const updateNotes = (newNotes: string = ''): void => {
 		invoice.notes = newNotes;
 	};
 
-	/**
-	 * @param {number} [amountPaid=0]
-	 */
-	const updatePaidAmount = (amountPaid = 0) => {
+	const updatePaidAmount = (amountPaid: number = 0): void => {
 		invoice.amountPaid = amountPaid;
 	};
 
-	/**
-	 * @param {InvoiceData['discount']} next
-	 */
-	const handleDiscountChange = (next) => {
+	const handleDiscountChange = (next: MonetaryAdjustment): void => {
 		invoice.discount = next;
 	};
 
-	/**
-	 * @param {InvoiceData['tax']} next
-	 */
-	const handleTaxChange = (next) => {
+	const handleTaxChange = (next: MonetaryAdjustment): void => {
 		invoice.tax = next;
 	};
 
-	/**
-	 * @param {InvoiceData['shipping']} next
-	 */
-	const handleShippingChange = (next) => {
+	const handleShippingChange = (next: { amount: number }): void => {
 		invoice.shipping = next;
 	};
 </script>
