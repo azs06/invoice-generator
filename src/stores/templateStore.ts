@@ -3,11 +3,13 @@ import {
 	getTemplateOptions,
 	getDefaultTemplateId,
 	templateExists,
-	getTemplate
+	getTemplate,
+	type TemplateMetadata,
+	type TemplateOption
 } from '$lib/templates/registry.js';
 
 const DEFAULT_TEMPLATE_ID = getDefaultTemplateId();
-const TEMPLATE_OPTIONS = getTemplateOptions();
+const TEMPLATE_OPTIONS: TemplateOption[] = getTemplateOptions();
 const selectedTemplateId = writable<string>(DEFAULT_TEMPLATE_ID);
 
 const setTemplateId = (templateId: string): void => {
@@ -21,9 +23,8 @@ const setTemplateId = (templateId: string): void => {
 };
 
 // Get current template info
-// Return type will be properly typed when registry.js is migrated to TypeScript
-const getCurrentTemplate = () => {
-	let currentId = DEFAULT_TEMPLATE_ID;
+const getCurrentTemplate = (): TemplateMetadata | null => {
+	let currentId: string = DEFAULT_TEMPLATE_ID;
 	const unsubscribe = selectedTemplateId.subscribe((value) => {
 		currentId = value;
 	});
