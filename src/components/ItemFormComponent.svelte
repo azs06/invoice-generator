@@ -1,20 +1,13 @@
-<script>
+<script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import { toUSCurrency } from '$lib/currency.js';
-	/** @typedef {import('$lib/types').InvoiceItem} InvoiceItem */
+	import type { InvoiceItem } from '$lib/types';
 
-	/** @type {InvoiceItem} */
-	export let item = { name: '', quantity: 1, price: 0, amount: 0 };
-	/** @type {(value: InvoiceItem) => void} */
-	export let onUpdate = () => {};
-	/** @type {number} */
-	export let index = 0;
+	export let item: InvoiceItem = { name: '', quantity: 1, price: 0, amount: 0 };
+	export let onUpdate: (value: InvoiceItem) => void = () => {};
+	export let index: number = 0;
 
-	/**
-	 * @param {'name' | 'quantity' | 'price'} field
-	 * @param {string | number} rawValue
-	 */
-	const updateField = (field, rawValue) => {
+	const updateField = (field: 'name' | 'quantity' | 'price', rawValue: string | number): void => {
 		const updatedItem = { ...item };
 		if (field === 'name') {
 			updatedItem.name = typeof rawValue === 'string' ? rawValue : String(rawValue ?? '');
@@ -26,7 +19,8 @@
 		updatedItem.amount = (updatedItem.quantity || 0) * (updatedItem.price || 0);
 		onUpdate(updatedItem);
 	};
-	const lineTotal = () => {
+
+	const lineTotal = (): number => {
 		const qty = Number(item.quantity) || 0;
 		const price = Number(item.price) || 0;
 		const amount = Number.isFinite(item.amount) ? Number(item.amount) : qty * price;

@@ -1,28 +1,34 @@
-<script>
-	/** @typedef {import('$lib/types').AdditionalPayment} AdditionalPayment */
+<script lang="ts">
+	import type { AdditionalPayment } from '$lib/types';
 
-	/** @type {AdditionalPayment[]} */
-	export let additionalPayments = [];
-	/** @type {(payments: AdditionalPayment[]) => void} */
-	export let onUpdate = () => {};
+	interface Props {
+		additionalPayments?: AdditionalPayment[];
+		onUpdate?: (payments: AdditionalPayment[]) => void;
+	}
 
-	const createEmptyPayment = () => ({ date: '', amount: 0, method: '' });
+	let { additionalPayments = [], onUpdate = () => {} }: Props = $props();
 
-	const addPayment = () => {
-		additionalPayments = [...additionalPayments, createEmptyPayment()];
-		onUpdate(additionalPayments);
+	let payments = $state<AdditionalPayment[]>(additionalPayments);
+
+	$effect(() => {
+		if (onUpdate) onUpdate(payments);
+	});
+
+	const createEmptyPayment = (): AdditionalPayment => ({ date: '', amount: 0, method: '' });
+
+	const addPayment = (): void => {
+		payments = [...payments, createEmptyPayment()];
 	};
 
-	/**
-	 * @param {number} index
-	 * @param {'date' | 'amount' | 'method'} field
-	 * @param {string | number} value
-	 */
-	const updatePayment = (index, field, value) => {
-		if (index < 0 || index >= additionalPayments.length) {
+	const updatePayment = (
+		index: number,
+		field: 'date' | 'amount' | 'method',
+		value: string | number
+	): void => {
+		if (index < 0 || index >= payments.length) {
 			return;
 		}
-		const updated = additionalPayments.map((payment) => ({ ...payment }));
+		const updated = payments.map((payment) => ({ ...payment }));
 		const target = updated[index];
 		if (!target) {
 			return;
@@ -36,24 +42,15 @@
 			target.method = typeof value === 'string' ? value : String(value ?? '');
 		}
 
-		additionalPayments = updated;
-		onUpdate(additionalPayments);
+		payments = updated;
 	};
 
-	/**
-	 * @param {number} index
-	 */
-	const removePayment = (index) => {
-		const updated = additionalPayments.filter((_, i) => i !== index);
-		additionalPayments = updated;
-		onUpdate(updated);
+	const removePayment = (index: number): void => {
+		const updated = payments.filter((_, i) => i !== index);
+		payments = updated;
 	};
 
-	/**
-	 * @param {number} index
-	 * @param {Event} event
-	 */
-	const handleDateChange = (index, event) => {
+	const handleDateChange = (index: number, event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
 			return;
@@ -61,11 +58,7 @@
 		updatePayment(index, 'date', target.value);
 	};
 
-	/**
-	 * @param {number} index
-	 * @param {Event} event
-	 */
-	const handleAmountChange = (index, event) => {
+	const handleAmountChange = (index: number, event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
 			return;
@@ -73,11 +66,7 @@
 		updatePayment(index, 'amount', Number(target.value));
 	};
 
-	/**
-	 * @param {number} index
-	 * @param {Event} event
-	 */
-	const handleMethodChange = (index, event) => {
+	const handleMethodChange = (index: number, event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
 			return;
@@ -99,11 +88,11 @@
 		</button>
 	</header>
 
-	{#if additionalPayments.length === 0}
+	{#if payments.length === 0}
 		<p class="empty-state">No extra payments recorded yet.</p>
 	{:else}
 		<div class="payments-list">
-			{#each additionalPayments as payment, index}
+			{#each payments as payment, index}
 				<div class="payment-entry">
 					<div class="field">
 						<label for={`payment-date-${index}`}>Date</label>

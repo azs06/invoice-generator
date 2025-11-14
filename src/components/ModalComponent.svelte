@@ -1,10 +1,20 @@
-<script>
-	let { open = false, title = '', onClose, children, footer } = $props();
+<script lang="ts">
+	import type { Snippet } from 'svelte';
 
-	const close = () => {
+	interface Props {
+		open?: boolean;
+		title?: string;
+		onClose?: () => void;
+		children?: Snippet;
+		footer?: Snippet;
+	}
+
+	let { open = false, title = '', onClose, children, footer }: Props = $props();
+
+	const close = (): void => {
 		onClose && onClose();
 	};
-	const onkeydown = () => {};
+	const onkeydown = (): void => {};
 </script>
 
 {#if open}

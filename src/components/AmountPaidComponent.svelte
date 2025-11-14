@@ -1,18 +1,12 @@
-<script>
+<script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import { toUSCurrency } from '$lib/currency.js';
 
-	/** @type {number} */
-	export let amountPaid = 0;
-	/** @type {(value: number) => void} */
-	export let updatePaidAmount = () => {};
-	/** @type {{ balanceDue?: number } | null | undefined } */
-	export let invoice = null;
+	export let amountPaid: number = 0;
+	export let updatePaidAmount: (value: number) => void = () => {};
+	export let invoice: { balanceDue?: number } | null | undefined = null;
 
-	/**
-	 * @param {Event} event
-	 */
-	const handleOnChange = (event) => {
+	const handleOnChange = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
 			return;

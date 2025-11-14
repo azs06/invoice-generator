@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import LanguageSelector from './LanguageSelector.svelte';

@@ -10,7 +10,7 @@ init({
 	initialLocale: browser ? getLocaleFromNavigator() : 'en'
 });
 
-export function setupI18n() {
+export function setupI18n(): void {
 	// This function is now just for potential future use
 	// The init happens at module load
 }

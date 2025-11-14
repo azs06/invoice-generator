@@ -1,8 +1,8 @@
-import { derived } from 'svelte/store';
+import { derived, type Readable } from 'svelte/store';
 import { currency, currencies } from './stores/currency.js';
 
 export const currentCurrencyInfo = derived(currency, ($currency) => {
-	return currencies[/** @type {keyof typeof currencies} */ ($currency)] || currencies.USD;
+	return currencies[$currency as keyof typeof currencies] || currencies.USD;
 });
 
 export const currencyFormatter = derived(currentCurrencyInfo, ($info) => {
@@ -13,12 +13,15 @@ export const currencyFormatter = derived(currentCurrencyInfo, ($info) => {
 	});
 });
 
-export const formatCurrency = derived(currencyFormatter, ($formatter) => {
-	return (amount = 0) => {
-		const numericAmount = Number.isFinite(amount) ? amount : Number(amount) || 0;
-		return $formatter.format(numericAmount);
-	};
-});
+export const formatCurrency: Readable<(amount?: number) => string> = derived(
+	currencyFormatter,
+	($formatter) => {
+		return (amount: number = 0): string => {
+			const numericAmount = Number.isFinite(amount) ? amount : Number(amount) || 0;
+			return $formatter.format(numericAmount);
+		};
+	}
+);
 
 export const currencySymbol = derived(currentCurrencyInfo, ($info) => $info.symbol);
 

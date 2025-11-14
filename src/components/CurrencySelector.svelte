@@ -9,7 +9,7 @@
 
 	function changeCurrency(/** @type {Event} */ event) {
 		const target = /** @type {HTMLSelectElement} */ (event.target);
-		const next = target.value;
+		const next = /** @type {import('$lib/stores/currency.js').CurrencyCode} */ (target.value);
 		selectedCurrency = next;
 		currency.set(next);
 	}

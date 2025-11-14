@@ -1,26 +1,22 @@
-<script>
-	'use runes';
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import { selectedTemplateId } from '../stores/templateStore.js';
 	import { getTemplate } from '$lib/templates/registry.js';
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
+	import type { InvoiceData, InvoiceTotals } from '$lib/types';
+	import type { TemplateMetadata } from '$lib/templates/registry.js';
 
-	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
-	/** @typedef {import('$lib/types').InvoiceTotals} InvoiceTotals */
-	/** @typedef {{ invoice: InvoiceData }} $$Props */
+	interface Props {
+		invoice: InvoiceData;
+	}
 
-	let { invoice } = $props();
+	let { invoice }: Props = $props();
 
-	/** @type {any} */
-	let currentTemplate = $state(null);
-	let TemplateComponent = $state(/** @type {any} */ (null));
-	let totals = $state(/** @type {InvoiceTotals} */ ({ subTotal: 0, total: 0, balanceDue: 0 }));
+	let currentTemplate = $state<TemplateMetadata | null>(null);
+	let TemplateComponent = $state<any>(null);
+	let totals = $state<InvoiceTotals>({ subTotal: 0, total: 0, balanceDue: 0 });
 
-	/**
-	 * @param {InvoiceData} value
-	 * @returns {InvoiceTotals}
-	 */
-	const calculateTotals = (value) => {
+	const calculateTotals = (value: InvoiceData): InvoiceTotals => {
 		const subTotal =
 			value.items?.reduce((sum, item) => {
 				const itemAmount = item.amount ?? (item.price || 0) * (item.quantity || 0);
@@ -37,10 +33,7 @@
 		};
 	};
 
-	/**
-	 * @param {string} templateId
-	 */
-	const loadTemplate = async (templateId) => {
+	const loadTemplate = async (templateId: string): Promise<void> => {
 		try {
 			const template = getTemplate(templateId);
 			if (template) {

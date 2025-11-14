@@ -1,9 +1,14 @@
-<script>
+<script lang="ts">
 	import { toUSCurrency } from '$lib/currency.js';
+	import type { InvoiceItem } from '$lib/types';
 
-	let { items = [] } = $props();
+	interface Props {
+		items?: InvoiceItem[];
+	}
 
-	const calculateSubTotal = () =>
+	let { items = [] }: Props = $props();
+
+	const calculateSubTotal = (): number =>
 		items.reduce((sum, item) => sum + (item.amount || (item.price || 0) * (item.quantity || 0)), 0);
 </script>
 

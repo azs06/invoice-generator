@@ -1,16 +1,9 @@
-<script>
-	/**
-	 * @typedef {string | File | null | undefined} FileSource
-	 */
+<script lang="ts">
+	type FileSource = string | File | null | undefined;
 
-	/** @type {FileSource} */
-	export let file = undefined;
+	export let file: FileSource = undefined;
 
-	/**
-	 * @param {FileSource} value
-	 * @returns {string | undefined}
-	 */
-	const getFileUrl = (value) => {
+	const getFileUrl = (value: FileSource): string | undefined => {
 		if (value instanceof File) {
 			return URL.createObjectURL(value);
 		}

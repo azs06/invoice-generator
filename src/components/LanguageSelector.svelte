@@ -1,23 +1,17 @@
-<script>
+<script lang="ts">
 	import { locale } from 'svelte-i18n';
 
-	const languages = {
+	type SupportedLocale = 'en' | 'bn';
+
+	const languages: Record<SupportedLocale, string> = {
 		en: 'English',
 		bn: 'বাংলা'
 	};
 
-	/**
-	 * @typedef {'en' | 'bn'} SupportedLocale
-	 */
-
-	/**
-	 * @param {string | null | undefined} value
-	 * @returns {SupportedLocale}
-	 */
-	const normalizeLocale = (value) => {
+	const normalizeLocale = (value: string | null | undefined): SupportedLocale => {
 		if (!value) return 'en';
 		const base = value.split('-')[0];
-		return base in languages ? /** @type {SupportedLocale} */ (base) : 'en';
+		return base in languages ? (base as SupportedLocale) : 'en';
 	};
 
 	$effect(() => {
@@ -27,10 +21,7 @@
 		}
 	});
 
-	/**
-	 * @param {Event} event
-	 */
-	const changeLanguage = (event) => {
+	const changeLanguage = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLSelectElement)) {
 			return;

@@ -1,8 +1,10 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
+export type Theme = 'light' | 'dark';
+
 // Get initial theme from localStorage or system preference
-function getInitialTheme() {
+function getInitialTheme(): Theme {
 	if (!browser) return 'light';
 
 	const stored = localStorage.getItem('theme');
@@ -19,7 +21,7 @@ function getInitialTheme() {
 }
 
 // Create the store
-export const theme = writable(getInitialTheme());
+export const theme = writable<Theme>(getInitialTheme());
 
 // Subscribe to changes and update DOM and localStorage
 if (browser) {
@@ -41,6 +43,6 @@ if (browser) {
 }
 
 // Helper function to toggle theme
-export function toggleTheme() {
+export function toggleTheme(): void {
 	theme.update((current) => (current === 'light' ? 'dark' : 'light'));
 }

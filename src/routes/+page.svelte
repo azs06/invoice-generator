@@ -1,5 +1,4 @@
-<script>
-	'use runes';
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
@@ -11,27 +10,24 @@
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
-	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
-	/** @typedef {import('$lib/types').InvoiceItem} InvoiceItem */
-	/** @typedef {import('$lib/types').MonetaryAdjustment} MonetaryAdjustment */
-	/** @typedef {import('$lib/types').ShippingInfo} ShippingInfo */
+	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
 
-	let invoice = $state(/** @type {InvoiceData | null} */ (null));
-	let previewRef = $state(/** @type {HTMLElement | null} */ (null));
-	let isGeneratingPDF = $state(false); // State to track PDF generation status
-	let pdfAction = $state(/** @type {'download' | 'print' | null} */ (null));
-	let showMobilePreview = $state(false); // Track mobile preview visibility
-	let activeTab = $state('edit'); // Track active tab: 'edit' or 'preview'
-	const validTabs = new Set(['edit', 'preview']);
+	type PDFAction = 'download' | 'print' | null;
+	type TabName = 'edit' | 'preview';
 
-	let userEditedDueDate = $state(false); // Track if user has edited the due date
-	let showSaveDraftModal = $state(false); // Track save draft modal visibility
-	let draftName = $state(''); // Track draft name input
+	let invoice = $state<InvoiceData | null>(null);
+	let previewRef = $state<HTMLElement | null>(null);
+	let isGeneratingPDF = $state<boolean>(false);
+	let pdfAction = $state<PDFAction>(null);
+	let showMobilePreview = $state<boolean>(false);
+	let activeTab = $state<TabName>('edit');
+	const validTabs = new Set<string>(['edit', 'preview']);
 
-	/**
-	 * @returns {InvoiceData}
-	 */
-	const createNewInvoice = () => ({
+	let userEditedDueDate = $state<boolean>(false);
+	let showSaveDraftModal = $state<boolean>(false);
+	let draftName = $state<string>('');
+
+	const createNewInvoice = (): InvoiceData => ({
 		id: uuidv4(),
 		invoiceLabel: 'INVOICE',
 		invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -58,29 +54,23 @@
 		templateId: 'modern'
 	});
 
-	/**
-	 * @returns {InvoiceData}
-	 */
-	const ensureInvoice = () => {
+	const ensureInvoice = (): InvoiceData => {
 		if (!invoice) {
 			invoice = createNewInvoice();
 		}
 		return invoice;
 	};
 
-	const startNewInvoice = () => {
+	const startNewInvoice = (): void => {
 		invoice = createNewInvoice();
 	};
 
-	/**
-	 * @param {any} tab - The tab to set
-	 */
-	const setActiveTab = (tab) => {
+	const setActiveTab = (tab: string): void => {
 		if (!validTabs.has(tab)) {
 			return;
 		}
 
-		activeTab = tab;
+		activeTab = tab as TabName;
 
 		if (typeof window !== 'undefined') {
 			const { pathname, search, hash } = window.location;
@@ -92,7 +82,7 @@
 		}
 	};
 
-	const syncTabFromHash = () => {
+	const syncTabFromHash = (): void => {
 		if (typeof window === 'undefined') {
 			return;
 		}
@@ -100,14 +90,11 @@
 		const hashValue = window.location.hash?.slice(1).toLowerCase();
 
 		if (validTabs.has(hashValue)) {
-			activeTab = hashValue;
+			activeTab = hashValue as TabName;
 		}
 	};
 
-	/**
-	 * @returns {Promise<void>}
-	 */
-	const waitForPreviewImages = async () => {
+	const waitForPreviewImages = async (): Promise<void> => {
 		if (!previewRef) {
 			return;
 		}
@@ -131,10 +118,7 @@
 		);
 	};
 
-	/**
-	 * @returns {Promise<void>}
-	 */
-	const saveAsPDF = async () => {
+	const saveAsPDF = async (): Promise<void> => {
 		const currentInvoice = invoice;
 		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
 			return;
@@ -172,10 +156,7 @@
 		}
 	};
 
-	/**
-	 * @returns {Promise<void>}
-	 */
-	const printPDF = async () => {
+	const printPDF = async (): Promise<void> => {
 		const currentInvoice = invoice;
 		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
 			return;
@@ -308,39 +289,32 @@
 		}
 	});
 
-	/**
-	 * @param {number} index
-	 * @param {InvoiceItem} updatedItem
-	 */
-	const updateInvoiceItems = (index, updatedItem) => {
+	const updateInvoiceItems = (index: number, updatedItem: InvoiceItem): void => {
 		const current = ensureInvoice();
 		current.items[index] = updatedItem;
 	};
 
-	const addInvoiceItem = () => {
+	const addInvoiceItem = (): void => {
 		const current = ensureInvoice();
 		current.items = [...current.items, { name: '', quantity: 1, price: 0, amount: 0 }];
 	};
 
-	const updateInvoiceTerms = (newTerms = '') => {
+	const updateInvoiceTerms = (newTerms: string = ''): void => {
 		const current = ensureInvoice();
 		current.terms = newTerms;
 	};
 
-	const updateInvoiceNotes = (newNotes = '') => {
+	const updateInvoiceNotes = (newNotes: string = ''): void => {
 		const current = ensureInvoice();
 		current.notes = newNotes;
 	};
 
-	const updateInvoicePaidAmount = (amountPaid = 0) => {
+	const updateInvoicePaidAmount = (amountPaid: number = 0): void => {
 		const current = ensureInvoice();
 		current.amountPaid = amountPaid;
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const handleInvoiceDateChange = (event) => {
+	const handleInvoiceDateChange = (event: Event): void => {
 		const current = ensureInvoice();
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
@@ -354,10 +328,7 @@
 		}
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const handleDueDateChange = (event) => {
+	const handleDueDateChange = (event: Event): void => {
 		const current = ensureInvoice();
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
@@ -367,34 +338,22 @@
 		userEditedDueDate = true;
 	};
 
-	/**
-	 * @param {MonetaryAdjustment} newTax
-	 */
-	const onUpdateTax = (newTax) => {
+	const onUpdateTax = (newTax: MonetaryAdjustment): void => {
 		const current = ensureInvoice();
 		current.tax = newTax;
 	};
 
-	/**
-	 * @param {MonetaryAdjustment} newDiscount
-	 */
-	const onUpdateDiscount = (newDiscount) => {
+	const onUpdateDiscount = (newDiscount: MonetaryAdjustment): void => {
 		const current = ensureInvoice();
 		current.discount = newDiscount;
 	};
 
-	/**
-	 * @param {ShippingInfo} newShipping
-	 */
-	const onUpdateShipping = (newShipping) => {
+	const onUpdateShipping = (newShipping: ShippingInfo): void => {
 		const current = ensureInvoice();
 		current.shipping = newShipping;
 	};
 
-	/**
-	 * @param {File | string | null} newFile
-	 */
-	const onUpdateLogo = (newFile) => {
+	const onUpdateLogo = (newFile: File | string | null): void => {
 		const current = ensureInvoice();
 		if (newFile instanceof File) {
 			current.logo = newFile;
@@ -415,18 +374,12 @@
 		console.warn('onUpdateLogo received an unexpected type for newFile:', newFile);
 	};
 
-	/**
-	 * @param {boolean} newStatus
-	 */
-	const togglePaidStatus = (newStatus) => {
+	const togglePaidStatus = (newStatus: boolean): void => {
 		const current = ensureInvoice();
 		current.paid = Boolean(newStatus);
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const onInvoiceToInput = (event) => {
+	const onInvoiceToInput = (event: Event): void => {
 		const current = ensureInvoice();
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
@@ -435,10 +388,7 @@
 		current.invoiceTo = target.value;
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const onInvoiceFromInput = (event) => {
+	const onInvoiceFromInput = (event: Event): void => {
 		const current = ensureInvoice();
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
@@ -447,10 +397,7 @@
 		current.invoiceFrom = target.value;
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const onInvoiceNumberInput = (event) => {
+	const onInvoiceNumberInput = (event: Event): void => {
 		const current = ensureInvoice();
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
@@ -459,10 +406,7 @@
 		current.invoiceNumber = target.value;
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const onInvoiceLabelInput = (event) => {
+	const onInvoiceLabelInput = (event: Event): void => {
 		const current = ensureInvoice();
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
@@ -470,7 +414,8 @@
 		}
 		current.invoiceLabel = target.value;
 	};
-	const openSaveDraftModal = () => {
+
+	const openSaveDraftModal = (): void => {
 		// Pre-fill with invoice label + number
 		if (invoice) {
 			draftName =
@@ -479,12 +424,12 @@
 		showSaveDraftModal = true;
 	};
 
-	const closeSaveDraftModal = () => {
+	const closeSaveDraftModal = (): void => {
 		showSaveDraftModal = false;
 		draftName = '';
 	};
 
-	const saveDraftAndRedirect = async () => {
+	const saveDraftAndRedirect = async (): Promise<void> => {
 		if (invoice) {
 			// Update invoice with draft name and mark as draft
 			invoice.draft = true;
@@ -503,27 +448,18 @@
 		}
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const stopModalPropagation = (event) => {
+	const stopModalPropagation = (event: Event): void => {
 		event.stopPropagation();
 	};
 
-	/**
-	 * @param {KeyboardEvent} event
-	 */
-	const handleBackdropKeydown = (event) => {
+	const handleBackdropKeydown = (event: KeyboardEvent): void => {
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
 			closeSaveDraftModal();
 		}
 	};
 
-	/**
-	 * @param {KeyboardEvent} event
-	 */
-	const handleDraftInputKeydown = (event) => {
+	const handleDraftInputKeydown = (event: KeyboardEvent): void => {
 		if (event.key === 'Enter') {
 			event.preventDefault();
 			saveDraftAndRedirect();
