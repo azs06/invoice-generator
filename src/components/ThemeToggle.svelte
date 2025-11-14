@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { theme, toggleTheme } from '$lib/theme.js';
 </script>
 

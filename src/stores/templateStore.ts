@@ -3,17 +3,16 @@ import {
 	getTemplateOptions,
 	getDefaultTemplateId,
 	templateExists,
-	getTemplate
+	getTemplate,
+	type TemplateMetadata,
+	type TemplateOption
 } from '$lib/templates/registry.js';
 
 const DEFAULT_TEMPLATE_ID = getDefaultTemplateId();
-const TEMPLATE_OPTIONS = getTemplateOptions();
-const selectedTemplateId = writable(DEFAULT_TEMPLATE_ID);
+const TEMPLATE_OPTIONS: TemplateOption[] = getTemplateOptions();
+const selectedTemplateId = writable<string>(DEFAULT_TEMPLATE_ID);
 
-/**
- * @param {string} templateId
- */
-const setTemplateId = (templateId) => {
+const setTemplateId = (templateId: string): void => {
 	const fallback = DEFAULT_TEMPLATE_ID;
 	// Validate template exists
 	if (templateExists(templateId)) {
@@ -24,8 +23,8 @@ const setTemplateId = (templateId) => {
 };
 
 // Get current template info
-const getCurrentTemplate = () => {
-	let currentId = DEFAULT_TEMPLATE_ID;
+const getCurrentTemplate = (): TemplateMetadata | null => {
+	let currentId: string = DEFAULT_TEMPLATE_ID;
 	const unsubscribe = selectedTemplateId.subscribe((value) => {
 		currentId = value;
 	});

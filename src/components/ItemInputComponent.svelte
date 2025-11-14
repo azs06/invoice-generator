@@ -1,16 +1,10 @@
-<script>
-	/** @typedef {import('$lib/types').InvoiceItem} InvoiceItem */
+<script lang="ts">
+	import type { InvoiceItem } from '$lib/types';
 
-	/** @type {InvoiceItem} */
-	export let item = { name: '', quantity: 1, price: 0, amount: 0 };
-	/** @type {(item: InvoiceItem) => void} */
-	export let onUpdate = () => {};
+	export let item: InvoiceItem = { name: '', quantity: 1, price: 0, amount: 0 };
+	export let onUpdate: (item: InvoiceItem) => void = () => {};
 
-	/**
-	 * @param {'name' | 'quantity' | 'price'} field
-	 * @param {string | number} rawValue
-	 */
-	const updateItem = (field, rawValue) => {
+	const updateItem = (field: 'name' | 'quantity' | 'price', rawValue: string | number): void => {
 		const nextItem = { ...item };
 		if (field === 'name') {
 			nextItem.name = typeof rawValue === 'string' ? rawValue : String(rawValue ?? '');
@@ -23,10 +17,7 @@
 		onUpdate(nextItem);
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const handleNameInput = (event) => {
+	const handleNameInput = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
 			return;
@@ -34,10 +25,7 @@
 		updateItem('name', target.value);
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const handleQuantityInput = (event) => {
+	const handleQuantityInput = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
 			return;
@@ -45,10 +33,7 @@
 		updateItem('quantity', Number(target.value));
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const handlePriceInput = (event) => {
+	const handlePriceInput = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLInputElement)) {
 			return;

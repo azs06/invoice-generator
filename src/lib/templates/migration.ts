@@ -6,11 +6,34 @@
 import { getAllInvoices, saveInvoice } from '$lib/db.js';
 import { getDefaultTemplateId } from '$lib/templates/registry.js';
 
+export interface MigrationResult {
+	success: boolean;
+	migrated: number;
+	total: number;
+	error?: string;
+}
+
+export interface MigrationStatus {
+	totalInvoices: number;
+	migratedInvoices: number;
+	needsMigration: boolean;
+	percentage: number;
+	error?: string;
+}
+
+export interface MigrationIfNeededResult {
+	success: boolean;
+	message?: string;
+	migrated: number;
+	error?: string;
+	total?: number;
+}
+
 /**
  * Migrate all existing invoices to include templateId
  * This ensures backward compatibility with existing invoices
  */
-export async function migrateInvoicesToIncludeTemplateId() {
+export async function migrateInvoicesToIncludeTemplateId(): Promise<MigrationResult> {
 	try {
 		const invoices = await getAllInvoices();
 		const defaultTemplateId = getDefaultTemplateId();
@@ -48,9 +71,8 @@ export async function migrateInvoicesToIncludeTemplateId() {
 
 /**
  * Check if migration is needed
- * @returns {Promise<boolean>} True if migration is needed
  */
-export async function isMigrationNeeded() {
+export async function isMigrationNeeded(): Promise<boolean> {
 	try {
 		const invoices = await getAllInvoices();
 		return invoices.some(({ invoice }) => !invoice.templateId);
@@ -62,9 +84,8 @@ export async function isMigrationNeeded() {
 
 /**
  * Get migration status
- * @returns {Promise<Object>} Migration status information
  */
-export async function getMigrationStatus() {
+export async function getMigrationStatus(): Promise<MigrationStatus> {
 	try {
 		const invoices = await getAllInvoices();
 		const totalInvoices = invoices.length;
@@ -92,9 +113,8 @@ export async function getMigrationStatus() {
 
 /**
  * Run migration if needed
- * @returns {Promise<Object>} Migration result
  */
-export async function runMigrationIfNeeded() {
+export async function runMigrationIfNeeded(): Promise<MigrationIfNeededResult> {
 	const needsMigration = await isMigrationNeeded();
 
 	if (!needsMigration) {

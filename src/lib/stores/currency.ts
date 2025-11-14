@@ -3,6 +3,13 @@ import { browser } from '$app/environment';
 
 const STORAGE_KEY = 'ig.currency';
 
+export interface CurrencyInfo {
+	code: string;
+	symbol: string;
+	locale: string;
+	name: string;
+}
+
 // Define available currencies with their properties
 export const currencies = {
 	USD: { code: 'USD', symbol: '$', locale: 'en-US', name: 'US Dollar' },
@@ -13,21 +20,23 @@ export const currencies = {
 	BDT: { code: 'BDT', symbol: '৳', locale: 'bn-BD', name: 'Bangladeshi Taka' },
 	CAD: { code: 'CAD', symbol: '$', locale: 'en-CA', name: 'Canadian Dollar' },
 	AUD: { code: 'AUD', symbol: '$', locale: 'en-AU', name: 'Australian Dollar' }
-};
+} as const satisfies Record<string, CurrencyInfo>;
+
+export type CurrencyCode = keyof typeof currencies;
 
 // Get initial currency from localStorage or default to USD
-const getInitialCurrency = () => {
+const getInitialCurrency = (): CurrencyCode => {
 	if (browser) {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		if (stored && stored in currencies) {
-			return stored;
+			return stored as CurrencyCode;
 		}
 	}
 	return 'USD';
 };
 
 // Create the writable store
-export const currency = writable(getInitialCurrency());
+export const currency = writable<CurrencyCode>(getInitialCurrency());
 
 // Subscribe to changes and persist to localStorage
 if (browser) {

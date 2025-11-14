@@ -3,7 +3,28 @@
  * Maps template IDs to their components, styles, and metadata
  */
 
-export const TEMPLATES = {
+// Type for dynamically imported Svelte component
+type SvelteComponentModule = Promise<{ default: any }>;
+
+export interface TemplateMetadata {
+	id: string;
+	name: string;
+	description: string;
+	component: () => SvelteComponentModule;
+	tags: string[];
+	premium: boolean;
+	preview: string;
+}
+
+export interface TemplateOption {
+	id: string;
+	label: string;
+	premium: boolean;
+}
+
+export type TemplateId = 'modern' | 'classic' | 'minimal' | 'atlantic';
+
+export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 	modern: {
 		id: 'modern',
 		name: 'Modern',
@@ -40,49 +61,40 @@ export const TEMPLATES = {
 		premium: false,
 		preview: '/templates/atlantic-preview.png'
 	}
-	
 };
 
 /**
  * Get template by ID
- * @param {string} templateId - The template ID
- * @returns {any|null} Template object or null if not found
  */
-export function getTemplate(templateId) {
+export function getTemplate(templateId: string): TemplateMetadata | null {
 	return Object.values(TEMPLATES).find((template) => template.id === templateId) || null;
 }
 
 /**
  * Get all templates
- * @returns {any} All templates
  */
-export function getAllTemplates() {
+export function getAllTemplates(): Record<TemplateId, TemplateMetadata> {
 	return TEMPLATES;
 }
 
 /**
  * Get templates filtered by premium status
- * @param {boolean} isPremium - Filter by premium status
- * @returns {Array<any>} Array of template objects
  */
-export function getTemplatesByPremium(isPremium = false) {
+export function getTemplatesByPremium(isPremium: boolean = false): TemplateMetadata[] {
 	return Object.values(TEMPLATES).filter((template) => template.premium === isPremium);
 }
 
 /**
  * Get templates by tag
- * @param {string} tag - Tag to filter by
- * @returns {Array<any>} Array of template objects
  */
-export function getTemplatesByTag(tag) {
+export function getTemplatesByTag(tag: string): TemplateMetadata[] {
 	return Object.values(TEMPLATES).filter((template) => template.tags.includes(tag));
 }
 
 /**
  * Get template options for dropdown/select components
- * @returns {Array<any>} Array of template options with id and label
  */
-export function getTemplateOptions() {
+export function getTemplateOptions(): TemplateOption[] {
 	return Object.values(TEMPLATES).map((template) => ({
 		id: template.id,
 		label: template.name,
@@ -92,17 +104,14 @@ export function getTemplateOptions() {
 
 /**
  * Check if a template exists
- * @param {string} templateId - The template ID to check
- * @returns {boolean} True if template exists
  */
-export function templateExists(templateId) {
+export function templateExists(templateId: string): templateId is TemplateId {
 	return templateId in TEMPLATES;
 }
 
 /**
  * Get default template ID
- * @returns {string} Default template ID
  */
-export function getDefaultTemplateId() {
+export function getDefaultTemplateId(): TemplateId {
 	return 'modern';
 }

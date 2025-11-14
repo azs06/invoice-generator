@@ -1,26 +1,31 @@
-<script>
+<script lang="ts">
 	import { DEFAULT_LOGO_PATH, defaultInvoice } from '$lib/index.js';
 	import { toUSCurrency } from '$lib/currency.js';
 	import { calculateDiscount, calculateTax } from '../lib/InvoiceCalculator.js';
-	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
+	import type { InvoiceData } from '$lib/types';
 
-	/** @type {InvoiceData} */
-	export let invoice = defaultInvoice;
+	interface Props {
+		invoice?: InvoiceData;
+	}
 
-	const totalAmount = () => invoice.total ?? 0;
-	const subTotal = () => invoice.subTotal ?? 0;
+	let { invoice = defaultInvoice }: Props = $props();
 
-	const discountDisplayValue = () => calculateDiscount(invoice.discount, subTotal());
+	type BalanceState = 'credit' | 'settled' | 'partial' | 'due';
 
-	const taxDisplayValue = () => {
+	const totalAmount = (): number => invoice.total ?? 0;
+	const subTotal = (): number => invoice.subTotal ?? 0;
+
+	const discountDisplayValue = (): number => calculateDiscount(invoice.discount, subTotal());
+
+	const taxDisplayValue = (): number => {
 		const amountAfterDiscount = subTotal() - discountDisplayValue();
 		return calculateTax(invoice.tax, amountAfterDiscount);
 	};
 
-	const shippingDisplayValue = () => invoice.shipping?.amount ?? 0;
-	const amountPaid = () => invoice.amountPaid ?? 0;
+	const shippingDisplayValue = (): number => invoice.shipping?.amount ?? 0;
+	const amountPaid = (): number => invoice.amountPaid ?? 0;
 
-	const balanceDue = () => {
+	const balanceDue = (): number => {
 		if (typeof invoice.balanceDue === 'number') {
 			return invoice.balanceDue;
 		}
@@ -29,7 +34,7 @@
 		return Number.isFinite(fallback) ? fallback : 0;
 	};
 
-	const balanceState = () => {
+	const balanceState = (): BalanceState => {
 		const balance = balanceDue();
 
 		if (balance < 0) {
@@ -47,7 +52,7 @@
 		return 'due';
 	};
 
-	const statusLabel = () => {
+	const statusLabel = (): string => {
 		switch (balanceState()) {
 			case 'credit':
 				return 'CREDIT OWED';
@@ -60,7 +65,8 @@
 		}
 	};
 
-	const balanceSummaryLabel = () => (balanceDue() < 0 ? 'Credit balance' : 'Balance due');
+	const balanceSummaryLabel = (): string =>
+		balanceDue() < 0 ? 'Credit balance' : 'Balance due';
 </script>
 
 <div class="invoice-preview">

@@ -1,39 +1,35 @@
-<script>
-	'use runes';
+<script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import { totalAmounts, calculateDiscount, calculateTax } from '../lib/InvoiceCalculator.js';
 	import { toUSCurrency, currencySymbol } from '$lib/currency.js';
 	import { defaultInvoice } from '$lib/index.js';
-	/** @typedef {import('$lib/types').InvoiceData} InvoiceData */
-	/** @typedef {import('$lib/types').MonetaryAdjustment} MonetaryAdjustment */
-	/** @typedef {import('$lib/types').ShippingInfo} ShippingInfo */
+	import type { InvoiceData, MonetaryAdjustment, ShippingInfo } from '$lib/types';
 
-	/**
-	 * @type {{
-	 *   invoice?: InvoiceData;
-	 *   onUpdateDiscount?: (value: MonetaryAdjustment) => void;
-	 *   onUpdateTax?: (value: MonetaryAdjustment) => void;
-	 *   onUpdateShipping?: (value: ShippingInfo) => void;
-	 * }}
-	 */
+	interface Props {
+		invoice?: InvoiceData;
+		onUpdateDiscount?: (value: MonetaryAdjustment) => void;
+		onUpdateTax?: (value: MonetaryAdjustment) => void;
+		onUpdateShipping?: (value: ShippingInfo) => void;
+	}
+
 	let {
-		invoice = /** @type {InvoiceData} */ (defaultInvoice),
+		invoice = defaultInvoice,
 		onUpdateDiscount,
 		onUpdateTax,
 		onUpdateShipping
-	} = $props();
+	}: Props = $props();
 
-	let tax = $state(invoice.tax || { type: 'flat', rate: 0 });
-	let discount = $state(invoice.discount || { type: 'flat', rate: 0 });
-	let shipping = $state(invoice.shipping || { amount: 0 });
+	let tax = $state<MonetaryAdjustment>(invoice.tax || { type: 'flat', rate: 0 });
+	let discount = $state<MonetaryAdjustment>(invoice.discount || { type: 'flat', rate: 0 });
+	let shipping = $state<ShippingInfo>(invoice.shipping || { amount: 0 });
 
-	const subTotal = () => invoice.subTotal || 0;
-	const discountAmount = () => calculateDiscount(invoice.discount, subTotal());
-	const taxAmount = () => {
+	const subTotal = (): number => invoice.subTotal || 0;
+	const discountAmount = (): number => calculateDiscount(invoice.discount, subTotal());
+	const taxAmount = (): number => {
 		const afterDiscount = subTotal() - discountAmount();
 		return calculateTax(invoice.tax, afterDiscount);
 	};
-	const totalAmount = () => totalAmounts(invoice, subTotal());
+	const totalAmount = (): number => totalAmounts(invoice, subTotal());
 
 	$effect(() => {
 		if (onUpdateDiscount && discount) onUpdateDiscount(discount);

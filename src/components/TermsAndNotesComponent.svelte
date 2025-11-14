@@ -1,22 +1,14 @@
-<script>
+<script lang="ts">
 	import { _ } from 'svelte-i18n';
-	/**
-	 * @typedef {(value: string) => void} UpdateHandler
-	 */
 
-	/** @type {string} */
-	export let terms = '';
-	/** @type {string} */
-	export let notes = '';
-	/** @type {UpdateHandler} */
-	export let onUpdateTerms = () => {};
-	/** @type {UpdateHandler} */
-	export let onUpdateNotes = () => {};
+	type UpdateHandler = (value: string) => void;
 
-	/**
-	 * @param {Event} event
-	 */
-	const handleTermsChange = (event) => {
+	export let terms: string = '';
+	export let notes: string = '';
+	export let onUpdateTerms: UpdateHandler = () => {};
+	export let onUpdateNotes: UpdateHandler = () => {};
+
+	const handleTermsChange = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLTextAreaElement)) {
 			return;
@@ -24,10 +16,7 @@
 		onUpdateTerms(target.value);
 	};
 
-	/**
-	 * @param {Event} event
-	 */
-	const handleNotesChange = (event) => {
+	const handleNotesChange = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLTextAreaElement)) {
 			return;

@@ -1,98 +1,151 @@
-<script>
+<script lang="ts">
 	import { _ } from 'svelte-i18n';
 
+	interface SchemaOffer {
+		'@type': 'Offer';
+		price: string;
+		priceCurrency?: string;
+	}
+
+	interface SchemaRating {
+		'@type': 'AggregateRating';
+		ratingValue: string;
+		ratingCount: string;
+	}
+
+	interface SoftwareApplicationSchema {
+		'@context': string;
+		'@type': 'SoftwareApplication';
+		name: string;
+		applicationCategory: string;
+		applicationSubCategory: string;
+		operatingSystem: string;
+		offers: SchemaOffer;
+		description: string;
+		aggregateRating: SchemaRating;
+		featureList: string[];
+	}
+
+	interface WebApplicationSchema {
+		'@context': string;
+		'@type': 'WebApplication';
+		name: string;
+		url: string;
+		browserRequirements: string;
+		applicationCategory: string;
+		offers: Omit<SchemaOffer, 'priceCurrency'>;
+	}
+
+	interface FAQAnswer {
+		'@type': 'Answer';
+		text: string;
+	}
+
+	interface FAQQuestion {
+		'@type': 'Question';
+		name: string;
+		acceptedAnswer: FAQAnswer;
+	}
+
+	interface FAQPageSchema {
+		'@context': string;
+		'@type': 'FAQPage';
+		mainEntity: FAQQuestion[];
+	}
+
 	// Schema.org structured data for SEO
-	const schemaMarkup = {
-		"@context": "https://schema.org",
-		"@type": "SoftwareApplication",
-		"name": "FreeInvoice.info",
-		"applicationCategory": "BusinessApplication",
-		"applicationSubCategory": "InvoiceApplication",
-		"operatingSystem": "Any",
-		"offers": {
-			"@type": "Offer",
-			"price": "0",
-			"priceCurrency": "USD"
+	const schemaMarkup: SoftwareApplicationSchema = {
+		'@context': 'https://schema.org',
+		'@type': 'SoftwareApplication',
+		name: 'FreeInvoice.info',
+		applicationCategory: 'BusinessApplication',
+		applicationSubCategory: 'InvoiceApplication',
+		operatingSystem: 'Any',
+		offers: {
+			'@type': 'Offer',
+			price: '0',
+			priceCurrency: 'USD'
 		},
-		"description": "Free online invoice generator for freelancers and small businesses. Create professional PDF invoices instantly with no signup required. Available in English and Bengali.",
-		"aggregateRating": {
-			"@type": "AggregateRating",
-			"ratingValue": "4.8",
-			"ratingCount": "127"
+		description:
+			'Free online invoice generator for freelancers and small businesses. Create professional PDF invoices instantly with no signup required. Available in English and Bengali.',
+		aggregateRating: {
+			'@type': 'AggregateRating',
+			ratingValue: '4.8',
+			ratingCount: '127'
 		},
-		"featureList": [
-			"No signup required",
-			"Instant PDF download",
-			"Privacy-first with local storage",
-			"Multi-language support (English, Bengali)",
-			"Multiple professional templates",
-			"Free forever"
+		featureList: [
+			'No signup required',
+			'Instant PDF download',
+			'Privacy-first with local storage',
+			'Multi-language support (English, Bengali)',
+			'Multiple professional templates',
+			'Free forever'
 		]
 	};
 
-	const webAppSchema = {
-		"@context": "https://schema.org",
-		"@type": "WebApplication",
-		"name": "FreeInvoice.info",
-		"url": "https://freeinvoice.info",
-		"browserRequirements": "Requires JavaScript. Requires HTML5.",
-		"applicationCategory": "FinanceApplication",
-		"offers": {
-			"@type": "Offer",
-			"price": "0"
+	const webAppSchema: WebApplicationSchema = {
+		'@context': 'https://schema.org',
+		'@type': 'WebApplication',
+		name: 'FreeInvoice.info',
+		url: 'https://freeinvoice.info',
+		browserRequirements: 'Requires JavaScript. Requires HTML5.',
+		applicationCategory: 'FinanceApplication',
+		offers: {
+			'@type': 'Offer',
+			price: '0'
 		}
 	};
 
-	const faqSchema = {
-		"@context": "https://schema.org",
-		"@type": "FAQPage",
-		"mainEntity": [
+	const faqSchema: FAQPageSchema = {
+		'@context': 'https://schema.org',
+		'@type': 'FAQPage',
+		mainEntity: [
 			{
-				"@type": "Question",
-				"name": "Is this invoice generator really free?",
-				"acceptedAnswer": {
-					"@type": "Answer",
-					"text": "Yes! FreeInvoice.info is completely free to use with no hidden costs, no premium tiers, and no signup required. Create unlimited invoices forever."
+				'@type': 'Question',
+				name: 'Is this invoice generator really free?',
+				acceptedAnswer: {
+					'@type': 'Answer',
+					text: 'Yes! FreeInvoice.info is completely free to use with no hidden costs, no premium tiers, and no signup required. Create unlimited invoices forever.'
 				}
 			},
 			{
-				"@type": "Question",
-				"name": "Do I need to create an account?",
-				"acceptedAnswer": {
-					"@type": "Answer",
-					"text": "No account needed. Simply visit the site and start creating invoices immediately. Your invoices are saved locally in your browser."
+				'@type': 'Question',
+				name: 'Do I need to create an account?',
+				acceptedAnswer: {
+					'@type': 'Answer',
+					text: 'No account needed. Simply visit the site and start creating invoices immediately. Your invoices are saved locally in your browser.'
 				}
 			},
 			{
-				"@type": "Question",
-				"name": "Where is my data stored?",
-				"acceptedAnswer": {
-					"@type": "Answer",
-					"text": "All your data is stored locally in your browser using IndexedDB. We never send your information to any server, ensuring complete privacy."
+				'@type': 'Question',
+				name: 'Where is my data stored?',
+				acceptedAnswer: {
+					'@type': 'Answer',
+					text: 'All your data is stored locally in your browser using IndexedDB. We never send your information to any server, ensuring complete privacy.'
 				}
 			},
 			{
-				"@type": "Question",
-				"name": "Can I use this for my business in Bangladesh?",
-				"acceptedAnswer": {
-					"@type": "Answer",
-					"text": "Absolutely! Our invoice generator supports Bengali language and is perfect for businesses in Bangladesh. You can create invoices in both English and বাংলা."
+				'@type': 'Question',
+				name: 'Can I use this for my business in Bangladesh?',
+				acceptedAnswer: {
+					'@type': 'Answer',
+					text: 'Absolutely! Our invoice generator supports Bengali language and is perfect for businesses in Bangladesh. You can create invoices in both English and বাংলা.'
 				}
 			},
 			{
-				"@type": "Question",
-				"name": "How do I add my company logo?",
-				"acceptedAnswer": {
-					"@type": "Answer",
-					"text": "Simply click the logo area in the invoice form and upload your company logo. Supported formats include PNG, JPG, and SVG files."
+				'@type': 'Question',
+				name: 'How do I add my company logo?',
+				acceptedAnswer: {
+					'@type': 'Answer',
+					text: 'Simply click the logo area in the invoice form and upload your company logo. Supported formats include PNG, JPG, and SVG files.'
 				}
 			},
 			{
-				"@type": "Question",
-				"name": "Can I save my invoices for later?",
-				"acceptedAnswer": {
-					"@type": "Answer",
-					"text": "Yes! Click the 'Save Draft' button to save your invoice. You can access all saved invoices from the 'Saved Invoices' page anytime."
+				'@type': 'Question',
+				name: 'Can I save my invoices for later?',
+				acceptedAnswer: {
+					'@type': 'Answer',
+					text: 'Yes! Click the \'Save Draft\' button to save your invoice. You can access all saved invoices from the \'Saved Invoices\' page anytime.'
 				}
 			}
 		]
