@@ -234,14 +234,6 @@
 		margin: 0 auto;
 	}
 
-	/* Dark mode support */
-	:global(.dark) .invoice-preview {
-		--color-bg-primary: #1f2937;
-		--color-bg-secondary: #111827;
-		--color-text-primary: #f9fafb;
-		--color-text-secondary: #9ca3af;
-		--color-border-primary: #374151;
-	}
 
 	.preview-header {
 		display: flex;
@@ -421,10 +413,6 @@
 		background: #f3f4f6;
 	}
 
-	:global(.dark) .items-table th {
-		background: #1e293b;
-		color: #f1f5f9;
-	}
 
 	.items-table th:last-child,
 	.items-table td:last-child {
