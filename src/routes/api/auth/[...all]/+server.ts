@@ -1,9 +1,11 @@
 import { createAuth } from "$lib/server/auth";
+import { requirePlatform } from "$lib/server/session";
 import { toSvelteKitHandler } from "better-auth/svelte-kit";
 import type { RequestHandler } from "@sveltejs/kit";
 
 const handler: RequestHandler = async (event) => {
-    const auth = createAuth(event.platform?.env);
+    const env = requirePlatform(event);
+    const auth = createAuth(env);
     return toSvelteKitHandler(auth)(event);
 }
 

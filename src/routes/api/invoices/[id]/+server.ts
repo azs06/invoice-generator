@@ -1,19 +1,16 @@
 import { json } from '@sveltejs/kit';
 import { getInvoice, saveInvoice, deleteInvoice } from '$lib/server/db';
-import { createAuth } from '$lib/server/auth';
+import { requireDB, getBucket } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 import type { InvoiceData } from '$lib/types';
 
 export const GET: RequestHandler = async (event) => {
-    const auth = createAuth(event.platform?.env);
-    const session = await auth.api.getSession({ headers: event.request.headers });
+    const session = event.locals.session;
     if (!session) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const db = event.platform?.env?.DB;
-    if (!db) return json({ error: 'Database not available' }, { status: 500 });
-
+    const db = requireDB(event);
     const { id } = event.params;
     const invoice = await getInvoice(db, id, session.user.id);
     if (!invoice) {
@@ -23,15 +20,13 @@ export const GET: RequestHandler = async (event) => {
 };
 
 export const PUT: RequestHandler = async (event) => {
-    const auth = createAuth(event.platform?.env);
-    const session = await auth.api.getSession({ headers: event.request.headers });
+    const session = event.locals.session;
     if (!session) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const db = event.platform?.env?.DB;
-    const bucket = event.platform?.env?.BUCKET;
-    if (!db) return json({ error: 'Database not available' }, { status: 500 });
+    const db = requireDB(event);
+    const bucket = getBucket(event);
 
     const { id } = event.params;
     const invoice = (await event.request.json()) as InvoiceData;
@@ -43,15 +38,13 @@ export const PUT: RequestHandler = async (event) => {
 };
 
 export const DELETE: RequestHandler = async (event) => {
-    const auth = createAuth(event.platform?.env);
-    const session = await auth.api.getSession({ headers: event.request.headers });
+    const session = event.locals.session;
     if (!session) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const db = event.platform?.env?.DB;
-    const bucket = event.platform?.env?.BUCKET;
-    if (!db) return json({ error: 'Database not available' }, { status: 500 });
+    const db = requireDB(event);
+    const bucket = getBucket(event);
 
     const { id } = event.params;
     await deleteInvoice(db, bucket, id, session.user.id);

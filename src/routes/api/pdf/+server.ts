@@ -1,22 +1,22 @@
 import { error } from '@sveltejs/kit';
-import { createAuth } from '$lib/server/auth';
 import { updateInvoicePdfKey } from '$lib/server/db';
+import { requirePlatform, getBucket } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async (event) => {
-    const auth = createAuth(event.platform?.env);
-    const session = await auth.api.getSession({ headers: event.request.headers });
-
+    const session = event.locals.session;
     if (!session) {
         error(401, 'Unauthorized');
     }
+
+    const env = requirePlatform(event);
 
     const { html, invoiceId } = (await event.request.json()) as { html: string; invoiceId?: string };
     if (!html) {
         error(400, 'Missing HTML content');
     }
 
-    const pdfUrl = event.platform?.env?.PDF_GENERATION_URL;
+    const pdfUrl = env.PDF_GENERATION_URL;
     if (!pdfUrl) {
         console.error('PDF_GENERATION_URL not configured');
         error(500, 'PDF generation service not configured');
@@ -37,8 +37,8 @@ export const POST: RequestHandler = async (event) => {
         }
 
         const pdfBuffer = await response.arrayBuffer();
-        const bucket = event.platform?.env?.BUCKET;
-        const db = event.platform?.env?.DB;
+        const bucket = getBucket(event);
+        const db = env.DB;
 
         // If invoiceId is provided and we have a bucket, upload to R2
         if (invoiceId && bucket && db) {

@@ -34,7 +34,11 @@
 			<CurrencySelector />
 			<LanguageSelector />
 			<ThemeToggle />
-			{#if $session.data}
+			{#if $session.isPending}
+				<div class="auth-loading">
+					<div class="loading-spinner"></div>
+				</div>
+			{:else if $session.data}
 				<div class="user-profile">
 					{#if $session.data.user.image}
 						<img src={$session.data.user.image} alt="User" class="user-avatar" />
@@ -163,5 +167,28 @@
 
 	.auth-button:hover {
 		opacity: 0.9;
+	}
+
+	.auth-loading {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 2.5rem;
+	}
+
+	.loading-spinner {
+		width: 1.25rem;
+		height: 1.25rem;
+		border: 2px solid var(--color-border-secondary);
+		border-top-color: var(--color-accent-blue);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>
