@@ -19,18 +19,29 @@ export interface SessionResult {
  * Returns null if not authenticated or if platform is unavailable.
  */
 export async function getSession(event: RequestEvent): Promise<AuthSession | null> {
-    const env = event.platform?.env;
-    
-    if (!env) {
+    // Check if platform exists at all
+    if (!event.platform?.env) {
         console.warn('Platform environment not available - running outside Cloudflare?');
         return null;
     }
 
     try {
-        const auth = createAuth(env);
+        // Try to access DB - this will throw on prerenderable routes
+        // We need to catch this specific error from the Cloudflare adapter
+        const db = event.platform.env.DB;
+        if (!db) {
+            console.warn('Database binding not available');
+            return null;
+        }
+        
+        const auth = createAuth(event.platform.env);
         const session = await auth.api.getSession({ headers: event.request.headers });
         return session;
     } catch (err) {
+        // Handle the "Cannot access platform.env.DB in a prerenderable route" error gracefully
+        if (err instanceof Error && err.message.includes('prerenderable')) {
+            return null;
+        }
         console.error('Failed to get session:', err);
         return null;
     }

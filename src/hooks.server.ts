@@ -9,8 +9,12 @@ import { getSession } from '$lib/server/session';
  * 2. Makes session available to all routes without per-route auth boilerplate
  */
 export const handle: Handle = async ({ event, resolve }) => {
-    // Attach session to locals for all routes
-    // This avoids duplicating auth checks in every API route
+    // Ignore Chrome DevTools requests (avoid noisy 404 logs)
+    if (event.url.pathname.startsWith('/.well-known/')) {
+        return new Response(null, { status: 404 });
+    }
+
+    // Attempt to get session - will return null if platform bindings unavailable
     event.locals.session = await getSession(event);
 
     const response = await resolve(event);

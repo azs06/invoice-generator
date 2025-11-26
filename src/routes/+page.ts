@@ -1,1 +1,1 @@
-export const prerender = true;
+// Inherits prerender = false from layout
