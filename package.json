@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"dev:cf": "npm run build && npx wrangler pages dev build",
+		"dev:cf": "npm run build && npx wrangler dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -13,7 +13,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check .",
-		"deploy": "node -r dotenv/config build"
+		"deploy": "npm run build && npx wrangler deploy"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^6.0.0",
