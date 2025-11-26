@@ -5,11 +5,16 @@ compatibility_flags = [ "nodejs_compat" ]
 [[d1_databases]]
 binding = "DB"
 database_name = "invoice-db"
-database_id = "YOUR_DATABASE_ID_HERE" # Run `npx wrangler d1 create invoice-db` to get this ID
+database_id = "2f6cfba4-f98c-499e-acf4-f64f87ca9061"
 
 [[r2_buckets]]
 binding = "BUCKET"
 bucket_name = "invoice-bucket"
 
 [vars]
-PDF_GENERATION_URL = "https://example.com/generate-pdf" # Update this with actual URL
+PDF_GENERATION_URL = "https://gc41xo63m1.execute-api.ap-southeast-1.amazonaws.com/prod/pdf"
+
+# Secrets (set via: wrangler secret put <SECRET_NAME>):
+# - GOOGLE_CLIENT_ID
+# - GOOGLE_CLIENT_SECRET
+# - BETTER_AUTH_SECRET
