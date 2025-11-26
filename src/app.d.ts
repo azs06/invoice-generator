@@ -31,6 +31,8 @@ declare global {
 		BUCKET: R2Bucket;
 		// Environment variables (set in wrangler.toml [vars])
 		PDF_GENERATION_URL: string;
+		// PDF Microservice API Key (set via wrangler secret put)
+		PDF_MICROSERVICE_API_KEY: string;
 		// Auth secrets (set via wrangler secret put)
 		GOOGLE_CLIENT_ID: string;
 		GOOGLE_CLIENT_SECRET: string;

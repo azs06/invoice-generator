@@ -18,3 +18,4 @@ PDF_GENERATION_URL = "https://gc41xo63m1.execute-api.ap-southeast-1.amazonaws.co
 # - GOOGLE_CLIENT_ID
 # - GOOGLE_CLIENT_SECRET
 # - BETTER_AUTH_SECRET
+# - PDF_MICROSERVICE_API_KEY

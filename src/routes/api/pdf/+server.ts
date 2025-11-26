@@ -22,21 +22,37 @@ export const POST: RequestHandler = async (event) => {
         error(500, 'PDF generation service not configured');
     }
 
+    const apiKey = env.PDF_MICROSERVICE_API_KEY;
+    if (!apiKey) {
+        console.error('PDF_MICROSERVICE_API_KEY not configured');
+        error(500, 'PDF generation service not configured');
+    }
+
     try {
         const response = await fetch(pdfUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-API-Key': apiKey
             },
             body: new URLSearchParams({ html })
         });
 
         if (!response.ok) {
-            console.error('PDF generation failed:', await response.text());
-            error(502, 'PDF generation failed');
+            const errorText = await response.text();
+            console.error('PDF generation failed:', response.status, errorText);
+            error(502, `PDF generation failed: ${errorText}`);
         }
 
-        const pdfBuffer = await response.arrayBuffer();
+        // Lambda returns base64-encoded PDF, decode it
+        const base64Pdf = await response.text();
+        const binaryString = atob(base64Pdf);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const pdfBuffer = bytes.buffer;
+        
         const bucket = getBucket(event);
         const db = env.DB;
 
