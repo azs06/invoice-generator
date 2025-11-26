@@ -4,13 +4,15 @@
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
-	import { saveInvoice, getAllInvoices, getInvoice } from '$lib/db.js';
+	import SignUpPromptModal from '$components/SignUpPromptModal.svelte';
+	import { saveInvoice, getAllInvoices, getInvoice, getInvoiceUsage } from '$lib/db.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
 	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
+	import { authClient } from '$lib/auth';
 
 	type PDFAction = 'download' | 'print' | null;
 	type TabName = 'edit' | 'preview';
@@ -26,6 +28,10 @@
 	let userEditedDueDate = $state<boolean>(false);
 	let showSaveDraftModal = $state<boolean>(false);
 	let draftName = $state<string>('');
+
+	let usage = $state<{ count: number; limit: number }>({ count: 0, limit: 12 });
+	let showLimitWarning = $state<boolean>(false);
+	let showSignUpPrompt = $state<boolean>(false);
 
 	const createNewInvoice = (): InvoiceData => ({
 		id: uuidv4(),
@@ -118,42 +124,203 @@
 		);
 	};
 
+	const session = authClient.useSession();
+
 	const saveAsPDF = async (): Promise<void> => {
 		const currentInvoice = invoice;
 		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
 			return;
 		}
 
-		isGeneratingPDF = true; // 👈 start loading
+		// For guests, show sign-up prompt once per session
+		if (!$session.data) {
+			const dismissed = sessionStorage.getItem('dismissedSignUpPrompt');
+			if (!dismissed) {
+				showSignUpPrompt = true;
+				return;
+			}
+		}
+
+		await generateAndDownloadPDF();
+	};
+
+	const generateAndDownloadPDF = async (): Promise<void> => {
+		const currentInvoice = invoice;
+		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
+			return;
+		}
+
+		isGeneratingPDF = true;
 		pdfAction = 'download';
 
 		try {
 			await waitForPreviewImages();
 
-			const html2pdf = (await import('html2pdf.js')).default;
-
-			await html2pdf()
-				.from(previewRef)
-				.set({
-					margin: 0.5,
-					filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
-					html2canvas: {
-						scale: 3,
-						useCORS: true
-					},
-					jsPDF: {
-						unit: 'in',
-						format: 'letter',
-						orientation: 'portrait'
+			if ($session.data) {
+				// Server-side generation for logged-in users
+				// Clone the preview element to avoid modifying the original
+				const clone = previewRef.cloneNode(true) as HTMLElement;
+				
+				// Convert images to base64 to ensure they render in the PDF
+				const images = clone.querySelectorAll('img');
+				for (const img of images) {
+					if (img.src && !img.src.startsWith('data:')) {
+						try {
+							const response = await fetch(img.src);
+							const blob = await response.blob();
+							const base64 = await new Promise<string>((resolve) => {
+								const reader = new FileReader();
+								reader.onloadend = () => resolve(reader.result as string);
+								reader.readAsDataURL(blob);
+							});
+							img.src = base64;
+						} catch {
+							// Keep original src if conversion fails
+						}
 					}
-				})
-				.save();
+				}
+
+				// Build a minimal, self-contained HTML document
+				const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+/* Reset and base styles */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	background: white; 
+	padding: 20px;
+	color: #111827;
+	-webkit-print-color-adjust: exact;
+	print-color-adjust: exact;
+}
+
+/* Invoice template styles */
+.invoice-preview {
+	--radius-lg: 0.75rem;
+	--radius-md: 0.5rem;
+	--color-bg-primary: #ffffff;
+	--color-bg-secondary: #f9fafb;
+	--color-text-primary: #111827;
+	--color-text-secondary: #6b7280;
+	--color-border-primary: #e5e7eb;
+	--color-accent-blue: #2563eb;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+	padding: 2rem;
+	background: white;
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.preview-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.25rem; padding-bottom: 1rem; }
+.brand { display: flex; align-items: center; }
+.logo-shell { max-width: 150px; height: auto; }
+.logo-shell img { width: 100%; height: auto; object-fit: contain; }
+.invoice-title-section { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
+.invoice-title { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
+.invoice-label { font-size: 2rem; font-weight: 300; letter-spacing: 0.02em; }
+.invoice-number { font-size: 1rem; color: #6b7280; }
+.status-text { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.status-text.due { color: #c2410c; }
+.status-text.partial { color: #2563eb; }
+.status-text.settled, .status-text.credit { color: #047857; }
+
+.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; padding: 1.5rem 0; }
+.details-column { display: flex; flex-direction: column; gap: 0.75rem; }
+.right-column { align-items: flex-end; text-align: right; }
+.details-block { display: flex; flex-direction: column; gap: 0.25rem; }
+.from-section { margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb; }
+.details-label { font-size: 0.8125rem; font-weight: 600; color: #6b7280; }
+.details-value { font-size: 0.95rem; word-break: break-word; white-space: pre-wrap; }
+.balance-due-highlight { margin-top: 0.5rem; padding: 0.75rem 1rem; background: #f9fafb; border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end; }
+.balance-label { font-size: 0.8rem; font-weight: 600; color: #6b7280; }
+.balance-amount { font-size: 1.5rem; font-weight: 700; }
+
+.items-card { border-radius: 0.5rem; overflow: hidden; border: 1px solid #e5e7eb; }
+.items-table { width: 100%; border-collapse: collapse; background: white; }
+.items-table th { text-align: left; font-size: 0.8rem; font-weight: 600; padding: 0.85rem 1rem; background: #f3f4f6; }
+.items-table th:last-child, .items-table td:last-child { text-align: right; }
+.items-table td { padding: 0.75rem 1rem; font-size: 0.95rem; border-bottom: 1px solid #e5e7eb; }
+.items-table tbody tr:last-child td { border-bottom: none; }
+
+.summary { display: flex; justify-content: flex-end; }
+.summary-table { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 0.5rem; }
+.summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; padding: 0.4rem 0; }
+.summary-row span:first-child { color: #6b7280; }
+.summary-row.emphasize { font-weight: 700; font-size: 1.05rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb; }
+.summary-row.emphasize span:first-child { color: #111827; }
+
+.notes-section { padding: 1.25rem 0; border-top: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 0.5rem; }
+.notes-section p { margin: 0; font-size: 0.95rem; white-space: pre-wrap; line-height: 1.6; }
+</style>
+</head>
+<body>
+${clone.innerHTML}
+</body>
+</html>`;
+
+				const response = await fetch('/api/pdf', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ html: htmlContent, invoiceId: currentInvoice.id })
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to generate PDF server-side');
+				}
+
+				const blob = await response.blob();
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`;
+				document.body.appendChild(a);
+				a.click();
+				window.URL.revokeObjectURL(url);
+				document.body.removeChild(a);
+			} else {
+				// Client-side generation for guests
+				const html2pdf = (await import('html2pdf.js')).default;
+
+				await html2pdf()
+					.from(previewRef)
+					.set({
+						margin: 0.5,
+						filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
+						html2canvas: {
+							scale: 3,
+							useCORS: true
+						},
+						jsPDF: {
+							unit: 'in',
+							format: 'letter',
+							orientation: 'portrait'
+						}
+					})
+					.save();
+			}
 		} catch (error) {
 			console.error('Failed to export PDF:', error);
+			alert('Failed to generate PDF. Please try again.');
 		} finally {
-			isGeneratingPDF = false; // 👈 stop loading
+			isGeneratingPDF = false;
 			pdfAction = null;
 		}
+	};
+
+	const handleContinueBasicDownload = (): void => {
+		showSignUpPrompt = false;
+		generateAndDownloadPDF();
+	};
+
+	const closeSignUpPrompt = (): void => {
+		showSignUpPrompt = false;
 	};
 
 	const printPDF = async (): Promise<void> => {
@@ -213,6 +380,9 @@
 			await runMigrationIfNeeded();
 
 			const invoicesFromDb = await getAllInvoices();
+			if ($session.data) {
+				usage = await getInvoiceUsage();
+			}
 			let loadedInvoice = /** @type {InvoiceData | null} */ (null);
 
 			if (typeof window !== 'undefined') {
@@ -667,6 +837,13 @@
 	<p class="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</p>
 {/if}
 
+<!-- Sign Up Prompt Modal for Guests -->
+<SignUpPromptModal
+	open={showSignUpPrompt}
+	onClose={closeSignUpPrompt}
+	onContinueBasic={handleContinueBasicDownload}
+/>
+
 <!-- Save Draft Modal -->
 
 {#if showSaveDraftModal}
@@ -681,6 +858,15 @@
 		<div class="modal" role="dialog" aria-modal="true" onpointerdown={stopModalPropagation}>
 			<h2 class="modal-title">{$_('modal.save_draft_title')}</h2>
 			<p class="modal-description">{$_('modal.save_draft_description')}</p>
+
+			{#if $session.data && usage.count >= usage.limit}
+				<div class="limit-warning">
+					<p class="text-amber-600 dark:text-amber-400 text-sm mb-4">
+						Warning: You have reached your limit of {usage.limit} invoices. Saving this invoice will
+						automatically delete your oldest saved invoice.
+					</p>
+				</div>
+			{/if}
 
 			<input
 				type="text"

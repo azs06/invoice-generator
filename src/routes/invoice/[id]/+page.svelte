@@ -1,30 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { getInvoice } from '$lib/db.js';
 	import { goto } from '$app/navigation';
 	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
 	import type { InvoiceData } from '$lib/types';
 
-	let invoice = $state<InvoiceData | null>(null);
+	let { data } = $props();
+	let invoice = $state<InvoiceData | null>(data.invoice);
 
-	// This effect will run when `id` changes, and also on initial mount if `id` is present.
 	$effect(() => {
-		// Ensure `id` is available and we're on the client-side before fetching
-		const currentId = page.params.id;
-		if (currentId && typeof window !== 'undefined') {
-			loadInvoiceData(currentId);
-		}
+		invoice = data.invoice;
 	});
-
-	const loadInvoiceData = async (currentId: string): Promise<void> => {
-		const data = await getInvoice(currentId);
-		if (data) {
-			invoice = data as InvoiceData;
-		} else {
-			// Invoice not found, or error during fetch
-			goto('/saved-invoices');
-		}
-	};
 </script>
 
 {#if invoice}
