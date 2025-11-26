@@ -1,11 +1,9 @@
-import { get, set, del, keys, clear } from 'idb-keyval';
 import type { InvoiceData, SavedInvoiceRecord } from './types';
 
-const INVOICE_PREFIX = 'ig.invoice.';
+const API_BASE = '/api/invoices';
 
 /**
  * Helper function to convert a File object to a Base64 Data URL
- * This ensures the function is self-contained if needed, though +page.svelte also has similar logic.
  */
 async function fileToDataURL(file: File): Promise<string | null> {
 	return new Promise((resolve, reject) => {
@@ -24,64 +22,87 @@ async function fileToDataURL(file: File): Promise<string | null> {
 }
 
 export async function saveInvoice(id: string, invoiceData: InvoiceData): Promise<void> {
-	// invoiceData is likely a Svelte $state proxy.
-	// We need to convert it to a plain JavaScript object for IndexedDB.
-
 	let processedLogo: string | null = null;
-	let logoFilename: string | null = invoiceData.logoFilename; // Preserve existing filename
+	let logoFilename: string | null = invoiceData.logoFilename;
 
-	// Handle logo: if it's a File object, convert to data URL.
-	// JSON.stringify would turn a File into {}.
 	if (invoiceData.logo instanceof File) {
 		try {
 			processedLogo = await fileToDataURL(invoiceData.logo);
-			logoFilename = invoiceData.logo.name; // Update filename from the File object
+			logoFilename = invoiceData.logo.name;
 		} catch (error) {
-			console.error('Failed to convert logo to data URL in db.ts:', error);
-			processedLogo = null; // Default to null if conversion fails
+			console.error('Failed to convert logo to data URL:', error);
+			processedLogo = null;
 			logoFilename = null;
 		}
 	} else if (typeof invoiceData.logo === 'string') {
 		processedLogo = invoiceData.logo;
 	}
 
-	// Create an intermediate object with the (potentially) processed logo
-	// and spread the rest of the invoiceData (which might have nested proxies).
 	const objectToSerialize = {
 		...invoiceData,
 		logo: processedLogo,
-		logoFilename: logoFilename, // Ensure logoFilename is included
-		templateId: invoiceData.templateId || 'modern' // Include templateId with fallback
+		logoFilename: logoFilename,
+		templateId: invoiceData.templateId || 'modern'
 	};
 
-	// Convert the entire object (including any nested proxies) to a plain JavaScript object.
+	// We don't need to stringify here, fetch will do it.
+	// But we need to make sure it's a plain object.
 	const plainInvoiceObject = JSON.parse(JSON.stringify(objectToSerialize));
-	await set(INVOICE_PREFIX + id, plainInvoiceObject);
+
+	if (id) {
+		// Update existing
+		await fetch(`${API_BASE}/${id}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(plainInvoiceObject)
+		});
+	} else {
+		// Create new (though id is usually passed)
+		await fetch(API_BASE, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(plainInvoiceObject)
+		});
+	}
 }
 
 export async function getInvoice(id: string): Promise<InvoiceData | undefined> {
-	return await get(INVOICE_PREFIX + id);
+	try {
+		const res = await fetch(`${API_BASE}/${id}`);
+		if (!res.ok) return undefined;
+		return await res.json();
+	} catch (e) {
+		console.error('Error fetching invoice:', e);
+		return undefined;
+	}
 }
 
 export async function deleteInvoice(id: string): Promise<void> {
-	await del(INVOICE_PREFIX + id);
+	await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
 }
 
 export async function getAllInvoices(): Promise<SavedInvoiceRecord[]> {
-	const allKeys = await keys();
-	const invoices: SavedInvoiceRecord[] = [];
-	for (const key of allKeys) {
-		if (typeof key === 'string' && key.startsWith(INVOICE_PREFIX)) {
-			const invoice = await get<InvoiceData>(key);
-			if (invoice) {
-				const id = key.replace(INVOICE_PREFIX, '');
-				invoices.push({ id, invoice });
-			}
+	const response = await fetch('/api/invoices');
+	if (response.ok) {
+		const data = await response.json();
+		// Handle both old array format (if any cached) and new object format
+		if (Array.isArray(data)) return data;
+		return data.invoices || [];
+	}
+	return [];
+}
+
+export async function getInvoiceUsage(): Promise<{ count: number; limit: number }> {
+	const response = await fetch('/api/invoices');
+	if (response.ok) {
+		const data = await response.json();
+		if (!Array.isArray(data)) {
+			return { count: data.count || 0, limit: data.limit || 12 };
 		}
 	}
-	return invoices;
+	return { count: 0, limit: 12 };
 }
 
 export async function clearAllInvoices(): Promise<void> {
-	await clear();
+	await fetch(API_BASE, { method: 'DELETE' });
 }

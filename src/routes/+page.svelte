@@ -4,13 +4,14 @@
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
-	import { saveInvoice, getAllInvoices, getInvoice } from '$lib/db.js';
+	import { saveInvoice, getAllInvoices, getInvoice, getInvoiceUsage } from '$lib/db.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
 	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
+	import { authClient } from '$lib/auth';
 
 	type PDFAction = 'download' | 'print' | null;
 	type TabName = 'edit' | 'preview';
@@ -26,6 +27,9 @@
 	let userEditedDueDate = $state<boolean>(false);
 	let showSaveDraftModal = $state<boolean>(false);
 	let draftName = $state<string>('');
+
+	let usage = $state<{ count: number; limit: number }>({ count: 0, limit: 12 });
+	let showLimitWarning = $state<boolean>(false);
 
 	const createNewInvoice = (): InvoiceData => ({
 		id: uuidv4(),
@@ -118,6 +122,8 @@
 		);
 	};
 
+	const session = authClient.useSession();
+
 	const saveAsPDF = async (): Promise<void> => {
 		const currentInvoice = invoice;
 		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
@@ -130,26 +136,54 @@
 		try {
 			await waitForPreviewImages();
 
-			const html2pdf = (await import('html2pdf.js')).default;
-
-			await html2pdf()
-				.from(previewRef)
-				.set({
-					margin: 0.5,
-					filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
-					html2canvas: {
-						scale: 3,
-						useCORS: true
+			if ($session.data) {
+				// Server-side generation for logged-in users
+				const htmlContent = previewRef.innerHTML;
+				const response = await fetch('/api/pdf', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
 					},
-					jsPDF: {
-						unit: 'in',
-						format: 'letter',
-						orientation: 'portrait'
-					}
-				})
-				.save();
+					body: JSON.stringify({ html: htmlContent })
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to generate PDF server-side');
+				}
+
+				const blob = await response.blob();
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`;
+				document.body.appendChild(a);
+				a.click();
+				window.URL.revokeObjectURL(url);
+				document.body.removeChild(a);
+			} else {
+				// Client-side generation for guests
+				const html2pdf = (await import('html2pdf.js')).default;
+
+				await html2pdf()
+					.from(previewRef)
+					.set({
+						margin: 0.5,
+						filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
+						html2canvas: {
+							scale: 3,
+							useCORS: true
+						},
+						jsPDF: {
+							unit: 'in',
+							format: 'letter',
+							orientation: 'portrait'
+						}
+					})
+					.save();
+			}
 		} catch (error) {
 			console.error('Failed to export PDF:', error);
+			alert('Failed to generate PDF. Please try again.');
 		} finally {
 			isGeneratingPDF = false; // 👈 stop loading
 			pdfAction = null;
@@ -213,6 +247,9 @@
 			await runMigrationIfNeeded();
 
 			const invoicesFromDb = await getAllInvoices();
+			if ($session.data) {
+				usage = await getInvoiceUsage();
+			}
 			let loadedInvoice = /** @type {InvoiceData | null} */ (null);
 
 			if (typeof window !== 'undefined') {
@@ -681,6 +718,15 @@
 		<div class="modal" role="dialog" aria-modal="true" onpointerdown={stopModalPropagation}>
 			<h2 class="modal-title">{$_('modal.save_draft_title')}</h2>
 			<p class="modal-description">{$_('modal.save_draft_description')}</p>
+
+			{#if $session.data && usage.count >= usage.limit}
+				<div class="limit-warning">
+					<p class="text-amber-600 dark:text-amber-400 text-sm mb-4">
+						Warning: You have reached your limit of {usage.limit} invoices. Saving this invoice will
+						automatically delete your oldest saved invoice.
+					</p>
+				</div>
+			{/if}
 
 			<input
 				type="text"

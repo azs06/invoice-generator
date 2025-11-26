@@ -3,6 +3,19 @@
 	import ThemeToggle from './ThemeToggle.svelte';
 	import LanguageSelector from './LanguageSelector.svelte';
 	import CurrencySelector from './CurrencySelector.svelte';
+	import { authClient } from '$lib/auth';
+
+	const session = authClient.useSession();
+
+	const signIn = async () => {
+		await authClient.signIn.social({
+			provider: 'google'
+		});
+	};
+
+	const signOut = async () => {
+		await authClient.signOut();
+	};
 </script>
 
 <header class="app-header">
@@ -21,6 +34,16 @@
 			<CurrencySelector />
 			<LanguageSelector />
 			<ThemeToggle />
+			{#if $session.data}
+				<div class="user-profile">
+					{#if $session.data.user.image}
+						<img src={$session.data.user.image} alt="User" class="user-avatar" />
+					{/if}
+					<button onclick={signOut} class="auth-button">Sign Out</button>
+				</div>
+			{:else}
+				<button onclick={signIn} class="auth-button">Sign In</button>
+			{/if}
 		</div>
 	</div>
 </header>
@@ -111,5 +134,34 @@
 		.nav-links {
 			display: inline-flex;
 		}
+	}
+
+	.user-profile {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.user-avatar {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		object-fit: cover;
+	}
+
+	.auth-button {
+		padding: 0.4rem 0.8rem;
+		border-radius: var(--radius-pill);
+		background: var(--color-accent-blue);
+		color: white;
+		font-weight: 600;
+		font-size: 0.9rem;
+		border: none;
+		cursor: pointer;
+		transition: opacity 0.2s;
+	}
+
+	.auth-button:hover {
+		opacity: 0.9;
 	}
 </style>
