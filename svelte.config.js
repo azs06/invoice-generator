@@ -10,9 +10,9 @@ const config = {
 			// See below for an explanation of these options
 			config: undefined,
 			platformProxy: {
-				configPath: undefined,
+				configPath: 'wrangler.toml',
 				environment: undefined,
-				persist: undefined
+				persist: '.wrangler/state'
 			},
 			fallback: 'plaintext',
 			routes: {
