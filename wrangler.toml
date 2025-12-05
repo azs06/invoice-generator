@@ -16,6 +16,9 @@ database_id = "2f6cfba4-f98c-499e-acf4-f64f87ca9061"
 binding = "BUCKET"
 bucket_name = "invoice-bucket"
 
+[ai]
+binding = "AI"
+
 [vars]
 PDF_GENERATION_URL = "https://gc41xo63m1.execute-api.ap-southeast-1.amazonaws.com/prod/pdf"
 SUPER_ADMIN_EMAILS = "atik.aiub@gmail.com"

@@ -29,6 +29,8 @@ declare global {
 		DB: D1Database;
 		// R2 Bucket for PDF storage
 		BUCKET: R2Bucket;
+		// Cloudflare Workers AI
+		AI: Ai;
 		// Environment variables (set in wrangler.toml [vars])
 		PDF_GENERATION_URL: string;
 		SUPER_ADMIN_EMAILS: string;
