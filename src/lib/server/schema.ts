@@ -6,6 +6,9 @@ export const user = sqliteTable('user', {
     email: text('email').notNull().unique(),
     emailVerified: integer('emailVerified', { mode: 'boolean' }).notNull(),
     image: text('image'),
+    role: text('role').notNull().default('user'),  // 'user' | 'admin'
+    isBanned: integer('isBanned', { mode: 'boolean' }).notNull().default(false),
+    deletedAt: integer('deletedAt', { mode: 'timestamp' }),
     createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
     updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
 });

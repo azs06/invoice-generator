@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS user (
     email TEXT NOT NULL UNIQUE,
     emailVerified INTEGER NOT NULL DEFAULT 0, -- boolean: 0 = false, 1 = true
     image TEXT,
+    role TEXT NOT NULL DEFAULT 'user', -- 'user' | 'admin'
+    isBanned INTEGER NOT NULL DEFAULT 0, -- 0 = active, 1 = banned
+    deletedAt INTEGER DEFAULT NULL, -- Soft delete timestamp (null = not deleted)
     createdAt INTEGER NOT NULL DEFAULT (unixepoch()),
     updatedAt INTEGER NOT NULL DEFAULT (unixepoch())
 );

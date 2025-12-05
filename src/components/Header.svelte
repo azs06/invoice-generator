@@ -5,6 +5,12 @@
 	import CurrencySelector from './CurrencySelector.svelte';
 	import { authClient } from '$lib/auth';
 
+	interface Props {
+		isAdmin?: boolean;
+	}
+
+	let { isAdmin = false }: Props = $props();
+
 	const session = authClient.useSession();
 	let imageError = $state(false);
 	let showProfileMenu = $state(false);
@@ -27,6 +33,8 @@
 	const signOut = async () => {
 		showProfileMenu = false;
 		await authClient.signOut();
+		// Redirect to home page after signing out
+		window.location.href = '/';
 	};
 
 	const handleImageError = () => {
@@ -185,6 +193,23 @@
 								</svg>
 								Saved Invoices
 							</a>
+							{#if isAdmin}
+								<a
+									href="/admin"
+									class="dropdown-item dropdown-item-admin"
+									onclick={closeProfileMenu}
+								>
+									<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
+										<path
+											fill-rule="evenodd"
+											d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+											clip-rule="evenodd"
+										/>
+									</svg>
+									Admin Panel
+									<span class="admin-badge">Admin</span>
+								</a>
+							{/if}
 							<div class="dropdown-divider"></div>
 							<button class="dropdown-item dropdown-item-danger" onclick={signOut}>
 								<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
@@ -522,6 +547,26 @@
 
 	.dropdown-item-danger:hover {
 		background: rgba(220, 38, 38, 0.1);
+	}
+
+	.dropdown-item-admin {
+		color: #7c3aed;
+	}
+
+	.dropdown-item-admin:hover {
+		background: rgba(124, 58, 237, 0.1);
+	}
+
+	.admin-badge {
+		margin-left: auto;
+		background: linear-gradient(135deg, #6366f1, #8b5cf6);
+		color: white;
+		font-size: 0.6rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 0.15rem 0.4rem;
+		border-radius: 9999px;
 	}
 
 	.dropdown-icon {

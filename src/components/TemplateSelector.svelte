@@ -32,7 +32,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.25rem 0.5rem;
-		border-radius: var(--radius-pill);
+		border-radius: var(--radius-sm);
 		background: var(--color-bg-secondary);
 		border: 1px solid var(--color-border-primary);
 	}

@@ -991,7 +991,7 @@ ${clone.innerHTML}
 		justify-content: center;
 		width: 2.5rem;
 		height: 2.5rem;
-		border-radius: var(--radius-pill);
+		border-radius: var(--radius-md);
 		border: 1px solid transparent;
 		background-color: var(--color-accent, #2563eb);
 		color: var(--color-accent-contrast, #ffffff);
