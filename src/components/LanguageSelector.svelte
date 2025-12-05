@@ -120,4 +120,23 @@
 	.select-wrapper:focus-within::after {
 		border-color: var(--color-accent-blue);
 	}
+
+	/* Mobile - hide icon and compact */
+	@media (max-width: 680px) {
+		.language-icon {
+			display: none;
+		}
+		.language-selector {
+			gap: 0;
+		}
+		select {
+			padding: 0.35rem 1.75rem 0.35rem 0.5rem;
+			font-size: 0.8rem;
+		}
+		.select-wrapper::after {
+			right: 0.6rem;
+			width: 0.4rem;
+			height: 0.4rem;
+		}
+	}
 </style>
