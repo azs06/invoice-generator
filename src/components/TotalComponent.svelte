@@ -243,6 +243,21 @@
 			font-size: 0.9rem;
 		}
 
+		.summary-row.with-control {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.5rem;
+		}
+
+		.control-group {
+			justify-content: space-between;
+			width: 100%;
+		}
+
+		.input-with-value {
+			justify-content: space-between;
+		}
+
 		.summary-input {
 			width: 70px;
 			font-size: 0.825rem;

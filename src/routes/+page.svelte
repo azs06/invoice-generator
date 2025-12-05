@@ -5,6 +5,8 @@
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
 	import SignUpPromptModal from '$components/SignUpPromptModal.svelte';
+	import CurrencySelector from '$components/CurrencySelector.svelte';
+	import LanguageSelector from '$components/LanguageSelector.svelte';
 	import { saveInvoice, getAllInvoices, getInvoice, getInvoiceUsage } from '$lib/db.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
@@ -160,7 +162,7 @@
 				// Server-side generation for logged-in users
 				// Clone the preview element to avoid modifying the original
 				const clone = previewRef.cloneNode(true) as HTMLElement;
-				
+
 				// Convert images to base64 to ensure they render in the PDF
 				const images = clone.querySelectorAll('img');
 				for (const img of images) {
@@ -651,6 +653,12 @@ ${clone.innerHTML}
 
 {#if invoice}
 	<div class="page-layout">
+		<!-- Mobile selectors row -->
+		<div class="mobile-selectors-row">
+			<CurrencySelector />
+			<LanguageSelector />
+		</div>
+
 		<div class="page-toolbar">
 			<!-- Tab Navigation -->
 			<div class="tab-navigation">
@@ -899,6 +907,19 @@ ${clone.innerHTML}
 		margin: 0 auto;
 	}
 
+	/* Mobile selectors - hidden on desktop */
+	.mobile-selectors-row {
+		display: none;
+		gap: 0.75rem;
+		align-items: center;
+	}
+
+	@media (max-width: 768px) {
+		.mobile-selectors-row {
+			display: flex;
+		}
+	}
+
 	.page-toolbar {
 		display: flex;
 		align-items: center;
@@ -1123,14 +1144,27 @@ ${clone.innerHTML}
 			--section-padding: 0.85rem;
 		}
 
+		.sticky-button-wrapper {
+			position: static;
+			height: auto;
+			margin-bottom: 0.75rem;
+		}
+
 		.sticky-button-wrapper .button-group {
-			flex-direction: column;
-			gap: 0.25rem;
+			transform: none;
+			flex-direction: row;
+			justify-content: flex-end;
+			gap: 0.5rem;
 		}
 
 		.action-button {
-			font-size: 0.75rem;
-			padding: 0.375rem 0.75rem;
+			font-size: 0.8rem;
+			padding: 0.5rem 0.875rem;
+		}
+
+		.icon-button {
+			width: 2.25rem;
+			height: 2.25rem;
 		}
 	}
 

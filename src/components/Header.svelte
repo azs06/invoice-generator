@@ -8,6 +8,15 @@
 	const session = authClient.useSession();
 	let imageError = $state(false);
 	let showProfileMenu = $state(false);
+	let showMobileMenu = $state(false);
+
+	const toggleMobileMenu = () => {
+		showMobileMenu = !showMobileMenu;
+	};
+
+	const closeMobileMenu = () => {
+		showMobileMenu = false;
+	};
 
 	const signIn = async () => {
 		await authClient.signIn.social({
@@ -43,24 +52,83 @@
 	};
 </script>
 
-<svelte:window onclick={closeProfileMenu} />
+<svelte:window
+	onclick={() => {
+		closeProfileMenu();
+		closeMobileMenu();
+	}}
+/>
 
 <header class="app-header">
 	<div class="header-content">
 		<div class="brand-group">
+			<!-- Mobile hamburger menu -->
+			<div class="mobile-menu-container">
+				<button
+					class="hamburger-button"
+					onclick={(e) => {
+						e.stopPropagation();
+						toggleMobileMenu();
+					}}
+					aria-label="Navigation menu"
+					aria-expanded={showMobileMenu}
+				>
+					<svg
+						class="hamburger-icon"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						{#if showMobileMenu}
+							<path d="M6 18L18 6M6 6l12 12" />
+						{:else}
+							<path d="M4 6h16M4 12h16M4 18h16" />
+						{/if}
+					</svg>
+				</button>
+
+				{#if showMobileMenu}
+					<nav class="mobile-nav-dropdown" onclick={(e) => e.stopPropagation()}>
+						<a href="/" class="mobile-nav-link" onclick={closeMobileMenu}>
+							<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+								<path
+									fill-rule="evenodd"
+									d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							{$_('nav.create_invoice')}
+						</a>
+						<a href="/saved-invoices" class="mobile-nav-link" onclick={closeMobileMenu}>
+							<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+								<path
+									fill-rule="evenodd"
+									d="M10 2c-1.716 0-3.408.106-5.07.31C3.806 2.45 3 3.414 3 4.517V17.25a.75.75 0 001.075.676L10 15.082l5.925 2.844A.75.75 0 0017 17.25V4.517c0-1.103-.806-2.068-1.93-2.207A41.403 41.403 0 0010 2z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							{$_('nav.saved_invoices')}
+						</a>
+					</nav>
+				{/if}
+			</div>
+
 			<a href="/" class="brand-link">
 				<span class="brand-text">{$_('app.title')}</span>
 			</a>
 
-			<nav class="nav-links">
+			<nav class="nav-links desktop-nav">
 				<a href="/" class="nav-link">{$_('nav.create_invoice')}</a>
 				<a href="/saved-invoices" class="nav-link">{$_('nav.saved_invoices')}</a>
 			</nav>
 		</div>
 
 		<div class="controls">
-			<CurrencySelector />
-			<LanguageSelector />
+			<div class="desktop-only-selectors">
+				<CurrencySelector />
+				<LanguageSelector />
+			</div>
 			<ThemeToggle />
 			{#if $session.isPending}
 				<div class="auth-loading">
@@ -68,17 +136,20 @@
 				</div>
 			{:else if $session.data}
 				<div class="user-menu-container">
-					<button 
-						class="avatar-button" 
-						onclick={(e) => { e.stopPropagation(); toggleProfileMenu(); }}
+					<button
+						class="avatar-button"
+						onclick={(e) => {
+							e.stopPropagation();
+							toggleProfileMenu();
+						}}
 						aria-label="User menu"
 						aria-expanded={showProfileMenu}
 					>
 						{#if $session.data.user.image && !imageError}
-							<img 
-								src={$session.data.user.image} 
-								alt={$session.data.user.name || 'User'} 
-								class="user-avatar" 
+							<img
+								src={$session.data.user.image}
+								alt={$session.data.user.name || 'User'}
+								class="user-avatar"
 								onerror={handleImageError}
 								referrerpolicy="no-referrer"
 							/>
@@ -88,7 +159,7 @@
 							</div>
 						{/if}
 					</button>
-					
+
 					{#if showProfileMenu}
 						<div class="profile-dropdown" onclick={(e) => e.stopPropagation()}>
 							<div class="dropdown-header">
@@ -98,20 +169,30 @@
 							<div class="dropdown-divider"></div>
 							<a href="/dashboard" class="dropdown-item" onclick={closeProfileMenu}>
 								<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
-									<path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+									<path
+										d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
+									/>
 								</svg>
 								Dashboard
 							</a>
 							<a href="/saved-invoices" class="dropdown-item" onclick={closeProfileMenu}>
 								<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
-									<path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+									<path
+										fill-rule="evenodd"
+										d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+										clip-rule="evenodd"
+									/>
 								</svg>
 								Saved Invoices
 							</a>
 							<div class="dropdown-divider"></div>
 							<button class="dropdown-item dropdown-item-danger" onclick={signOut}>
 								<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
-									<path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd" />
+									<path
+										fill-rule="evenodd"
+										d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z"
+										clip-rule="evenodd"
+									/>
 								</svg>
 								Sign Out
 							</button>
@@ -201,26 +282,139 @@
 		gap: 0.75rem;
 	}
 
+	.desktop-only-selectors {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	/* Mobile menu - hidden by default on desktop */
+	.mobile-menu-container {
+		display: none;
+		position: relative;
+	}
+
+	.hamburger-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.25rem;
+		height: 2.25rem;
+		padding: 0;
+		border: 1px solid var(--color-border-secondary);
+		border-radius: var(--radius-md);
+		background: var(--color-bg-secondary);
+		color: var(--color-text-primary);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.hamburger-button:hover {
+		background: var(--color-bg-tertiary);
+		border-color: var(--color-border-primary);
+	}
+
+	.hamburger-icon {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	.mobile-nav-dropdown {
+		position: absolute;
+		top: calc(100% + 0.5rem);
+		left: 0;
+		min-width: 200px;
+		background: var(--color-bg-primary);
+		border: 1px solid var(--color-border-primary);
+		border-radius: var(--radius-lg);
+		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+		z-index: 50;
+		overflow: hidden;
+		animation: fadeIn 0.15s ease;
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.mobile-nav-link {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		width: 100%;
+		padding: 0.75rem 1rem;
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: var(--color-text-primary);
+		text-decoration: none;
+		transition: background 0.15s ease;
+	}
+
+	.mobile-nav-link:hover {
+		background: var(--color-bg-secondary);
+	}
+
+	.nav-icon {
+		width: 1.1rem;
+		height: 1.1rem;
+		color: var(--color-text-secondary);
+	}
+
+	/* Tablet */
 	@media (max-width: 1024px) {
 		.header-content {
 			padding-inline: 0.5rem;
 		}
 	}
 
-	@media (max-width: 480px) {
-		.nav-links {
-			gap: 0.5rem;
+	/* Mobile - show hamburger, hide desktop nav */
+	@media (max-width: 768px) {
+		.header-content {
+			padding-inline: 0.25rem;
+			gap: 0.75rem;
 		}
-		.nav-link {
-			font-size: 0.85rem;
-			padding: 0.3rem 0.5rem;
+
+		.brand-group {
+			gap: 0.75rem;
+		}
+
+		.brand-text {
+			font-size: 1.15rem;
+		}
+
+		.desktop-nav {
+			display: none;
+		}
+
+		.mobile-menu-container {
+			display: block;
+		}
+
+		.controls {
+			gap: 0.35rem;
+		}
+
+		.app-header {
+			padding: 0.75rem 0.5rem;
+		}
+
+		.desktop-only-selectors {
+			display: none !important;
 		}
 	}
 
-	.user-profile {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
+	/* Very small screens */
+	@media (max-width: 400px) {
+		.brand-text {
+			font-size: 1rem;
+		}
 	}
 
 	.user-avatar {
@@ -350,6 +544,14 @@
 
 	.auth-button:hover {
 		opacity: 0.9;
+	}
+
+	/* Mobile auth button */
+	@media (max-width: 680px) {
+		.auth-button {
+			padding: 0.35rem 0.65rem;
+			font-size: 0.8rem;
+		}
 	}
 
 	.auth-loading {
