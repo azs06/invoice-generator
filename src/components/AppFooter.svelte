@@ -39,6 +39,7 @@
 	.footer-content {
 		max-width: 1280px;
 		margin: 0 auto;
+		padding: 0 1.5rem;
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 		gap: 2rem;

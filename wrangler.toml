@@ -18,6 +18,7 @@ bucket_name = "invoice-bucket"
 
 [vars]
 PDF_GENERATION_URL = "https://gc41xo63m1.execute-api.ap-southeast-1.amazonaws.com/prod/pdf"
+SUPER_ADMIN_EMAILS = "atik.aiub@gmail.com"
 
 # Secrets (set via: wrangler secret put <SECRET_NAME>):
 # - GOOGLE_CLIENT_ID
