@@ -11,10 +11,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Check AI availability
 	if (!isAIAvailable(event.platform)) {
-		return json(
-			{ success: false, error: 'AI service is not available' },
-			{ status: 503 }
-		);
+		return json({ success: false, error: 'AI service is not available' }, { status: 503 });
 	}
 
 	try {
@@ -22,10 +19,7 @@ export const POST: RequestHandler = async (event) => {
 		const { message } = body as { message?: string };
 
 		if (!message || typeof message !== 'string' || message.trim().length === 0) {
-			return json(
-				{ success: false, error: 'Message is required' },
-				{ status: 400 }
-			);
+			return json({ success: false, error: 'Message is required' }, { status: 400 });
 		}
 
 		if (message.length > 2000) {
@@ -45,9 +39,6 @@ export const POST: RequestHandler = async (event) => {
 		return json({ success: true, data: result.data });
 	} catch (error) {
 		console.error('Parse invoice API error:', error);
-		return json(
-			{ success: false, error: 'Failed to process request' },
-			{ status: 500 }
-		);
+		return json({ success: false, error: 'Failed to process request' }, { status: 500 });
 	}
 };

@@ -253,7 +253,9 @@
 						<div class="month-bar">
 							<div
 								class="month-fill"
-								style="width: {(month.total / Math.max(...data.summary.monthlyBreakdown.map((m) => m.total))) * 100}%"
+								style="width: {(month.total /
+									Math.max(...data.summary.monthlyBreakdown.map((m) => m.total))) *
+									100}%"
 							></div>
 						</div>
 						<span class="month-total">{$toUSCurrency(month.total)}</span>

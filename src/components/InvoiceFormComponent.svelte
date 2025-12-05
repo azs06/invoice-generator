@@ -5,12 +5,7 @@
 	import AmountPaidComponent from './AmountPaidComponent.svelte';
 	import TotalComponent from './TotalComponent.svelte';
 	import { DEFAULT_LOGO_PATH, defaultInvoice } from '$lib';
-	import type {
-		InvoiceData,
-		InvoiceItem,
-		MonetaryAdjustment,
-		ShippingInfo
-	} from '$lib/types';
+	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
 
 	interface Props {
 		invoice?: InvoiceData;

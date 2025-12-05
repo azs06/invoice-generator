@@ -1,6 +1,7 @@
 # TypeScript Migration Plan - Sprint Breakdown
 
 ## Overview
+
 Your codebase is **already well-positioned** for TypeScript migration with comprehensive type definitions in `types.d.ts` and TypeScript configured. The migration will convert 16 JavaScript files and add types to 32 Svelte components (~10,386 lines total).
 
 **Estimated Timeline**: 13 sprints (26 weeks / ~6 months)
@@ -11,11 +12,13 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 1-2: Foundation & Core Utilities** (10-20 hours)
 
 ### Goals
+
 - Set up TypeScript infrastructure
 - Migrate pure utility functions (lowest risk, highest value)
 - Get immediate type safety for critical calculations
 
 ### Tasks
+
 1. **Setup** (1-2 hours)
    - Rename `jsconfig.json` → `tsconfig.json`
    - Install `@types/html2pdf.js`
@@ -37,10 +40,12 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 3: Database Layer** (3-5 hours)
 
 ### Goals
+
 - Type-safe data persistence
 - Critical data integrity
 
 ### Tasks
+
 1. **Database Migration** (3-5 hours)
    - `src/lib/db.js` → `.ts` (102 lines) ⭐⭐ **CRITICAL**
    - Handle `File | string | null` union types carefully
@@ -54,10 +59,12 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 4: State Management (Stores)** (3-4 hours)
 
 ### Goals
+
 - Type-safe global state
 - Proper store typing
 
 ### Tasks
+
 1. **Migrate Stores** (3-4 hours)
    - `src/lib/stores/currency.js` → `.ts` (37 lines)
    - `src/lib/theme.js` → `.ts` (46 lines)
@@ -71,10 +78,12 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 5: Template System** (4-6 hours)
 
 ### Goals
+
 - Type-safe template operations
 - Proper dynamic import types
 
 ### Tasks
+
 1. **Migrate Template System** (4-6 hours)
    - `src/lib/templates/registry.js` → `.ts` (108 lines)
    - `src/lib/templates/migration.js` → `.ts` (118 lines)
@@ -88,10 +97,12 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 6-7: Simple Components** (11-22 hours)
 
 ### Goals
+
 - Migrate smaller components (<150 lines)
 - Establish component typing patterns
 
 ### Tasks
+
 1. **Migrate 11 Simple Components** (1-2 hours each)
    - `ThemeToggle.svelte` (44 lines)
    - `FooterComponent.svelte` (19 lines)
@@ -112,10 +123,12 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 8-9: Medium Complexity Components** (12-18 hours)
 
 ### Goals
+
 - Migrate medium-sized components (150-300 lines)
 - Handle more complex prop interfaces
 
 ### Tasks
+
 1. **Migrate 6 Medium Components** (2-3 hours each)
    - `Header.svelte` (115 lines)
    - `AmountPaidComponent.svelte` (127 lines)
@@ -132,10 +145,12 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 10: Complex Form Component** (6-8 hours)
 
 ### Goals
+
 - Migrate largest form component
 - Handle 19 prop type definitions
 
 ### Tasks
+
 1. **Migrate Complex Form** (6-8 hours)
    - `InvoiceFormComponent.svelte` (607 lines) ⭐⭐⭐
    - Define comprehensive prop interfaces
@@ -149,9 +164,11 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 11: Preview Components** (8-12 hours)
 
 ### Goals
+
 - Migrate preview and content components
 
 ### Tasks
+
 1. **Migrate Preview Components** (4-6 hours each)
    - `InvoicePreviewComponent.svelte` (525 lines)
    - `SEOContent.svelte` (538 lines)
@@ -163,10 +180,12 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 12: Template Components** (16-24 hours)
 
 ### Goals
+
 - Migrate all template rendering components
 - Ensure consistent prop interfaces
 
 ### Tasks
+
 1. **Migrate 4 Templates** (4-6 hours each)
    - `AtlanticTemplate.svelte` (455 lines)
    - `MinimalTemplate.svelte` (479 lines)
@@ -180,9 +199,11 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 13: Simple Route Pages** (10-20 hours)
 
 ### Goals
+
 - Migrate smaller route pages
 
 ### Tasks
+
 1. **Migrate 5 Route Pages** (2-4 hours each)
    - `src/routes/+layout.svelte` (39 lines)
    - `src/routes/invoice/[id]/+page.svelte` (53 lines)
@@ -197,10 +218,12 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 14-15: Complex Route Pages** (28-40 hours)
 
 ### Goals
+
 - Migrate most complex pages
 - Handle complex state management
 
 ### Tasks
+
 1. **Saved Invoices Page** (12-16 hours)
    - `src/routes/saved-invoices/+page.svelte` (1,058 lines) ⭐⭐⭐
    - Type filtering logic
@@ -221,11 +244,13 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 ## **Sprint 16: Testing & Refinement** (8-16 hours)
 
 ### Goals
+
 - Ensure complete type safety
 - Enable strict mode
 - Final testing
 
 ### Tasks
+
 1. **Type Safety Audit** (4-8 hours)
    - Run `npm run check` - fix all errors
    - Enable stricter TypeScript options:
@@ -285,6 +310,7 @@ Your codebase is **already well-positioned** for TypeScript migration with compr
 All 47 files successfully migrated to TypeScript with strict mode enabled!
 
 #### Migration Statistics:
+
 - **Total Files Migrated:** 47 of 47 (100%)
 - **Total Lines of Code:** ~10,386 lines
 - **JavaScript Files:** 16 → 16 TypeScript (.ts)
@@ -294,6 +320,7 @@ All 47 files successfully migrated to TypeScript with strict mode enabled!
 - **Strict Mode:** ✅ Enabled (`strict: true`)
 
 #### What Was Accomplished:
+
 - ✅ TypeScript installed (v5.0.0) and configured
 - ✅ Renamed `jsconfig.json` → `tsconfig.json` with strict checking
 - ✅ Installed `@types/html2pdf.js`
@@ -370,6 +397,7 @@ Files that are **easy to migrate** and provide **immediate value**:
 ## Dependencies Status
 
 ### ✅ Already Have TypeScript Support
+
 - `@tailwindcss/vite` (^4.1.4) - Built-in types
 - `idb-keyval` (^6.2.1) - Built-in types
 - `svelte-i18n` (^4.0.1) - Built-in types
@@ -378,6 +406,7 @@ Files that are **easy to migrate** and provide **immediate value**:
 - All SvelteKit packages - Built-in types
 
 ### 📦 Need to Install
+
 - `@types/html2pdf.js` - For PDF generation
 - `@types/node` (optional) - For dotenv (if needed)
 
@@ -386,26 +415,29 @@ Files that are **easy to migrate** and provide **immediate value**:
 ## Svelte 5 Runes with TypeScript Examples
 
 ### Current (JavaScript with JSDoc)
+
 ```javascript
 let invoice = $state(/** @type {InvoiceData | null} */ (null));
 let items = $state(/** @type {InvoiceItem[]} */ ([]));
 ```
 
 ### Target (TypeScript)
+
 ```typescript
 let invoice = $state<InvoiceData | null>(null);
 let items = $state<InvoiceItem[]>([]);
 ```
 
 ### Component Props
+
 ```typescript
 // Current
 let { invoice, onUpdate } = $props();
 
 // Target
 interface Props {
-  invoice: InvoiceData;
-  onUpdate: (invoice: InvoiceData) => void;
+	invoice: InvoiceData;
+	onUpdate: (invoice: InvoiceData) => void;
 }
 let { invoice, onUpdate } = $props<Props>();
 ```
@@ -417,6 +449,7 @@ let { invoice, onUpdate } = $props<Props>();
 Create a checklist to track progress:
 
 ### Sprint 1-2: Foundation & Core Utilities
+
 - [ ] Rename jsconfig.json → tsconfig.json
 - [ ] Install @types/html2pdf.js
 - [ ] Migrate InvoiceCalculator.js
@@ -426,20 +459,24 @@ Create a checklist to track progress:
 - [ ] Migrate all route config files (4 files)
 
 ### Sprint 3: Database Layer
+
 - [ ] Migrate db.js
 
 ### Sprint 4: State Management
+
 - [ ] Migrate stores/currency.js
 - [ ] Migrate lib/theme.js
 - [ ] Migrate stores/templateStore.js
 - [ ] Migrate stores/invoiceStore.js
 
 ### Sprint 5: Template System
+
 - [ ] Migrate templates/registry.js
 - [ ] Migrate templates/migration.js
 - [ ] Migrate templates/index.js
 
 ### Sprint 6-7: Simple Components
+
 - [ ] ThemeToggle.svelte
 - [ ] FooterComponent.svelte
 - [ ] FilePreviewComponent.svelte
@@ -453,6 +490,7 @@ Create a checklist to track progress:
 - [ ] AppFooter.svelte
 
 ### Sprint 8-9: Medium Components
+
 - [ ] Header.svelte
 - [ ] AmountPaidComponent.svelte
 - [ ] LanguageSelector.svelte
@@ -462,19 +500,23 @@ Create a checklist to track progress:
 - [ ] AdditionalPaymentsComponent.svelte
 
 ### Sprint 10: Complex Form
+
 - [ ] InvoiceFormComponent.svelte
 
 ### Sprint 11: Preview Components
+
 - [ ] InvoicePreviewComponent.svelte
 - [ ] SEOContent.svelte
 
 ### Sprint 12: Template Components
+
 - [ ] AtlanticTemplate.svelte
 - [ ] MinimalTemplate.svelte
 - [ ] ClassicTemplate.svelte
 - [ ] ModernTemplate.svelte
 
 ### Sprint 13: Simple Routes
+
 - [ ] routes/+layout.svelte
 - [ ] routes/invoice/[id]/+page.svelte
 - [ ] routes/how-it-works/+page.svelte
@@ -482,10 +524,12 @@ Create a checklist to track progress:
 - [ ] routes/features/+page.svelte
 
 ### Sprint 14-15: Complex Routes
+
 - [ ] routes/saved-invoices/+page.svelte
 - [ ] routes/+page.svelte
 
 ### Sprint 16: Testing & Refinement
+
 - [ ] Run npm run check
 - [ ] Enable noImplicitAny
 - [ ] Enable strictNullChecks

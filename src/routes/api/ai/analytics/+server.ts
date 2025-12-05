@@ -11,10 +11,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Check AI availability
 	if (!isAIAvailable(event.platform)) {
-		return json(
-			{ success: false, error: 'AI service is not available' },
-			{ status: 503 }
-		);
+		return json({ success: false, error: 'AI service is not available' }, { status: 503 });
 	}
 
 	try {
@@ -25,10 +22,7 @@ export const POST: RequestHandler = async (event) => {
 		};
 
 		if (!query || typeof query !== 'string' || query.trim().length === 0) {
-			return json(
-				{ success: false, error: 'Query is required' },
-				{ status: 400 }
-			);
+			return json({ success: false, error: 'Query is required' }, { status: 400 });
 		}
 
 		if (query.length > 500) {
@@ -39,10 +33,7 @@ export const POST: RequestHandler = async (event) => {
 		}
 
 		if (!invoiceSummary || typeof invoiceSummary !== 'object') {
-			return json(
-				{ success: false, error: 'Invoice summary is required' },
-				{ status: 400 }
-			);
+			return json({ success: false, error: 'Invoice summary is required' }, { status: 400 });
 		}
 
 		// Validate summary structure
@@ -53,19 +44,19 @@ export const POST: RequestHandler = async (event) => {
 			unpaidCount: Number(invoiceSummary.unpaidCount) || 0,
 			averageAmount: Number(invoiceSummary.averageAmount) || 0,
 			topClients: Array.isArray(invoiceSummary.topClients)
-				? invoiceSummary.topClients.slice(0, 10).map(c => ({
+				? invoiceSummary.topClients.slice(0, 10).map((c) => ({
 						name: String(c.name || 'Unknown'),
 						total: Number(c.total) || 0,
 						count: Number(c.count) || 0
 					}))
 				: [],
 			monthlyBreakdown: Array.isArray(invoiceSummary.monthlyBreakdown)
-				? invoiceSummary.monthlyBreakdown.slice(0, 12).map(m => ({
+				? invoiceSummary.monthlyBreakdown.slice(0, 12).map((m) => ({
 						month: String(m.month || ''),
 						total: Number(m.total) || 0,
 						count: Number(m.count) || 0
 					}))
-				: undefined
+				: []
 		};
 
 		const ai = event.platform!.env.AI;
@@ -78,9 +69,6 @@ export const POST: RequestHandler = async (event) => {
 		return json({ success: true, analysis: result.data });
 	} catch (error) {
 		console.error('Analytics API error:', error);
-		return json(
-			{ success: false, error: 'Failed to process request' },
-			{ status: 500 }
-		);
+		return json({ success: false, error: 'Failed to process request' }, { status: 500 });
 	}
 };

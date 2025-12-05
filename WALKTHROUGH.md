@@ -5,9 +5,11 @@ This walkthrough details the integration of Drizzle ORM, Better Auth, and PDF Ge
 ## Changes Implemented
 
 ### Dependencies
+
 - Installed `drizzle-orm`, `drizzle-kit`, `better-auth`, `@better-auth/cli`.
 
 ### Configuration
+
 - **`drizzle.config.ts`**: Configured Drizzle Kit for SQLite.
 - **`wrangler.toml`**: Added `PDF_GENERATION_URL` to `[vars]`.
 - **`src/lib/server/schema.ts`**: Defined Drizzle schema.
@@ -15,12 +17,14 @@ This walkthrough details the integration of Drizzle ORM, Better Auth, and PDF Ge
 - **`src/lib/auth.ts`**: Configured Better Auth client.
 
 ### Backend Logic
+
 - **`src/lib/server/db.ts`**: Refactored to use Drizzle ORM.
 - **`src/routes/api/auth/[...all]/+server.ts`**: Added Better Auth API handlers.
 - **`src/routes/api/invoices/+server.ts`**: Protected endpoints.
 - **`src/routes/api/pdf/+server.ts`**: New endpoint to proxy PDF generation requests.
 
 ### Frontend Integration
+
 - **`src/components/Header.svelte`**: Added Auth controls.
 - **`src/routes/+page.svelte`**: Updated "Download PDF" to use server-side generation for logged-in users.
 
@@ -30,11 +34,13 @@ This walkthrough details the integration of Drizzle ORM, Better Auth, and PDF Ge
 > **Database Migration**: You MUST run the following commands to apply the new schema.
 
 1.  **Generate Migrations**:
+
     ```bash
     npx drizzle-kit generate
     ```
 
 2.  **Apply Migrations (Local)**:
+
     ```bash
     npx wrangler d1 migrations apply invoice-db --local
     ```

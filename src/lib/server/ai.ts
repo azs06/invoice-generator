@@ -39,7 +39,7 @@ export interface InvoiceSummary {
 	unpaidCount: number;
 	averageAmount: number;
 	topClients: Array<{ name: string; total: number; count: number }>;
-	monthlyBreakdown?: Array<{ month: string; total: number; count: number }>;
+	monthlyBreakdown: Array<{ month: string; total: number; count: number }>;
 }
 
 const MODEL_ID = '@cf/mistral/mistral-7b-instruct-v0.1';
@@ -100,25 +100,33 @@ IMPORTANT: Respond ONLY with valid JSON, no additional text or markdown. Use thi
 			parsed = JSON.parse(responseText);
 		} catch {
 			// Try to find JSON in the response
-			const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-			if (jsonMatch) {
-				parsed = JSON.parse(jsonMatch[0]);
-			} else {
+			try {
+				const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+				if (jsonMatch) {
+					parsed = JSON.parse(jsonMatch[0]);
+				} else {
+					return { success: false, error: 'Could not parse AI response as JSON' };
+				}
+			} catch {
 				return { success: false, error: 'Could not parse AI response as JSON' };
 			}
 		}
 
-		// Validate required fields
-		if (!parsed.invoiceTo && !parsed.items) {
-			return { success: false, error: 'Could not extract invoice information from the description' };
+		// Validate required fields - need at least client name or items to proceed
+		if (
+			!parsed.invoiceTo ||
+			!parsed.items ||
+			!Array.isArray(parsed.items) ||
+			parsed.items.length === 0
+		) {
+			return {
+				success: false,
+				error:
+					'Could not extract invoice information from the description. Please include client name and at least one item.'
+			};
 		}
 
-		// Ensure items array exists and has valid structure
-		if (!Array.isArray(parsed.items)) {
-			parsed.items = [];
-		}
-
-		parsed.items = parsed.items.map(item => ({
+		parsed.items = parsed.items.map((item) => ({
 			name: item.name || 'Item',
 			quantity: Number(item.quantity) || 1,
 			price: Number(item.price) || 0
@@ -150,8 +158,8 @@ Invoice Summary:
 - Paid Invoices: ${summary.paidCount}
 - Unpaid Invoices: ${summary.unpaidCount}
 - Average Invoice Amount: $${summary.averageAmount.toFixed(2)}
-- Top Clients: ${summary.topClients.map(c => `${c.name} ($${c.total.toFixed(2)}, ${c.count} invoices)`).join('; ')}
-${summary.monthlyBreakdown ? `- Monthly Breakdown: ${summary.monthlyBreakdown.map(m => `${m.month}: $${m.total.toFixed(2)} (${m.count} invoices)`).join('; ')}` : ''}
+- Top Clients: ${summary.topClients.map((c) => `${c.name} ($${c.total.toFixed(2)}, ${c.count} invoices)`).join('; ')}
+${summary.monthlyBreakdown.length > 0 ? `- Monthly Breakdown: ${summary.monthlyBreakdown.map((m) => `${m.month}: $${m.total.toFixed(2)} (${m.count} invoices)`).join('; ')}` : ''}
 
 Provide helpful, concise answers. Use specific numbers from the data when relevant. Format currency values with dollar signs and two decimal places.`;
 
@@ -189,5 +197,5 @@ Provide helpful, concise answers. Use specific numbers from the data when releva
  * Check if AI binding is available
  */
 export function isAIAvailable(platform: App.Platform | undefined): boolean {
-	return !!(platform?.env?.AI);
+	return !!platform?.env?.AI;
 }
