@@ -42,8 +42,8 @@
 					<div class="feature-icon">💾</div>
 					<h3 class="feature-title">Auto-Save & Drafts</h3>
 					<p class="feature-description">
-						Your work is automatically saved locally in your browser. Never lose your progress.
-						Save multiple drafts for different clients.
+						Your work is automatically saved locally in your browser. Never lose your progress. Save
+						multiple drafts for different clients.
 					</p>
 				</div>
 
@@ -60,8 +60,8 @@
 					<div class="feature-icon">🌐</div>
 					<h3 class="feature-title">Multi-Language Support</h3>
 					<p class="feature-description">
-						Available in English and Bengali (বাংলা). Perfect for businesses operating in
-						Bangladesh and international markets.
+						Available in English and Bengali (বাংলা). Perfect for businesses operating in Bangladesh
+						and international markets.
 					</p>
 				</div>
 
@@ -184,7 +184,9 @@
 				</div>
 				<div class="use-case-card">
 					<h3>Small Businesses</h3>
-					<p>Simple invoicing for startups and small companies that don't need complex accounting.</p>
+					<p>
+						Simple invoicing for startups and small companies that don't need complex accounting.
+					</p>
 				</div>
 				<div class="use-case-card">
 					<h3>Contractors</h3>

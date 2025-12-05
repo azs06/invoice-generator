@@ -133,7 +133,9 @@
 							<td>{item.name || `${$_('items.item')} ${index + 1}`}</td>
 							<td class="qty">{item.quantity ?? 0}</td>
 							<td class="price">{$toUSCurrency(item.price || 0)}</td>
-							<td class="amount">{$toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td>
+							<td class="amount"
+								>{$toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td
+							>
 						</tr>
 					{/each}
 				{:else}
@@ -147,12 +149,24 @@
 
 	<section class="summary">
 		<div class="rows">
-			<div class="row"><span>{$_('summary.subtotal')}</span><span>{$toUSCurrency(subTotal())}</span></div>
-			<div class="row"><span>{$_('summary.discount')}</span><span>-{$toUSCurrency(discountDisplayValue())}</span></div>
-			<div class="row"><span>{$_('summary.tax')}</span><span>+{$toUSCurrency(taxDisplayValue())}</span></div>
-			<div class="row"><span>{$_('summary.shipping')}</span><span>+{$toUSCurrency(shippingDisplayValue())}</span></div>
-			<div class="row total"><span>{$_('summary.total')}</span><span>{$toUSCurrency(totalAmount())}</span></div>
-			<div class="row"><span>{$_('summary.amount_paid')}</span><span>{$toUSCurrency(amountPaid())}</span></div>
+			<div class="row">
+				<span>{$_('summary.subtotal')}</span><span>{$toUSCurrency(subTotal())}</span>
+			</div>
+			<div class="row">
+				<span>{$_('summary.discount')}</span><span>-{$toUSCurrency(discountDisplayValue())}</span>
+			</div>
+			<div class="row">
+				<span>{$_('summary.tax')}</span><span>+{$toUSCurrency(taxDisplayValue())}</span>
+			</div>
+			<div class="row">
+				<span>{$_('summary.shipping')}</span><span>+{$toUSCurrency(shippingDisplayValue())}</span>
+			</div>
+			<div class="row total">
+				<span>{$_('summary.total')}</span><span>{$toUSCurrency(totalAmount())}</span>
+			</div>
+			<div class="row">
+				<span>{$_('summary.amount_paid')}</span><span>{$toUSCurrency(amountPaid())}</span>
+			</div>
 			<div class={`row grand-total ${balanceDue() < 0 ? 'credit' : ''}`}>
 				<span>{balanceLabel()}</span>
 				<span>{$toUSCurrency(Math.abs(balanceDue()))}</span>
@@ -178,7 +192,7 @@
 		--surface: rgba(255, 255, 255, 0.85);
 		--surface-alt: rgba(20, 20, 19, 0.06);
 
-		font-family: "Tiempos Text", "Times New Roman", serif;
+		font-family: 'Tiempos Text', 'Times New Roman', serif;
 		letter-spacing: -0.01em;
 		text-wrap: pretty;
 		line-height: 1.5;
@@ -219,16 +233,31 @@
 		border: 1px solid var(--border);
 		overflow: hidden;
 	}
-	.logo img { width: 100%; height: 100%; object-fit: contain; }
-	.logo.is-placeholder { opacity: 0.9; }
-	.from { display: flex; flex-direction: column; gap: 6px; }
+	.logo img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+	.logo.is-placeholder {
+		opacity: 0.9;
+	}
+	.from {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
 	.from-label {
 		font-size: 0.7rem;
 		color: var(--muted);
 		text-transform: uppercase;
 		letter-spacing: 0.12em;
 	}
-	.from pre { margin: 0; white-space: pre-wrap; font-size: 0.95rem; color: var(--text); }
+	.from pre {
+		margin: 0;
+		white-space: pre-wrap;
+		font-size: 0.95rem;
+		color: var(--text);
+	}
 
 	.titleblock {
 		display: flex;
@@ -236,7 +265,12 @@
 		gap: 12px;
 		align-items: stretch;
 	}
-	.title-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+	.title-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 12px;
+	}
 	.title {
 		margin: 0;
 		font-size: 2.15rem;
@@ -264,10 +298,16 @@
 		background: currentColor;
 		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
 	}
-	.status.due { color: #e11d48; }
-	.status.partial { color: #1d4ed8; }
+	.status.due {
+		color: #e11d48;
+	}
+	.status.partial {
+		color: #1d4ed8;
+	}
 	.status.settled,
-	.status.credit { color: #047857; }
+	.status.credit {
+		color: #047857;
+	}
 
 	.meta {
 		display: grid;
@@ -275,7 +315,9 @@
 		gap: 6px 18px;
 		align-self: stretch;
 	}
-	.meta-item { display: contents; }
+	.meta-item {
+		display: contents;
+	}
 	.label {
 		color: var(--muted);
 		font-size: 0.78rem;
@@ -286,7 +328,9 @@
 		font-size: 0.95rem;
 		justify-self: end;
 	}
-	.terms .value { white-space: pre-wrap; }
+	.terms .value {
+		white-space: pre-wrap;
+	}
 
 	.parties {
 		display: grid;
@@ -325,8 +369,13 @@
 		text-transform: uppercase;
 		letter-spacing: 0.12em;
 	}
-	.balance-amount { font-size: 1.8rem; font-weight: 700; }
-	.balance.credit .balance-amount { color: #047857; }
+	.balance-amount {
+		font-size: 1.8rem;
+		font-weight: 700;
+	}
+	.balance.credit .balance-amount {
+		color: #047857;
+	}
 
 	.items {
 		margin-top: 24px;
@@ -335,7 +384,11 @@
 		overflow: hidden;
 		background: var(--surface);
 	}
-	.table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+	.table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
 	.table thead th {
 		text-align: left;
 		font-size: 0.78rem;
@@ -352,10 +405,18 @@
 		font-size: 0.95rem;
 		color: var(--text);
 	}
-	.table tbody tr { border-bottom: 1px solid var(--border); }
-	.table tbody tr:last-child { border-bottom: none; }
-	.table tbody tr:nth-child(even) { background: rgba(20, 20, 19, 0.04); }
-	.table tr.empty { background: transparent; }
+	.table tbody tr {
+		border-bottom: 1px solid var(--border);
+	}
+	.table tbody tr:last-child {
+		border-bottom: none;
+	}
+	.table tbody tr:nth-child(even) {
+		background: rgba(20, 20, 19, 0.04);
+	}
+	.table tr.empty {
+		background: transparent;
+	}
 	.table .empty td {
 		text-align: center;
 		font-style: italic;
@@ -385,13 +446,30 @@
 		grid-template-columns: 1fr auto;
 		gap: 8px 18px;
 	}
-	.row { display: contents; }
-	.row span:first-child { color: var(--muted); }
-	.total span:first-child { color: var(--text); font-weight: 600; }
-	.total span:last-child { font-weight: 600; }
-	.grand-total span:first-child { color: var(--text); font-weight: 700; }
-	.grand-total span:last-child { font-weight: 700; font-size: 1.1rem; }
-	.grand-total.credit span:last-child { color: #047857; }
+	.row {
+		display: contents;
+	}
+	.row span:first-child {
+		color: var(--muted);
+	}
+	.total span:first-child {
+		color: var(--text);
+		font-weight: 600;
+	}
+	.total span:last-child {
+		font-weight: 600;
+	}
+	.grand-total span:first-child {
+		color: var(--text);
+		font-weight: 700;
+	}
+	.grand-total span:last-child {
+		font-weight: 700;
+		font-size: 1.1rem;
+	}
+	.grand-total.credit span:last-child {
+		color: #047857;
+	}
 
 	.notes {
 		margin-top: 28px;
@@ -405,17 +483,39 @@
 		letter-spacing: 0.1em;
 		margin-bottom: 8px;
 	}
-	.notes .text { white-space: pre-wrap; font-size: 0.95rem; }
+	.notes .text {
+		white-space: pre-wrap;
+		font-size: 0.95rem;
+	}
 
 	@media (max-width: 768px) {
-		.invoice-preview { padding: 20px; }
-		.header { grid-template-columns: 1fr; gap: 20px; }
-		.titleblock { align-items: flex-start; }
-		.title-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-		.parties { grid-template-columns: 1fr; }
-		.balance { text-align: left; }
-		.summary { justify-content: stretch; }
-		.rows { max-width: 100%; }
+		.invoice-preview {
+			padding: 20px;
+		}
+		.header {
+			grid-template-columns: 1fr;
+			gap: 20px;
+		}
+		.titleblock {
+			align-items: flex-start;
+		}
+		.title-header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 8px;
+		}
+		.parties {
+			grid-template-columns: 1fr;
+		}
+		.balance {
+			text-align: left;
+		}
+		.summary {
+			justify-content: stretch;
+		}
+		.rows {
+			max-width: 100%;
+		}
 	}
 
 	@media print {
@@ -457,7 +557,11 @@
 			background: #fff !important;
 			border-color: #d1d5db !important;
 		}
-		.status { color: #1f2937 !important; }
-		.status::before { box-shadow: none !important; }
+		.status {
+			color: #1f2937 !important;
+		}
+		.status::before {
+			box-shadow: none !important;
+		}
 	}
 </style>

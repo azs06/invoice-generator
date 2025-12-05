@@ -289,10 +289,16 @@
 		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
 	}
 
-	.status.due { color: #ef4444; }
-	.status.partial { color: #3b82f6; }
+	.status.due {
+		color: #ef4444;
+	}
+	.status.partial {
+		color: #3b82f6;
+	}
 	.status.settled,
-	.status.credit { color: #10b981; }
+	.status.credit {
+		color: #10b981;
+	}
 
 	.parties-section {
 		display: grid;
@@ -441,8 +447,12 @@
 			color: black !important;
 		}
 
-		.status { color: #1f2937 !important; }
-		.status::before { box-shadow: none !important; }
+		.status {
+			color: #1f2937 !important;
+		}
+		.status::before {
+			box-shadow: none !important;
+		}
 
 		.item-row {
 			border-bottom: 1px solid #e5e5e5 !important;

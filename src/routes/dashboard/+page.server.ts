@@ -7,58 +7,60 @@ import { invoices } from '$lib/server/schema';
 import type { PageServerLoad } from './$types';
 
 export interface DashboardInvoice {
-    id: string;
-    invoiceNumber: string;
-    invoiceTo: string;
-    date: string;
-    total: number;
-    paid: boolean;
-    hasPdf: boolean;
-    updatedAt: Date;
+	id: string;
+	invoiceNumber: string;
+	invoiceTo: string;
+	date: string;
+	total: number;
+	paid: boolean;
+	hasPdf: boolean;
+	updatedAt: Date;
 }
 
 export const load: PageServerLoad = async (event) => {
-    const session = event.locals.session;
-    
-    if (!session) {
-        redirect(302, '/');
-    }
+	const session = event.locals.session;
 
-    const db = requireDB(event);
-    const d1 = drizzle(db);
+	if (!session) {
+		redirect(302, '/');
+	}
 
-    // Get all invoices with pdfKey info
-    const rawInvoices = await d1
-        .select()
-        .from(invoices)
-        .where(eq(invoices.userId, session.user.id))
-        .orderBy(invoices.updatedAt)
-        .all();
+	const db = requireDB(event);
+	const d1 = drizzle(db);
 
-    // Transform to dashboard format
-    const dashboardInvoices: DashboardInvoice[] = rawInvoices.map((row) => {
-        const data = JSON.parse(row.data);
-        return {
-            id: row.id,
-            invoiceNumber: data.invoiceNumber || 'N/A',
-            invoiceTo: data.invoiceTo || 'Unknown Client',
-            date: data.date || 'N/A',
-            total: data.total || 0,
-            paid: data.paid || false,
-            hasPdf: !!row.pdfKey,
-            updatedAt: row.updatedAt
-        };
-    }).reverse(); // Most recent first
+	// Get all invoices with pdfKey info
+	const rawInvoices = await d1
+		.select()
+		.from(invoices)
+		.where(eq(invoices.userId, session.user.id))
+		.orderBy(invoices.updatedAt)
+		.all();
 
-    const count = await getInvoiceCount(db, session.user.id);
+	// Transform to dashboard format
+	const dashboardInvoices: DashboardInvoice[] = rawInvoices
+		.map((row) => {
+			const data = JSON.parse(row.data);
+			return {
+				id: row.id,
+				invoiceNumber: data.invoiceNumber || 'N/A',
+				invoiceTo: data.invoiceTo || 'Unknown Client',
+				date: data.date || 'N/A',
+				total: data.total || 0,
+				paid: data.paid || false,
+				hasPdf: !!row.pdfKey,
+				updatedAt: row.updatedAt
+			};
+		})
+		.reverse(); // Most recent first
 
-    return {
-        invoices: dashboardInvoices,
-        count,
-        limit: 12,
-        user: {
-            name: session.user.name,
-            email: session.user.email
-        }
-    };
+	const count = await getInvoiceCount(db, session.user.id);
+
+	return {
+		invoices: dashboardInvoices,
+		count,
+		limit: 12,
+		user: {
+			name: session.user.name,
+			email: session.user.email
+		}
+	};
 };

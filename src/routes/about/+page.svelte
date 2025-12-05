@@ -42,17 +42,17 @@
 				<div class="value-card">
 					<h3>Privacy First</h3>
 					<p>
-						Your invoice data never leaves your device. Everything is stored locally in your
-						browser using IndexedDB. We don't have servers collecting your information, we don't
-						track what you invoice for, and we don't know who your clients are.
+						Your invoice data never leaves your device. Everything is stored locally in your browser
+						using IndexedDB. We don't have servers collecting your information, we don't track what
+						you invoice for, and we don't know who your clients are.
 					</p>
 				</div>
 
 				<div class="value-card">
 					<h3>Truly Free</h3>
 					<p>
-						No hidden costs, no premium tiers, no feature limitations. All features are available
-						to everyone at no charge. No credit card required, no trial period, no upsells.
+						No hidden costs, no premium tiers, no feature limitations. All features are available to
+						everyone at no charge. No credit card required, no trial period, no upsells.
 					</p>
 				</div>
 

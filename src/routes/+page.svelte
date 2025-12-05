@@ -7,6 +7,7 @@
 	import SignUpPromptModal from '$components/SignUpPromptModal.svelte';
 	import CurrencySelector from '$components/CurrencySelector.svelte';
 	import LanguageSelector from '$components/LanguageSelector.svelte';
+	import AIChatInput from '$components/AIChatInput.svelte';
 	import { saveInvoice, getAllInvoices, getInvoice, getInvoiceUsage } from '$lib/db.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
@@ -14,6 +15,7 @@
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
 	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
+	import type { ParsedInvoice } from '$lib/server/ai';
 	import { authClient } from '$lib/auth';
 
 	type PDFAction = 'download' | 'print' | null;
@@ -637,6 +639,62 @@ ${clone.innerHTML}
 			saveDraftAndRedirect();
 		}
 	};
+
+	const handleApplyAIParsedData = (parsed: ParsedInvoice): void => {
+		const current = ensureInvoice();
+
+		// Apply client name
+		if (parsed.invoiceTo) {
+			current.invoiceTo = parsed.invoiceTo;
+		}
+
+		// Apply sender/from (if provided)
+		if (parsed.invoiceFrom) {
+			current.invoiceFrom = parsed.invoiceFrom;
+		}
+
+		// Apply items
+		if (parsed.items && parsed.items.length > 0) {
+			current.items = parsed.items.map((item) => ({
+				name: item.name,
+				quantity: item.quantity,
+				price: item.price,
+				amount: item.quantity * item.price
+			}));
+		}
+
+		// Apply due date
+		if (parsed.dueDate) {
+			current.dueDate = parsed.dueDate;
+			userEditedDueDate = true;
+		}
+
+		// Apply tax
+		if (parsed.tax && parsed.tax.rate > 0) {
+			current.tax = {
+				type: parsed.tax.type,
+				rate: parsed.tax.rate
+			};
+		}
+
+		// Apply discount
+		if (parsed.discount && parsed.discount.rate > 0) {
+			current.discount = {
+				type: parsed.discount.type,
+				rate: parsed.discount.rate
+			};
+		}
+
+		// Apply notes
+		if (parsed.notes) {
+			current.notes = parsed.notes;
+		}
+
+		// Apply terms
+		if (parsed.terms) {
+			current.terms = parsed.terms;
+		}
+	};
 </script>
 
 <svelte:head>
@@ -731,6 +789,11 @@ ${clone.innerHTML}
 					</button>
 				</div>
 			</div>
+
+			<!-- AI Chat Input (only for authenticated users) -->
+			{#if $session.data}
+				<AIChatInput onApplyParsedData={handleApplyAIParsedData} />
+			{/if}
 
 			<InvoiceFormComponent
 				{invoice}
