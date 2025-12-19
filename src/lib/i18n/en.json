@@ -157,6 +157,10 @@
 		"query_payment_rate": "Payment rate?",
 		"top_clients_title": "Top Clients",
 		"monthly_breakdown_title": "Monthly Revenue",
-		"invoices": "invoices"
+		"invoices": "invoices",
+		"voice_input": "Voice input",
+		"voice_listening": "Listening...",
+		"voice_not_supported": "Voice input not supported in this browser",
+		"toggle_assistant": "Toggle AI Assistant"
 	}
 }

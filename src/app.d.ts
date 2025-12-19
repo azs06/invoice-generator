@@ -3,7 +3,39 @@
 
 import type { Session, User } from 'better-auth';
 
+// Web Speech API types (not included in lib.dom.d.ts by default)
+interface SpeechRecognitionEvent extends Event {
+	results: SpeechRecognitionResultList;
+	resultIndex: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+	error: string;
+	message: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+	continuous: boolean;
+	interimResults: boolean;
+	lang: string;
+	onresult: ((event: SpeechRecognitionEvent) => void) | null;
+	onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+	onend: (() => void) | null;
+	start(): void;
+	stop(): void;
+	abort(): void;
+}
+
+interface SpeechRecognitionConstructor {
+	new (): SpeechRecognition;
+}
+
 declare global {
+	interface Window {
+		SpeechRecognition?: SpeechRecognitionConstructor;
+		webkitSpeechRecognition?: SpeechRecognitionConstructor;
+	}
+
 	namespace App {
 		// interface Error {}
 		interface Locals {

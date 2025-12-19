@@ -20,8 +20,12 @@ import { eq } from 'drizzle-orm';
  * 3. Makes session available to all routes without per-route auth boilerplate
  */
 export const handle: Handle = async ({ event, resolve }) => {
-	// Ignore Chrome DevTools requests (avoid noisy 404 logs)
-	if (event.url.pathname.startsWith('/.well-known/')) {
+	// Ignore Chrome DevTools requests and missing service worker (avoid noisy 404 logs)
+	if (
+		event.url.pathname.startsWith('/.well-known/') ||
+		event.url.pathname === '/sw.js' ||
+		event.url.pathname === '/favicon.ico'
+	) {
 		return new Response(null, { status: 404 });
 	}
 

@@ -157,6 +157,10 @@
 		"query_payment_rate": "পেমেন্ট হার?",
 		"top_clients_title": "শীর্ষ ক্লায়েন্ট",
 		"monthly_breakdown_title": "মাসিক আয়",
-		"invoices": "ইনভয়েস"
+		"invoices": "ইনভয়েস",
+		"voice_input": "ভয়েস ইনপুট",
+		"voice_listening": "শুনছি...",
+		"voice_not_supported": "এই ব্রাউজারে ভয়েস ইনপুট সমর্থিত নয়",
+		"toggle_assistant": "AI সহকারী টগল করুন"
 	}
 }
