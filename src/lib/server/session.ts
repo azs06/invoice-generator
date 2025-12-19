@@ -89,7 +89,7 @@ export async function checkUserStatus(db: D1Database, userId: string): Promise<{
 
     return {
         isBanned: userRecord.isBanned === true,
-        isDeleted: userRecord.deletedAt != null && userRecord.deletedAt !== undefined
+        isDeleted: Boolean(userRecord.deletedAt)
     };
 }
 
