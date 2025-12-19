@@ -234,7 +234,6 @@
 		margin: 0 auto;
 	}
 
-
 	.preview-header {
 		display: flex;
 		justify-content: space-between;
@@ -412,7 +411,6 @@
 		color: var(--color-text-primary);
 		background: #f3f4f6;
 	}
-
 
 	.items-table th:last-child,
 	.items-table td:last-child {

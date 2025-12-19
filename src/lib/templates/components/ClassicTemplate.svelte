@@ -315,10 +315,16 @@
 		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
 	}
 
-	.status-badge.due { color: #dc2626; }
-	.status-badge.partial { color: #2563eb; }
+	.status-badge.due {
+		color: #dc2626;
+	}
+	.status-badge.partial {
+		color: #2563eb;
+	}
 	.status-badge.settled,
-	.status-badge.credit { color: #059669; }
+	.status-badge.credit {
+		color: #059669;
+	}
 
 	.billing-details {
 		display: flex;
@@ -477,8 +483,12 @@
 			color: black !important;
 		}
 
-		.status-badge { color: #1f2937 !important; }
-		.status-badge::before { box-shadow: none !important; }
+		.status-badge {
+			color: #1f2937 !important;
+		}
+		.status-badge::before {
+			box-shadow: none !important;
+		}
 	}
 
 	@media (max-width: 768px) {

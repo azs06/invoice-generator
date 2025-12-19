@@ -54,9 +54,9 @@
   - Loader: `src/components/InvoicePreviewWrapper.svelte` dynamically imports the selected component via `getTemplate()` and falls back to `modern` on error; totals are computed there.
   - Persistence: `src/lib/db.js` saves `templateId` with fallback to `modern`.
 - Adding a template
-  1) Create `src/lib/templates/components/MyTemplate.svelte` (accepts `{ invoice, totals }`, uses i18n keys and `$lib/currency`), include print styles.
-  2) Register in `registry.js` with `{ id, name, description, component: () => import('./components/MyTemplate.svelte'), tags, premium, preview }`.
-  3) Optional preview image at `static/templates/<id>-preview.png`.
+  1. Create `src/lib/templates/components/MyTemplate.svelte` (accepts `{ invoice, totals }`, uses i18n keys and `$lib/currency`), include print styles.
+  2. Register in `registry.js` with `{ id, name, description, component: () => import('./components/MyTemplate.svelte'), tags, premium, preview }`.
+  3. Optional preview image at `static/templates/<id>-preview.png`.
 - Notes
   - Premium flag surfaces as “(PRO)” in the selector; access control is UI-only unless enforced elsewhere.
   - i18n strings used by templates are under `src/lib/i18n/{en,bn}.json` (`status.*`, `summary.*`, etc.).

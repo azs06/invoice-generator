@@ -153,7 +153,6 @@ Add optional magic link authentication for premium users. Free users can continu
    ```
 
 2. **UserMenu.svelte** - Profile dropdown when logged in
-
    - Show user email
    - Show tier badge (Free/Premium)
    - "Upgrade to Premium" button (if free)
@@ -1432,27 +1431,27 @@ Leverage Large Language Models (LLMs) to automate data entry, enhance profession
 
 **1. AI-Powered Invoice Generation from Text**
 
--   **Description:** Users can paste unstructured text (from emails, notes, etc.) into a prompt, and the AI will automatically parse the content and fill out the entire invoice form.
--   **Tier:** Freemium (3-5 free uses for free users, unlimited for Premium).
--   **Benefit:** Drastically reduces manual data entry and speeds up invoice creation.
+- **Description:** Users can paste unstructured text (from emails, notes, etc.) into a prompt, and the AI will automatically parse the content and fill out the entire invoice form.
+- **Tier:** Freemium (3-5 free uses for free users, unlimited for Premium).
+- **Benefit:** Drastically reduces manual data entry and speeds up invoice creation.
 
 **2. Smart Line-Item Suggestions**
 
--   **Description:** As a user types a line item, AI suggests a more professional, detailed description. For example, "Consulting" could be expanded to "Hourly consulting services for strategic planning and project management."
--   **Tier:** Premium.
--   **Benefit:** Improves the quality and professionalism of invoices.
+- **Description:** As a user types a line item, AI suggests a more professional, detailed description. For example, "Consulting" could be expanded to "Hourly consulting services for strategic planning and project management."
+- **Tier:** Premium.
+- **Benefit:** Improves the quality and professionalism of invoices.
 
 **3. AI-Powered Expense Recognition from Receipts**
 
--   **Description:** Users can upload a photo of a receipt. A multimodal AI will use OCR to extract the vendor, date, items, and total, then automatically add them as billable expenses to the invoice.
--   **Tier:** Premium.
--   **Benefit:** Eliminates tedious manual expense tracking.
+- **Description:** Users can upload a photo of a receipt. A multimodal AI will use OCR to extract the vendor, date, items, and total, then automatically add them as billable expenses to the invoice.
+- **Tier:** Premium.
+- **Benefit:** Eliminates tedious manual expense tracking.
 
 **4. Automated Invoice Reminders & Personalized Messages**
 
--   **Description:** The system uses AI to generate polite but firm reminder emails for overdue invoices. It can also generate personalized "thank you" notes or the initial email body when sending an invoice.
--   **Tier:** Premium (requires Phase 8: Email Integration).
--   **Benefit:** Saves time on administrative follow-up and improves client communication.
+- **Description:** The system uses AI to generate polite but firm reminder emails for overdue invoices. It can also generate personalized "thank you" notes or the initial email body when sending an invoice.
+- **Tier:** Premium (requires Phase 8: Email Integration).
+- **Benefit:** Saves time on administrative follow-up and improves client communication.
 
 ---
 
