@@ -901,7 +901,7 @@ ${clone.innerHTML}
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
-		padding: 0.875rem 1.5rem 1.25rem 1.5rem;
+		padding: 0.875rem 1.5rem 1.25rem;
 		position: relative;
 		max-width: 1280px;
 		margin: 0 auto;
@@ -1114,7 +1114,7 @@ ${clone.innerHTML}
 	/* Tablet */
 	@media (max-width: 1024px) {
 		.page-layout {
-			padding: 1.1rem;
+			padding: 1.1rem 1rem;
 		}
 
 		.content-section {
@@ -1125,7 +1125,7 @@ ${clone.innerHTML}
 	/* Mobile */
 	@media (max-width: 768px) {
 		.page-layout {
-			padding: 0.85rem;
+			padding: 0.85rem 0.75rem;
 			gap: 0.75rem;
 		}
 

@@ -32,7 +32,7 @@
 		width: 100%;
 		background: var(--color-bg-secondary);
 		border-top: 1px solid var(--color-border-secondary);
-		padding: 2rem 1.5rem 1rem;
+		padding: 2rem 0 1rem;
 		margin-top: 3rem;
 	}
 
@@ -93,18 +93,25 @@
 
 	@media (max-width: 768px) {
 		.app-footer {
-			padding: 1.5rem 1rem 0.75rem;
+			padding: 1.5rem 0 0.75rem;
 			margin-top: 2rem;
 		}
 
 		.footer-content {
 			grid-template-columns: 1fr;
 			gap: 1.5rem;
+			padding-inline: 0.75rem;
 		}
 
 		.footer-copyright {
 			padding-top: 1rem;
 			margin-top: 1rem;
+		}
+	}
+
+	@media (max-width: 1024px) and (min-width: 769px) {
+		.footer-content {
+			padding-inline: 1rem;
 		}
 	}
 </style>

@@ -236,7 +236,7 @@
 		width: 100%;
 		background: var(--color-bg-primary);
 		border-bottom: 1px solid var(--color-border-secondary);
-		padding: 1rem 1.5rem;
+		padding: 1rem 0;
 		position: sticky;
 		top: 0;
 		z-index: 20;
@@ -249,7 +249,7 @@
 		gap: 1.5rem;
 		max-width: 1280px;
 		margin: 0 auto;
-		padding: 0 1.5em;
+		padding: 0 1.5rem;
 	}
 
 	.brand-group {
@@ -395,14 +395,14 @@
 	/* Tablet */
 	@media (max-width: 1024px) {
 		.header-content {
-			padding-inline: 0.5rem;
+			padding-inline: 1rem;
 		}
 	}
 
 	/* Mobile - show hamburger, hide desktop nav */
 	@media (max-width: 768px) {
 		.header-content {
-			padding-inline: 0.25rem;
+			padding-inline: 0.75rem;
 			gap: 0.75rem;
 		}
 
@@ -427,7 +427,7 @@
 		}
 
 		.app-header {
-			padding: 0.75rem 0.5rem;
+			padding: 0.75rem 0;
 		}
 
 		.desktop-only-selectors {
