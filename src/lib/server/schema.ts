@@ -57,3 +57,22 @@ export const invoices = sqliteTable('invoices', {
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
+
+export const sharedLinks = sqliteTable('shared_links', {
+    id: text('id').primaryKey(),
+    invoiceId: text('invoiceId').notNull().references(() => invoices.id),
+    token: text('token').notNull().unique(),
+    createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+    expiresAt: integer('expiresAt', { mode: 'timestamp' }).notNull(),
+    revoked: integer('revoked', { mode: 'boolean' }).notNull().default(false),
+    viewCount: integer('viewCount').notNull().default(0),
+    lastViewedAt: integer('lastViewedAt', { mode: 'timestamp' })
+});
+
+export const linkViews = sqliteTable('link_views', {
+    id: text('id').primaryKey(),
+    linkId: text('linkId').notNull().references(() => sharedLinks.id),
+    viewedAt: integer('viewedAt', { mode: 'timestamp' }).notNull(),
+    ipAddress: text('ipAddress'),
+    userAgent: text('userAgent')
+});
