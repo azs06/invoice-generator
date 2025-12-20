@@ -135,7 +135,7 @@
 
 		if (diffMs <= 0) return 'Expired';
 
-		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+		const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 		const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
 
 		if (diffDays > 0) {
