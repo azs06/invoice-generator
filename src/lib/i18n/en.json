@@ -86,7 +86,8 @@
 	"actions": {
 		"save_draft": "Save Draft",
 		"cancel": "Cancel",
-		"save": "Save"
+		"save": "Save",
+		"clear": "Clear Invoice"
 	},
 	"modal": {
 		"save_draft_title": "Save Draft",

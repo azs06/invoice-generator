@@ -80,6 +80,27 @@ CREATE TABLE IF NOT EXISTS invoices (
     updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
+-- Shared invoice links - allows sharing invoices via unique URLs
+CREATE TABLE IF NOT EXISTS shared_links (
+    id TEXT PRIMARY KEY,
+    invoiceId TEXT NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    createdAt INTEGER NOT NULL DEFAULT (unixepoch()),
+    expiresAt INTEGER NOT NULL,  -- Smart expiration: min(30 days, dueDate, 90 days max)
+    revoked INTEGER NOT NULL DEFAULT 0,
+    viewCount INTEGER NOT NULL DEFAULT 0,
+    lastViewedAt INTEGER DEFAULT NULL
+);
+
+-- View tracking for shared links
+CREATE TABLE IF NOT EXISTS link_views (
+    id TEXT PRIMARY KEY,
+    linkId TEXT NOT NULL REFERENCES shared_links(id) ON DELETE CASCADE,
+    viewedAt INTEGER NOT NULL DEFAULT (unixepoch()),
+    ipAddress TEXT,
+    userAgent TEXT
+);
+
 -- =====================================================
 -- Indexes for performance
 -- =====================================================
@@ -91,3 +112,7 @@ CREATE INDEX IF NOT EXISTS idx_account_providerId ON account(providerId);
 CREATE INDEX IF NOT EXISTS idx_invoices_userId ON invoices(userId);
 CREATE INDEX IF NOT EXISTS idx_invoices_updated_at ON invoices(updated_at);
 CREATE INDEX IF NOT EXISTS idx_user_email ON user(email);
+CREATE INDEX IF NOT EXISTS idx_shared_links_token ON shared_links(token);
+CREATE INDEX IF NOT EXISTS idx_shared_links_invoiceId ON shared_links(invoiceId);
+CREATE INDEX IF NOT EXISTS idx_link_views_linkId ON link_views(linkId);
+

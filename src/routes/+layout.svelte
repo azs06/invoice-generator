@@ -17,12 +17,18 @@
 
 	// Check for ban/delete message in URL
 	const accountStatus = $derived($page.url.searchParams.get('account'));
+
+	// Check if we're on a shared route (no app chrome)
+	const isSharedRoute = $derived($page.url.pathname.startsWith('/shared'));
 </script>
 
 {#if $isLoading}
 	<div class="flex items-center justify-center min-h-screen loading-screen">
 		<div class="text-gray-600 dark:text-gray-400">Loading...</div>
 	</div>
+{:else if isSharedRoute}
+	<!-- Shared routes get a clean layout without app Header/Footer -->
+	{@render children()}
 {:else}
 	<div class="page-shell">
 		{#if accountStatus === 'banned'}
