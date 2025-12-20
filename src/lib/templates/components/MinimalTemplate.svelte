@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { _ } from 'svelte-i18n';
 	import { toUSCurrency } from '$lib/currency.js';
 	import { calculateDiscount, calculateTax } from '$lib/InvoiceCalculator.js';
@@ -11,6 +12,23 @@
 	}
 
 	let { invoice, totals = {} as InvoiceTotals }: Props = $props();
+
+	// Compute logo URL safely for both SSR and client-side rendering
+	const getLogoUrl = (): string | null => {
+		if (!invoice.logo) return null;
+
+		// If logo is already a string (data URL or URL), use it directly
+		if (typeof invoice.logo === 'string') {
+			return invoice.logo;
+		}
+
+		// Only create object URLs on the client side
+		if (browser && invoice.logo instanceof File) {
+			return URL.createObjectURL(invoice.logo);
+		}
+
+		return null;
+	};
 
 	type BalanceState = 'credit' | 'settled' | 'partial' | 'due';
 
@@ -71,13 +89,9 @@
 <div class="invoice-preview minimal-template">
 	<header class="minimal-header">
 		<div class="header-row">
-			<div class="logo-section" class:has-logo={invoice.logo}>
-				{#if invoice.logo}
-					{#if typeof invoice.logo === 'string'}
-						<img src={invoice.logo} alt="Logo" />
-					{:else}
-						<img src={URL.createObjectURL(invoice.logo)} alt="Logo" />
-					{/if}
+			<div class="logo-section" class:has-logo={getLogoUrl()}>
+				{#if getLogoUrl()}
+					<img src={getLogoUrl()} alt="Logo" />
 				{/if}
 			</div>
 			<div class="title-section">

@@ -59,11 +59,7 @@
 {#if invoice}
 	<div class="shared-invoice-page">
 		<header class="shared-header">
-			<div class="branding">
-				<a href="/" class="logo-link">
-					<img src="/logo.png" alt="FreeInvoice.info" class="logo" />
-				</a>
-			</div>
+			<a href="/" class="brand-link"><span class="brand-text font-bold">FreeInvoice.info</span></a>
 			<div class="actions">
 				<button class="action-button" onclick={printInvoice} title="Print Invoice">
 					<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
