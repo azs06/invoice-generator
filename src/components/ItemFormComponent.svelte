@@ -42,6 +42,7 @@
 				updateField('name', target.value);
 			}}
 			class="item-input"
+			data-testid={`item-name-${index}`}
 		/>
 	</div>
 
@@ -59,6 +60,7 @@
 				updateField('quantity', Number(target.value));
 			}}
 			class="item-input"
+			data-testid={`item-quantity-${index}`}
 		/>
 	</div>
 
@@ -77,6 +79,7 @@
 				updateField('price', Number(target.value));
 			}}
 			class="item-input"
+			data-testid={`item-price-${index}`}
 		/>
 	</div>
 

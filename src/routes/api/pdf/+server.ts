@@ -1,3 +1,4 @@
+import puppeteer from '@cloudflare/puppeteer';
 import { error } from '@sveltejs/kit';
 import { updateInvoicePdfKey } from '$lib/server/db';
 import { requirePlatform, getBucket } from '$lib/server/session';
@@ -16,43 +17,27 @@ export const POST: RequestHandler = async (event) => {
         error(400, 'Missing HTML content');
     }
 
-    const pdfUrl = env.PDF_GENERATION_URL;
-    if (!pdfUrl) {
-        console.error('PDF_GENERATION_URL not configured');
-        error(500, 'PDF generation service not configured');
-    }
-
-    const apiKey = env.PDF_MICROSERVICE_API_KEY;
-    if (!apiKey) {
-        console.error('PDF_MICROSERVICE_API_KEY not configured');
-        error(500, 'PDF generation service not configured');
+    // Check if Browser Rendering is available (only in Cloudflare environment)
+    if (!env.BROWSER) {
+        console.error('Browser Rendering not available - this endpoint requires Cloudflare environment');
+        error(503, 'PDF generation is not available in local development. Please use the client-side download instead.');
     }
 
     try {
-        const response = await fetch(pdfUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-API-Key': apiKey
-            },
-            body: new URLSearchParams({ html })
+        // Use Cloudflare Browser Rendering
+        const browser = await puppeteer.launch(env.BROWSER);
+        const page = await browser.newPage();
+
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+
+        const pdfBuffer = await page.pdf({
+            format: 'letter',
+            margin: { top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' },
+            printBackground: true
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('PDF generation failed:', response.status, errorText);
-            error(502, `PDF generation failed: ${errorText}`);
-        }
+        await browser.close();
 
-        // Lambda returns base64-encoded PDF, decode it
-        const base64Pdf = await response.text();
-        const binaryString = atob(base64Pdf);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        const pdfBuffer = bytes.buffer;
-        
         const bucket = getBucket(event);
         const db = env.DB;
 
@@ -60,7 +45,7 @@ export const POST: RequestHandler = async (event) => {
         if (invoiceId && bucket && db) {
             const pdfKey = `users/${session.user.id}/${invoiceId}.pdf`;
             try {
-                await bucket.put(pdfKey, pdfBuffer, {
+                await bucket.put(pdfKey, new Uint8Array(pdfBuffer), {
                     httpMetadata: {
                         contentType: 'application/pdf'
                     }
@@ -74,14 +59,15 @@ export const POST: RequestHandler = async (event) => {
             }
         }
 
-        return new Response(pdfBuffer, {
+        // Convert Buffer to Uint8Array for Response compatibility
+        return new Response(new Uint8Array(pdfBuffer), {
             headers: {
                 'Content-Type': 'application/pdf',
                 'Content-Disposition': 'attachment; filename="invoice.pdf"'
             }
         });
     } catch (err) {
-        console.error('Error calling PDF service:', err);
-        error(500, 'Internal Server Error');
+        console.error('PDF generation failed:', err);
+        error(500, 'PDF generation failed');
     }
 };

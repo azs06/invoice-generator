@@ -13,9 +13,14 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check .",
-		"deploy": "npm run build && npx wrangler deploy"
+		"deploy": "npm run build && npx wrangler deploy",
+		"test": "playwright test",
+		"test:ui": "playwright test --ui",
+		"test:headed": "playwright test --headed"
 	},
 	"devDependencies": {
+		"@cloudflare/puppeteer": "^1.0.4",
+		"@playwright/test": "^1.57.0",
 		"@sveltejs/adapter-auto": "^6.0.0",
 		"@sveltejs/adapter-cloudflare": "^7.0.1",
 		"@sveltejs/adapter-node": "^5.2.12",

@@ -284,27 +284,58 @@ ${clone.innerHTML}
 </body>
 </html>`;
 
-				const response = await fetch('/api/pdf', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({ html: htmlContent, invoiceId: currentInvoice.id })
-				});
+				let useClientSide = false;
 
-				if (!response.ok) {
-					throw new Error('Failed to generate PDF server-side');
+				try {
+					const response = await fetch('/api/pdf', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({ html: htmlContent, invoiceId: currentInvoice.id })
+					});
+
+					if (!response.ok) {
+						// Fall back to client-side generation if server-side fails
+						console.warn('Server-side PDF generation unavailable, using client-side fallback');
+						useClientSide = true;
+					} else {
+						const blob = await response.blob();
+						const url = window.URL.createObjectURL(blob);
+						const a = document.createElement('a');
+						a.href = url;
+						a.download = `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`;
+						document.body.appendChild(a);
+						a.click();
+						window.URL.revokeObjectURL(url);
+						document.body.removeChild(a);
+					}
+				} catch {
+					console.warn('Server-side PDF generation failed, using client-side fallback');
+					useClientSide = true;
 				}
 
-				const blob = await response.blob();
-				const url = window.URL.createObjectURL(blob);
-				const a = document.createElement('a');
-				a.href = url;
-				a.download = `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`;
-				document.body.appendChild(a);
-				a.click();
-				window.URL.revokeObjectURL(url);
-				document.body.removeChild(a);
+				if (useClientSide) {
+					// Fall back to client-side generation
+					const html2pdf = (await import('html2pdf.js')).default;
+
+					await html2pdf()
+						.from(previewRef)
+						.set({
+							margin: 0.5,
+							filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
+							html2canvas: {
+								scale: 3,
+								useCORS: true
+							},
+							jsPDF: {
+								unit: 'in',
+								format: 'letter',
+								orientation: 'portrait'
+							}
+						})
+						.save();
+				}
 			} else {
 				// Client-side generation for guests
 				const html2pdf = (await import('html2pdf.js')).default;
@@ -685,6 +716,7 @@ ${clone.innerHTML}
 					class="tab-button"
 					class:active={activeTab === 'edit'}
 					onclick={() => setActiveTab('edit')}
+					data-testid="edit-tab"
 				>
 					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
@@ -697,6 +729,7 @@ ${clone.innerHTML}
 					class="tab-button"
 					class:active={activeTab === 'preview'}
 					onclick={() => setActiveTab('preview')}
+					data-testid="preview-tab"
 				>
 					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
@@ -836,6 +869,7 @@ ${clone.innerHTML}
 						title={$_('invoice.save_pdf')}
 						onclick={saveAsPDF}
 						disabled={isGeneratingPDF}
+						data-testid="download-pdf"
 					>
 						{#if isGeneratingPDF && pdfAction === 'download'}
 							<svg

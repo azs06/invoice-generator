@@ -163,6 +163,7 @@
 					value={invoice.invoiceFrom}
 					placeholder={$_('placeholders.your_company')}
 					oninput={onInvoiceFromInput}
+					data-testid="invoice-from"
 				/>
 			</div>
 
@@ -174,6 +175,7 @@
 					oninput={onInvoiceToInput}
 					value={invoice.invoiceTo}
 					placeholder={$_('placeholders.client_name')}
+					data-testid="invoice-to"
 				/>
 			</div>
 
