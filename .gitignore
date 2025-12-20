@@ -24,3 +24,7 @@ vite.config.ts.timestamp-*
 .claude
 .playwright-mcp.dev.vars
 .dev.vars
+
+# Playwright
+playwright-report
+test-results
