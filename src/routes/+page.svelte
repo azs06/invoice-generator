@@ -148,6 +148,9 @@
 	const session = authClient.useSession();
 
 	const saveAsPDF = async (): Promise<void> => {
+		// Guard against double-clicks immediately
+		if (isGeneratingPDF) return;
+
 		const currentInvoice = invoice;
 		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
 			return;
@@ -195,88 +198,51 @@
 								reader.readAsDataURL(blob);
 							});
 							img.src = base64;
-						} catch {
+						} catch (e) {
+							console.warn('Failed to convert image to base64:', img.src, e);
 							// Keep original src if conversion fails
 						}
 					}
 				}
 
-				// Build a minimal, self-contained HTML document
+				// Extract all stylesheets from the document for accurate template rendering
+				const extractStyles = (): string => {
+					const styles: string[] = [];
+
+					// Get all style elements (includes Svelte component styles)
+					for (const style of document.querySelectorAll('style')) {
+						styles.push(style.textContent || '');
+					}
+
+					// Get all linked stylesheets (same-origin only)
+					for (const link of document.querySelectorAll('link[rel="stylesheet"]')) {
+						try {
+							const sheet = (link as HTMLLinkElement).sheet;
+							if (sheet) {
+								for (const rule of sheet.cssRules) {
+									styles.push(rule.cssText);
+								}
+							}
+						} catch {
+							// Cross-origin stylesheet, skip
+						}
+					}
+
+					return styles.join('\n');
+				};
+
+				const cssStyles = extractStyles();
+
+				// Build a self-contained HTML document with extracted styles
 				const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
-/* Reset and base styles */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { 
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-	background: white; 
-	padding: 20px;
-	color: #111827;
-	-webkit-print-color-adjust: exact;
-	print-color-adjust: exact;
-}
-
-/* Invoice template styles */
-.invoice-preview {
-	--radius-lg: 0.75rem;
-	--radius-md: 0.5rem;
-	--color-bg-primary: #ffffff;
-	--color-bg-secondary: #f9fafb;
-	--color-text-primary: #111827;
-	--color-text-secondary: #6b7280;
-	--color-border-primary: #e5e7eb;
-	--color-accent-blue: #2563eb;
-	display: flex;
-	flex-direction: column;
-	gap: 1.5rem;
-	padding: 2rem;
-	background: white;
-	max-width: 800px;
-	margin: 0 auto;
-}
-
-.preview-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.25rem; padding-bottom: 1rem; }
-.brand { display: flex; align-items: center; }
-.logo-shell { max-width: 150px; height: auto; }
-.logo-shell img { width: 100%; height: auto; object-fit: contain; }
-.invoice-title-section { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
-.invoice-title { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
-.invoice-label { font-size: 2rem; font-weight: 300; letter-spacing: 0.02em; }
-.invoice-number { font-size: 1rem; color: #6b7280; }
-.status-text { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
-.status-text.due { color: #c2410c; }
-.status-text.partial { color: #2563eb; }
-.status-text.settled, .status-text.credit { color: #047857; }
-
-.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; padding: 1.5rem 0; }
-.details-column { display: flex; flex-direction: column; gap: 0.75rem; }
-.right-column { align-items: flex-end; text-align: right; }
-.details-block { display: flex; flex-direction: column; gap: 0.25rem; }
-.from-section { margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb; }
-.details-label { font-size: 0.8125rem; font-weight: 600; color: #6b7280; }
-.details-value { font-size: 0.95rem; word-break: break-word; white-space: pre-wrap; }
-.balance-due-highlight { margin-top: 0.5rem; padding: 0.75rem 1rem; background: #f9fafb; border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end; }
-.balance-label { font-size: 0.8rem; font-weight: 600; color: #6b7280; }
-.balance-amount { font-size: 1.5rem; font-weight: 700; }
-
-.items-card { border-radius: 0.5rem; overflow: hidden; border: 1px solid #e5e7eb; }
-.items-table { width: 100%; border-collapse: collapse; background: white; }
-.items-table th { text-align: left; font-size: 0.8rem; font-weight: 600; padding: 0.85rem 1rem; background: #f3f4f6; }
-.items-table th:last-child, .items-table td:last-child { text-align: right; }
-.items-table td { padding: 0.75rem 1rem; font-size: 0.95rem; border-bottom: 1px solid #e5e7eb; }
-.items-table tbody tr:last-child td { border-bottom: none; }
-
-.summary { display: flex; justify-content: flex-end; }
-.summary-table { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 0.5rem; }
-.summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; padding: 0.4rem 0; }
-.summary-row span:first-child { color: #6b7280; }
-.summary-row.emphasize { font-weight: 700; font-size: 1.05rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb; }
-.summary-row.emphasize span:first-child { color: #111827; }
-
-.notes-section { padding: 1.25rem 0; border-top: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 0.5rem; }
-.notes-section p { margin: 0; font-size: 0.95rem; white-space: pre-wrap; line-height: 1.6; }
+${cssStyles}
+/* Print overrides */
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; padding: 20px; background: white; }
 </style>
 </head>
 <body>
@@ -292,7 +258,11 @@ ${clone.innerHTML}
 						headers: {
 							'Content-Type': 'application/json'
 						},
-						body: JSON.stringify({ html: htmlContent, invoiceId: currentInvoice.id })
+						body: JSON.stringify({
+							html: htmlContent,
+							invoiceId: currentInvoice.id,
+							invoiceTo: currentInvoice.invoiceTo
+						})
 					});
 
 					if (!response.ok) {
