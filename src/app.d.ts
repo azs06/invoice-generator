@@ -29,11 +29,10 @@ declare global {
 		DB: D1Database;
 		// R2 Bucket for PDF storage
 		BUCKET: R2Bucket;
+		// Browser Rendering for PDF generation
+		BROWSER: Fetcher;
 		// Environment variables (set in wrangler.toml [vars])
-		PDF_GENERATION_URL: string;
 		SUPER_ADMIN_EMAILS: string;
-		// PDF Microservice API Key (set via wrangler secret put)
-		PDF_MICROSERVICE_API_KEY: string;
 		// Auth secrets (set via wrangler secret put)
 		GOOGLE_CLIENT_ID: string;
 		GOOGLE_CLIENT_SECRET: string;

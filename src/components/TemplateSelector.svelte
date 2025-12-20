@@ -17,6 +17,7 @@
 		class="selector-control"
 		value={$selectedTemplateId}
 		onchange={handleChange}
+		data-testid="template-select"
 	>
 		{#each TEMPLATE_OPTIONS as option}
 			<option value={option.id}>
