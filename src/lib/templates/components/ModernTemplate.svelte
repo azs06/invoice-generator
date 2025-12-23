@@ -248,7 +248,6 @@
 		margin: 0 auto;
 	}
 
-
 	.preview-header {
 		display: flex;
 		justify-content: space-between;
@@ -427,7 +426,6 @@
 		background: #f3f4f6;
 	}
 
-
 	.items-table th:last-child,
 	.items-table td:last-child {
 		text-align: right;
@@ -516,6 +514,21 @@
 			background: white !important;
 			color: black !important;
 		}
+		.preview-header {
+			flex-direction: row !important;
+			justify-content: space-between !important;
+			align-items: flex-start !important;
+		}
+		.details-grid {
+			grid-template-columns: 1fr 1fr !important;
+		}
+		.right-column {
+			align-items: flex-end !important;
+			text-align: right !important;
+		}
+		.summary-table {
+			max-width: 400px !important;
+		}
 
 		.items-table th {
 			background: #f5f5f5 !important;
@@ -527,7 +540,7 @@
 		}
 	}
 
-	@media (max-width: 768px) {
+	@media only screen and (max-width: 768px) {
 		.invoice-preview {
 			padding: 1.25rem;
 		}

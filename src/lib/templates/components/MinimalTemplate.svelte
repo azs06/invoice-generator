@@ -303,10 +303,16 @@
 		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
 	}
 
-	.status.due { color: #ef4444; }
-	.status.partial { color: #3b82f6; }
+	.status.due {
+		color: #ef4444;
+	}
+	.status.partial {
+		color: #3b82f6;
+	}
 	.status.settled,
-	.status.credit { color: #10b981; }
+	.status.credit {
+		color: #10b981;
+	}
 
 	.parties-section {
 		display: grid;
@@ -454,16 +460,32 @@
 			background: white !important;
 			color: black !important;
 		}
+		.header-row {
+			flex-direction: row !important;
+			align-items: center !important;
+			gap: 2rem !important;
+		}
+		.parties-section {
+			grid-template-columns: 1fr 1fr !important;
+			gap: 2rem !important;
+		}
+		.dates-section {
+			gap: 2rem !important;
+		}
 
-		.status { color: #1f2937 !important; }
-		.status::before { box-shadow: none !important; }
+		.status {
+			color: #1f2937 !important;
+		}
+		.status::before {
+			box-shadow: none !important;
+		}
 
 		.item-row {
 			border-bottom: 1px solid #e5e5e5 !important;
 		}
 	}
 
-	@media (max-width: 768px) {
+	@media only screen and (max-width: 768px) {
 		.invoice-preview {
 			padding: 1.5rem;
 			gap: 1.5rem;
