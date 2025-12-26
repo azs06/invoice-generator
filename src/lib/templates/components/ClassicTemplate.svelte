@@ -329,10 +329,16 @@
 		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
 	}
 
-	.status-badge.due { color: #dc2626; }
-	.status-badge.partial { color: #2563eb; }
+	.status-badge.due {
+		color: #dc2626;
+	}
+	.status-badge.partial {
+		color: #2563eb;
+	}
 	.status-badge.settled,
-	.status-badge.credit { color: #059669; }
+	.status-badge.credit {
+		color: #059669;
+	}
 
 	.billing-details {
 		display: flex;
@@ -485,17 +491,39 @@
 			color: black !important;
 			border: none !important;
 		}
+		.header-top {
+			flex-direction: row !important;
+			justify-content: space-between !important;
+			align-items: flex-start !important;
+		}
+		.billing-details {
+			flex-direction: row !important;
+			justify-content: space-between !important;
+		}
+		.invoice-meta {
+			text-align: right !important;
+		}
+		.totals-section {
+			justify-content: flex-end !important;
+		}
+		.totals-container {
+			max-width: 400px !important;
+		}
 
 		.items-table th {
 			background: #f8f8f8 !important;
 			color: black !important;
 		}
 
-		.status-badge { color: #1f2937 !important; }
-		.status-badge::before { box-shadow: none !important; }
+		.status-badge {
+			color: #1f2937 !important;
+		}
+		.status-badge::before {
+			box-shadow: none !important;
+		}
 	}
 
-	@media (max-width: 768px) {
+	@media only screen and (max-width: 768px) {
 		.invoice-preview {
 			padding: 1rem;
 		}
