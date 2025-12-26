@@ -517,9 +517,14 @@
 
 		.status-badge {
 			color: #1f2937 !important;
+			display: inline-flex !important;
+			align-items: center !important;
 		}
 		.status-badge::before {
 			box-shadow: none !important;
+			vertical-align: middle !important;
+			position: relative !important;
+			top: 0 !important;
 		}
 	}
 
