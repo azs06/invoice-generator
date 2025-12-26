@@ -241,8 +241,10 @@
 		background: white;
 		color: #333;
 		font-family: 'Times New Roman', serif;
-		max-width: 1024px;
-		margin: 0 auto;
+		/* Width/height controlled by A4 wrapper in InvoicePreviewWrapper */
+		width: 100%;
+		flex: 1;
+		box-sizing: border-box;
 		border: 1px solid #ddd;
 	}
 
@@ -490,6 +492,7 @@
 			background: white !important;
 			color: black !important;
 			border: none !important;
+			border-radius: 0 !important;
 		}
 		.header-top {
 			flex-direction: row !important;

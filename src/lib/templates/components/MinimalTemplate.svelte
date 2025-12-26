@@ -227,8 +227,10 @@
 			-apple-system,
 			BlinkMacSystemFont,
 			sans-serif;
-		max-width: 800px;
-		margin: 0 auto;
+		/* Width/height controlled by A4 wrapper in InvoicePreviewWrapper */
+		width: 100%;
+		flex: 1;
+		box-sizing: border-box;
 		line-height: 1.5;
 	}
 
@@ -459,6 +461,7 @@
 		.invoice-preview {
 			background: white !important;
 			color: black !important;
+			border-radius: 0 !important;
 		}
 		.header-row {
 			flex-direction: row !important;

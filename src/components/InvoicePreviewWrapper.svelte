@@ -83,8 +83,43 @@
 
 <style>
 	.template-wrapper {
-		width: 100%;
-		height: 100%;
+		/* A4 dimensions: 210mm x 297mm */
+		--a4-width: 210mm;
+		--a4-height: 297mm;
+		/* Pixel equivalents at 96dpi for reference: 794px x 1123px */
+
+		display: flex;
+		flex-direction: column;
+		width: var(--a4-width);
+		min-height: var(--a4-height);
+		margin: 0 auto;
+		background: white;
+		box-shadow:
+			0 4px 6px -1px rgba(0, 0, 0, 0.1),
+			0 2px 4px -2px rgba(0, 0, 0, 0.1);
+		transform-origin: top center;
+	}
+
+	/* Responsive scaling for smaller viewports */
+	@media (max-width: 900px) {
+		.template-wrapper {
+			/* Scale down to fit viewport with some margin */
+			--scale: calc((100vw - 2rem) / 210mm);
+			transform: scale(var(--scale));
+			margin-bottom: calc((var(--a4-height) * var(--scale)) - var(--a4-height));
+		}
+	}
+
+	/* Print styles - ensure full A4 size */
+	@media print {
+		.template-wrapper {
+			width: 210mm;
+			min-height: 297mm;
+			margin: 0;
+			box-shadow: none;
+			transform: none;
+			border-radius: 0 !important;
+		}
 	}
 
 	.template-loading {
