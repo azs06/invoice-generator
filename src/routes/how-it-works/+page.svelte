@@ -32,14 +32,19 @@
 					<div class="step-details">
 						<h3>What to include:</h3>
 						<ul>
-							<li><strong>Your Business Info:</strong> Your name/company name, address, contact details</li>
-							<li><strong>Client Info:</strong> Client's name/company, address, contact information</li>
+							<li>
+								<strong>Your Business Info:</strong> Your name/company name, address, contact details
+							</li>
+							<li>
+								<strong>Client Info:</strong> Client's name/company, address, contact information
+							</li>
 							<li>
 								<strong>Invoice Details:</strong> Invoice number, date, and due date (automatically calculated
 								as 30 days from invoice date)
 							</li>
 							<li>
-								<strong>Company Logo:</strong> Upload your logo for a professional look (optional but recommended)
+								<strong>Company Logo:</strong> Upload your logo for a professional look (optional but
+								recommended)
 							</li>
 						</ul>
 					</div>
@@ -75,8 +80,8 @@
 								<strong>Tax:</strong> Add tax as a percentage or flat amount (e.g., 15% VAT or $50 tax)
 							</li>
 							<li>
-								<strong>Discount:</strong> Apply discount as percentage or flat amount (e.g., 10% off or $20
-								discount)
+								<strong>Discount:</strong> Apply discount as percentage or flat amount (e.g., 10% off
+								or $20 discount)
 							</li>
 							<li><strong>Shipping:</strong> Add shipping/delivery charges if applicable</li>
 							<li>
@@ -111,11 +116,15 @@
 								is correct
 							</li>
 							<li>
-								<strong>Download PDF:</strong> Click the download button to get your invoice as a PDF file
+								<strong>Download PDF:</strong> Click the download button to get your invoice as a PDF
+								file
 							</li>
-							<li><strong>Or Print:</strong> Print directly from your browser if you need a hard copy</li>
 							<li>
-								<strong>Save Draft:</strong> Save your invoice as a draft to access it later or make edits
+								<strong>Or Print:</strong> Print directly from your browser if you need a hard copy
+							</li>
+							<li>
+								<strong>Save Draft:</strong> Save your invoice as a draft to access it later or make
+								edits
 							</li>
 						</ul>
 					</div>
@@ -137,9 +146,7 @@
 				</div>
 				<div class="tip-card">
 					<h3>✓ Set Clear Payment Terms</h3>
-					<p>
-						Specify payment due date, accepted payment methods, and any late payment penalties.
-					</p>
+					<p>Specify payment due date, accepted payment methods, and any late payment penalties.</p>
 				</div>
 				<div class="tip-card">
 					<h3>✓ Include All Contact Info</h3>

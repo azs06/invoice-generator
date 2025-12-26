@@ -4,22 +4,22 @@ import { requireDB } from '$lib/server/session';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
-    const session = event.locals.session;
+	const session = event.locals.session;
 
-    // Optional: redirect to login if not authenticated?
-    // Or allow public access if shared? For now, let's assume private.
-    if (!session) {
-        error(401, 'Unauthorized');
-    }
+	// Optional: redirect to login if not authenticated?
+	// Or allow public access if shared? For now, let's assume private.
+	if (!session) {
+		error(401, 'Unauthorized');
+	}
 
-    const db = requireDB(event);
-    const invoice = await getInvoice(db, event.params.id, session.user.id);
-    if (!invoice) {
-        error(404, 'Invoice not found');
-    }
+	const db = requireDB(event);
+	const invoice = await getInvoice(db, event.params.id, session.user.id);
+	if (!invoice) {
+		error(404, 'Invoice not found');
+	}
 
-    return {
-        invoice,
-        user: session.user
-    };
+	return {
+		invoice,
+		user: session.user
+	};
 };

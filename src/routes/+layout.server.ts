@@ -2,16 +2,16 @@ import type { LayoutServerLoad } from './$types';
 import { isUserAdmin, requirePlatform } from '$lib/server/session';
 
 export const load: LayoutServerLoad = async (event) => {
-    const session = event.locals.session;
+	const session = event.locals.session;
 
-    if (!session || !event.platform?.env?.DB) {
-        return { isAdmin: false };
-    }
+	if (!session || !event.platform?.env?.DB) {
+		return { isAdmin: false };
+	}
 
-    const db = event.platform.env.DB;
-    const env = event.platform.env;
+	const db = event.platform.env.DB;
+	const env = event.platform.env;
 
-    const isAdmin = await isUserAdmin(db, session.user.id, env);
+	const isAdmin = await isUserAdmin(db, session.user.id, env);
 
-    return { isAdmin };
+	return { isAdmin };
 };

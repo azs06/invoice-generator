@@ -61,3 +61,23 @@ export interface SavedInvoiceRecord {
 	id: string;
 	invoice: InvoiceData;
 }
+
+export type PageSizeId = 'a4' | 'letter' | 'legal' | 'a5';
+
+export interface PageDimensions {
+	width: string;
+	height: string;
+	label: string;
+}
+
+export interface PageMargins {
+	top: number;
+	right: number;
+	bottom: number;
+	left: number;
+}
+
+export interface PageSettings {
+	pageSize: PageSizeId;
+	margins: PageMargins;
+}

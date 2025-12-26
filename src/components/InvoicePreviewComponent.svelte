@@ -83,8 +83,7 @@
 		}
 	};
 
-	const balanceSummaryLabel = (): string =>
-		balanceDue() < 0 ? 'Credit balance' : 'Balance due';
+	const balanceSummaryLabel = (): string => (balanceDue() < 0 ? 'Credit balance' : 'Balance due');
 </script>
 
 <div class="invoice-preview">

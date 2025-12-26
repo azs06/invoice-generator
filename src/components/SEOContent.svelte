@@ -145,7 +145,7 @@
 				name: 'Can I save my invoices for later?',
 				acceptedAnswer: {
 					'@type': 'Answer',
-					text: 'Yes! Click the \'Save Draft\' button to save your invoice. You can access all saved invoices from the \'Saved Invoices\' page anytime.'
+					text: "Yes! Click the 'Save Draft' button to save your invoice. You can access all saved invoices from the 'Saved Invoices' page anytime."
 				}
 			}
 		]
@@ -203,7 +203,8 @@
 				<div class="feature-icon">🎨</div>
 				<h3 class="feature-title">Professional Templates</h3>
 				<p class="feature-description">
-					Choose from multiple beautiful templates. Create invoices that look great and professional.
+					Choose from multiple beautiful templates. Create invoices that look great and
+					professional.
 				</p>
 			</div>
 			<div class="feature-card">
@@ -261,8 +262,8 @@
 			<details class="faq-item">
 				<summary class="faq-question">Is this invoice generator really free?</summary>
 				<p class="faq-answer">
-					Yes! FreeInvoice.info is completely free to use with no hidden costs, no premium tiers, and
-					no signup required. Create unlimited invoices forever.
+					Yes! FreeInvoice.info is completely free to use with no hidden costs, no premium tiers,
+					and no signup required. Create unlimited invoices forever.
 				</p>
 			</details>
 			<details class="faq-item">
@@ -282,8 +283,8 @@
 			<details class="faq-item">
 				<summary class="faq-question">Can I use this for my business in Bangladesh?</summary>
 				<p class="faq-answer">
-					Absolutely! Our invoice generator supports Bengali language and is perfect for businesses in
-					Bangladesh. You can create invoices in both English and বাংলা.
+					Absolutely! Our invoice generator supports Bengali language and is perfect for businesses
+					in Bangladesh. You can create invoices in both English and বাংলা.
 				</p>
 			</details>
 			<details class="faq-item">

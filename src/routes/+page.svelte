@@ -4,6 +4,7 @@
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
+	import PageSettingsSelector from '$components/PageSettingsSelector.svelte';
 	import SignUpPromptModal from '$components/SignUpPromptModal.svelte';
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
 	import CurrencySelector from '$components/CurrencySelector.svelte';
@@ -14,6 +15,7 @@
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
+	import { pageSettings, getJsPDFFormat, getMarginsInInches } from '../stores/pageSettingsStore.js';
 	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
 	import { authClient } from '$lib/auth';
 	import { isInvoiceComplete } from '$lib/invoiceValidation';
@@ -288,11 +290,14 @@ ${clone.innerHTML}
 				if (useClientSide) {
 					// Fall back to client-side generation
 					const html2pdf = (await import('html2pdf.js')).default;
+					const currentSettings = $pageSettings;
+					const pdfFormat = getJsPDFFormat(currentSettings.pageSize);
+					const margins = getMarginsInInches(currentSettings.margins);
 
 					await html2pdf()
 						.from(previewRef)
 						.set({
-							margin: 0.5,
+							margin: [margins.top, margins.right, margins.bottom, margins.left],
 							filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
 							html2canvas: {
 								scale: 3,
@@ -300,7 +305,7 @@ ${clone.innerHTML}
 							},
 							jsPDF: {
 								unit: 'in',
-								format: 'letter',
+								format: pdfFormat,
 								orientation: 'portrait'
 							}
 						})
@@ -309,11 +314,14 @@ ${clone.innerHTML}
 			} else {
 				// Client-side generation for guests
 				const html2pdf = (await import('html2pdf.js')).default;
+				const currentSettings = $pageSettings;
+				const pdfFormat = getJsPDFFormat(currentSettings.pageSize);
+				const margins = getMarginsInInches(currentSettings.margins);
 
 				await html2pdf()
 					.from(previewRef)
 					.set({
-						margin: 0.5,
+						margin: [margins.top, margins.right, margins.bottom, margins.left],
 						filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
 						html2canvas: {
 							scale: 3,
@@ -321,7 +329,7 @@ ${clone.innerHTML}
 						},
 						jsPDF: {
 							unit: 'in',
-							format: 'letter',
+							format: pdfFormat,
 							orientation: 'portrait'
 						}
 					})
@@ -358,10 +366,14 @@ ${clone.innerHTML}
 			await waitForPreviewImages();
 
 			const html2pdf = (await import('html2pdf.js')).default;
+			const currentSettings = $pageSettings;
+			const pdfFormat = getJsPDFFormat(currentSettings.pageSize);
+			const margins = getMarginsInInches(currentSettings.margins);
+
 			const worker = html2pdf()
 				.from(previewRef)
 				.set({
-					margin: 0.5,
+					margin: [margins.top, margins.right, margins.bottom, margins.left],
 					filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
 					html2canvas: {
 						scale: 3,
@@ -369,7 +381,7 @@ ${clone.innerHTML}
 					},
 					jsPDF: {
 						unit: 'in',
-						format: 'letter',
+						format: pdfFormat,
 						orientation: 'portrait'
 					}
 				});
@@ -714,7 +726,10 @@ ${clone.innerHTML}
 			</div>
 
 			{#if activeTab === 'preview'}
-				<TemplateSelector />
+				<div class="preview-toolbar-controls">
+					<TemplateSelector />
+					<PageSettingsSelector />
+				</div>
 			{/if}
 		</div>
 
@@ -1035,6 +1050,13 @@ ${clone.innerHTML}
 		height: 1.125rem;
 	}
 
+	.preview-toolbar-controls {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
 	.content-section {
 		--section-padding: 0.875rem;
 		--section-radius: var(--radius-lg);
@@ -1192,6 +1214,16 @@ ${clone.innerHTML}
 		.page-layout {
 			padding: 0.85rem 0.75rem;
 			gap: 0.75rem;
+		}
+
+		.page-toolbar {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.preview-toolbar-controls {
+			width: 100%;
+			justify-content: space-between;
 		}
 
 		.tab-navigation {
