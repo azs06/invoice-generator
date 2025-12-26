@@ -215,11 +215,12 @@
 
 		background: var(--bg);
 		color: var(--text);
-		border-radius: 12px;
 		border: 1px solid var(--border);
 		padding: 28px;
-		max-width: 960px;
-		margin: 0 auto;
+		/* Width/height controlled by A4 wrapper in InvoicePreviewWrapper */
+		width: 100%;
+		flex: 1;
+		box-sizing: border-box;
 		box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
 	}
 
@@ -593,9 +594,14 @@
 		}
 		.status {
 			color: #1f2937 !important;
+			display: inline-flex !important;
+			align-items: center !important;
 		}
 		.status::before {
 			box-shadow: none !important;
+			vertical-align: middle !important;
+			position: relative !important;
+			top: 0 !important;
 		}
 	}
 </style>

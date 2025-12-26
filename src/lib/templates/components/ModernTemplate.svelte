@@ -179,26 +179,34 @@
 				<span>{$_('summary.subtotal')}:</span>
 				<span>{$toUSCurrency(subTotal())}</span>
 			</div>
-			<div class="summary-row">
-				<span>{$_('summary.discount')}:</span>
-				<span>-{$toUSCurrency(discountDisplayValue())}</span>
-			</div>
-			<div class="summary-row">
-				<span>{$_('summary.tax')}:</span>
-				<span>+{$toUSCurrency(taxDisplayValue())}</span>
-			</div>
-			<div class="summary-row">
-				<span>{$_('summary.shipping')}:</span>
-				<span>+{$toUSCurrency(shippingDisplayValue())}</span>
-			</div>
+			{#if discountDisplayValue() > 0}
+				<div class="summary-row">
+					<span>{$_('summary.discount')}:</span>
+					<span>-{$toUSCurrency(discountDisplayValue())}</span>
+				</div>
+			{/if}
+			{#if taxDisplayValue() > 0}
+				<div class="summary-row">
+					<span>{$_('summary.tax')}:</span>
+					<span>+{$toUSCurrency(taxDisplayValue())}</span>
+				</div>
+			{/if}
+			{#if shippingDisplayValue() > 0}
+				<div class="summary-row">
+					<span>{$_('summary.shipping')}:</span>
+					<span>+{$toUSCurrency(shippingDisplayValue())}</span>
+				</div>
+			{/if}
 			<div class="summary-row emphasize">
 				<span>{$_('summary.total')}:</span>
 				<span>{$toUSCurrency(totalAmount())}</span>
 			</div>
-			<div class="summary-row">
-				<span>{$_('summary.amount_paid')}:</span>
-				<span>{$toUSCurrency(amountPaid())}</span>
-			</div>
+			{#if amountPaid() > 0}
+				<div class="summary-row">
+					<span>{$_('summary.amount_paid')}:</span>
+					<span>{$toUSCurrency(amountPaid())}</span>
+				</div>
+			{/if}
 			<div class="summary-row emphasize">
 				<span
 					>{balanceDue() < 0 ? `${$_('summary.credit_balance')}:` : `${$_('summary.due')}:`}</span
@@ -212,15 +220,6 @@
 		<section class="notes-section">
 			<span class="details-label">{$_('fields.notes')}:</span>
 			<p>{invoice.notes}</p>
-		</section>
-	{/if}
-
-	{#if !invoice.terms || invoice.terms.trim() === ''}
-		<!-- Terms moved to details section, only show here if not already shown above -->
-	{:else if invoice.notes}
-		<section class="notes-section">
-			<span class="details-label">{$_('fields.terms')}:</span>
-			<p>{invoice.terms}</p>
 		</section>
 	{/if}
 </div>
@@ -240,21 +239,22 @@
 
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
-		padding: 2rem;
-		border-radius: var(--radius-lg);
+		gap: 1rem;
+		padding: 1.5rem;
 		background: var(--color-bg-primary);
-		max-width: 1024px;
-		margin: 0 auto;
+		/* Width/height controlled by A4 wrapper in InvoicePreviewWrapper */
+		width: 100%;
+		flex: 1;
+		box-sizing: border-box;
 	}
 
 	.preview-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		gap: 1.25rem;
+		gap: 1rem;
 		flex-wrap: wrap;
-		padding-bottom: 1rem;
+		padding-bottom: 0.75rem;
 	}
 
 	.brand {
@@ -299,20 +299,20 @@
 	}
 
 	.invoice-label {
-		font-size: 2rem;
+		font-size: 1.5rem;
 		font-weight: 300;
 		letter-spacing: 0.02em;
 		color: var(--color-text-primary);
 	}
 
 	.invoice-number {
-		font-size: 1rem;
+		font-size: 0.9rem;
 		font-weight: 400;
 		color: var(--color-text-secondary);
 	}
 
 	.status-text {
-		font-size: 0.85rem;
+		font-size: 0.75rem;
 		font-weight: 700;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
@@ -337,14 +337,14 @@
 	.details-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 2rem;
-		padding: 1.5rem 0;
+		gap: 1.5rem;
+		padding: 1rem 0;
 	}
 
 	.details-column {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.5rem;
 	}
 
 	.left-column {
@@ -363,43 +363,43 @@
 	}
 
 	.from-section {
-		margin-top: 0.5rem;
-		padding-top: 0.75rem;
+		margin-top: 0.35rem;
+		padding-top: 0.5rem;
 		border-top: 1px solid var(--color-border-primary);
 	}
 
 	.details-label {
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		color: var(--color-text-secondary);
 	}
 
 	.details-value {
-		font-size: 0.95rem;
+		font-size: 0.875rem;
 		color: var(--color-text-primary);
 		word-break: break-word;
 		white-space: pre-wrap;
 	}
 
 	.balance-due-highlight {
-		margin-top: 0.5rem;
-		padding: 0.75rem 1rem;
+		margin-top: 0.35rem;
+		padding: 0.5rem 0.75rem;
 		background: var(--color-bg-secondary);
 		border-radius: var(--radius-md);
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: 0.25rem;
 		align-items: flex-end;
 	}
 
 	.balance-label {
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		color: var(--color-text-secondary);
 	}
 
 	.balance-amount {
-		font-size: 1.5rem;
+		font-size: 1.25rem;
 		font-weight: 700;
 		color: var(--color-text-primary);
 	}
@@ -419,9 +419,9 @@
 
 	.items-table th {
 		text-align: left;
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 		font-weight: 600;
-		padding: 0.85rem 1rem;
+		padding: 0.6rem 0.75rem;
 		color: var(--color-text-primary);
 		background: #f3f4f6;
 	}
@@ -432,8 +432,8 @@
 	}
 
 	.items-table td {
-		padding: 0.75rem 1rem;
-		font-size: 0.95rem;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.875rem;
 		color: var(--color-text-primary);
 		border-bottom: 1px solid var(--color-border-primary);
 	}
@@ -446,7 +446,7 @@
 		text-align: center;
 		font-style: italic;
 		color: var(--color-text-secondary);
-		padding: 1.5rem;
+		padding: 1rem;
 	}
 
 	.summary {
@@ -459,16 +459,16 @@
 		max-width: 400px;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.35rem;
 	}
 
 	.summary-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		font-size: 0.95rem;
+		font-size: 0.9rem;
 		color: var(--color-text-primary);
-		padding: 0.4rem 0;
+		padding: 0.25rem 0;
 	}
 
 	.summary-row span:first-child {
@@ -477,8 +477,8 @@
 
 	.summary-row.emphasize {
 		font-weight: 700;
-		font-size: 1.05rem;
-		padding-top: 0.75rem;
+		font-size: 0.95rem;
+		padding-top: 0.5rem;
 		border-top: 1px solid var(--color-border-primary);
 	}
 
@@ -487,19 +487,19 @@
 	}
 
 	.notes-section {
-		padding: 1.25rem 0;
+		padding: 0.75rem 0;
 		border-top: 1px solid var(--color-border-primary);
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.35rem;
 	}
 
 	.notes-section p {
 		margin: 0;
-		font-size: 0.95rem;
+		font-size: 0.875rem;
 		color: var(--color-text-primary);
 		white-space: pre-wrap;
-		line-height: 1.6;
+		line-height: 1.5;
 	}
 
 	/* Print-specific styles */
@@ -511,32 +511,55 @@
 			--color-text-secondary: #4b5563 !important;
 			--color-border-primary: #d1d5db !important;
 
+			gap: 0.75rem !important;
+			padding: 1rem !important;
 			background: white !important;
 			color: black !important;
+			border-radius: 0 !important;
 		}
 		.preview-header {
 			flex-direction: row !important;
 			justify-content: space-between !important;
 			align-items: flex-start !important;
+			padding-bottom: 0.5rem !important;
 		}
 		.details-grid {
 			grid-template-columns: 1fr 1fr !important;
+			gap: 1rem !important;
+			padding: 0.75rem 0 !important;
+		}
+		.details-column {
+			gap: 0.35rem !important;
 		}
 		.right-column {
 			align-items: flex-end !important;
 			text-align: right !important;
 		}
-		.summary-table {
-			max-width: 400px !important;
+		.balance-due-highlight {
+			margin-top: 0.25rem !important;
+			padding: 0.4rem 0.5rem !important;
+			background: #f5f5f5 !important;
 		}
-
 		.items-table th {
+			padding: 0.5rem 0.6rem !important;
 			background: #f5f5f5 !important;
 			color: #000 !important;
 		}
-
-		.balance-due-highlight {
-			background: #f5f5f5 !important;
+		.items-table td {
+			padding: 0.4rem 0.6rem !important;
+		}
+		.summary-table {
+			max-width: 350px !important;
+			gap: 0.25rem !important;
+		}
+		.summary-row {
+			padding: 0.2rem 0 !important;
+		}
+		.summary-row.emphasize {
+			padding-top: 0.35rem !important;
+		}
+		.notes-section {
+			padding: 0.5rem 0 !important;
 		}
 	}
 
@@ -559,7 +582,7 @@
 		}
 
 		.invoice-label {
-			font-size: 1.75rem;
+			font-size: 1.35rem;
 		}
 
 		.details-grid {
