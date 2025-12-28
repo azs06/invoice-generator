@@ -1,6 +1,20 @@
 import { writable, derived } from 'svelte/store';
 import type { PageSizeId, PageDimensions, PageMargins, PageSettings } from '$lib/types';
 
+// View mode for responsive vs fixed page view
+export type ViewMode = 'responsive' | 'page';
+
+// View mode store - defaults to 'responsive' (will be auto-detected based on screen size)
+export const viewMode = writable<ViewMode>('responsive');
+
+export const setViewMode = (mode: ViewMode): void => {
+	viewMode.set(mode);
+};
+
+export const toggleViewMode = (): void => {
+	viewMode.update((current) => (current === 'responsive' ? 'page' : 'responsive'));
+};
+
 // Page size definitions with dimensions in mm
 export const PAGE_SIZES: Record<PageSizeId, PageDimensions> = {
 	a4: { width: '210mm', height: '297mm', label: 'A4' },
