@@ -239,9 +239,12 @@
 	/* Page mode container - centers the scaled content */
 	.preview-container.page-mode {
 		display: flex;
+		flex-direction: row;
 		align-items: flex-start;
 		justify-content: center;
 		width: 100%;
+		max-width: 100%;
+		overflow-x: hidden;
 	}
 
 	.page-size-indicator {
@@ -268,6 +271,7 @@
 		/* Width and height are scaled versions of the page dimensions */
 		width: calc(var(--page-width, 210mm) * var(--scale, 1));
 		height: calc(var(--page-height, 297mm) * var(--scale, 1));
+		max-width: 100%;
 		position: relative;
 		overflow: visible;
 	}
