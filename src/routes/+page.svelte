@@ -5,6 +5,7 @@
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
 	import PageSettingsSelector from '$components/PageSettingsSelector.svelte';
+	import ViewModeToggle from '$components/ViewModeToggle.svelte';
 	import SignUpPromptModal from '$components/SignUpPromptModal.svelte';
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
 	import CurrencySelector from '$components/CurrencySelector.svelte';
@@ -15,7 +16,7 @@
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
-	import { pageSettings, getJsPDFFormat, getMarginsInInches } from '../stores/pageSettingsStore.js';
+	import { pageSettings, getJsPDFFormat, getMarginsInInches, viewMode } from '../stores/pageSettingsStore.js';
 	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
 	import { authClient } from '$lib/auth';
 	import { isInvoiceComplete } from '$lib/invoiceValidation';
@@ -728,7 +729,10 @@ ${clone.innerHTML}
 			{#if activeTab === 'preview'}
 				<div class="preview-toolbar-controls">
 					<TemplateSelector />
-					<PageSettingsSelector />
+					<ViewModeToggle />
+					{#if $viewMode === 'page'}
+						<PageSettingsSelector />
+					{/if}
 				</div>
 			{/if}
 		</div>

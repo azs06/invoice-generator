@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { selectedTemplateId } from '../stores/templateStore.js';
-	import { pageSettings, currentPageDimensions, PAGE_SIZES } from '../stores/pageSettingsStore.js';
+	import {
+		pageSettings,
+		currentPageDimensions,
+		PAGE_SIZES,
+		viewMode,
+		setViewMode
+	} from '../stores/pageSettingsStore.js';
 	import { getTemplate } from '$lib/templates/registry.js';
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import type { InvoiceData, InvoiceTotals } from '$lib/types';
@@ -16,6 +23,56 @@
 	let currentTemplate = $state<TemplateMetadata | null>(null);
 	let TemplateComponent = $state<any>(null);
 	let totals = $state<InvoiceTotals>({ subTotal: 0, total: 0, balanceDue: 0 });
+
+	// Mobile detection state
+	let isMobile = $state(false);
+	const MOBILE_BREAKPOINT = 768;
+
+	// Responsive scaling state (only used in page view mode)
+	let containerRef = $state<HTMLDivElement | null>(null);
+	let scale = $state(1);
+	let scaledHeight = $state<string | null>(null);
+
+	// Convert mm to pixels (1mm ≈ 3.7795px at 96 DPI)
+	const MM_TO_PX = 3.7795;
+
+	const parsePageWidth = (width: string): number => {
+		const value = parseFloat(width);
+		if (width.endsWith('mm')) {
+			return value * MM_TO_PX;
+		}
+		return value;
+	};
+
+	const parsePageHeight = (height: string): number => {
+		const value = parseFloat(height);
+		if (height.endsWith('mm')) {
+			return value * MM_TO_PX;
+		}
+		return value;
+	};
+
+	const calculateScale = (): void => {
+		if (!containerRef || !browser) return;
+
+		const containerWidth = containerRef.clientWidth;
+		const pageWidthPx = parsePageWidth($currentPageDimensions.width);
+		const pageHeightPx = parsePageHeight($currentPageDimensions.height);
+
+		// Add some padding (16px on each side)
+		const availableWidth = containerWidth - 32;
+
+		// Calculate scale, never exceed 1.0
+		const newScale = Math.min(1, availableWidth / pageWidthPx);
+		scale = newScale;
+
+		// Calculate the scaled height for the container
+		if (newScale < 1) {
+			scaledHeight = `${pageHeightPx * newScale}px`;
+		} else {
+			scaledHeight = null;
+		}
+	};
 
 	const calculateTotals = (value: InvoiceData): InvoiceTotals => {
 		const subTotal =
@@ -53,10 +110,60 @@
 		}
 	};
 
-	onMount(async () => {
+	let resizeObserver: ResizeObserver | null = null;
+	let mediaQueryHandler: ((e: MediaQueryListEvent) => void) | null = null;
+	let mediaQuery: MediaQueryList | null = null;
+
+	onMount(() => {
 		totals = calculateTotals(invoice);
 		const templateId = $selectedTemplateId || 'modern';
-		await loadTemplate(templateId);
+		loadTemplate(templateId);
+
+		// Set up mobile detection
+		if (browser) {
+			mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
+			isMobile = mediaQuery.matches;
+
+			// Auto-set view mode based on screen size (only on initial load)
+			setViewMode(isMobile ? 'responsive' : 'page');
+
+			// Listen for screen size changes
+			mediaQueryHandler = (e: MediaQueryListEvent) => {
+				isMobile = e.matches;
+				// Auto-switch view mode when crossing breakpoint
+				setViewMode(e.matches ? 'responsive' : 'page');
+			};
+			mediaQuery.addEventListener('change', mediaQueryHandler);
+		}
+
+		return () => {
+			if (resizeObserver) {
+				resizeObserver.disconnect();
+			}
+			if (mediaQuery && mediaQueryHandler) {
+				mediaQuery.removeEventListener('change', mediaQueryHandler);
+			}
+		};
+	});
+
+	// Set up ResizeObserver when container ref is available (only in page view mode)
+	$effect(() => {
+		if (containerRef && browser && $viewMode === 'page') {
+			calculateScale();
+
+			resizeObserver = new ResizeObserver(() => {
+				calculateScale();
+			});
+
+			resizeObserver.observe(containerRef);
+
+			return () => {
+				if (resizeObserver) {
+					resizeObserver.disconnect();
+					resizeObserver = null;
+				}
+			};
+		}
 	});
 
 	$effect(() => {
@@ -70,23 +177,44 @@
 			totals = calculateTotals(invoice);
 		}
 	});
+
+	// Recalculate scale when page dimensions change (only in page view mode)
+	$effect(() => {
+		if ($currentPageDimensions && containerRef && $viewMode === 'page') {
+			calculateScale();
+		}
+	});
 </script>
 
 {#if TemplateComponent && invoice}
-	<div class="preview-container">
-		<div class="page-size-indicator" aria-label="Current page size">
-			{$currentPageDimensions.label}
+	{#if $viewMode === 'responsive'}
+		<!-- Responsive mode: no fixed dimensions, content flows naturally -->
+		<div class="preview-container responsive-mode">
+			<div class="template-wrapper responsive">
+				<TemplateComponent {invoice} {totals} />
+			</div>
 		</div>
-		<div
-			class="template-wrapper"
-			style="--page-width: {$currentPageDimensions.width}; --page-height: {$currentPageDimensions.height}; --margin-top: {$pageSettings
-				.margins.top}mm; --margin-right: {$pageSettings.margins
-				.right}mm; --margin-bottom: {$pageSettings.margins.bottom}mm; --margin-left: {$pageSettings
-				.margins.left}mm;"
-		>
-			<TemplateComponent {invoice} {totals} />
+	{:else}
+		<!-- Page view mode: fixed dimensions with scaling -->
+		<div class="preview-container page-mode" bind:this={containerRef}>
+			<div class="page-size-indicator" aria-label="Current page size">
+				{$currentPageDimensions.label}
+			</div>
+			<div
+				class="scale-wrapper"
+				style="--scale: {scale}; --page-width: {$currentPageDimensions.width}; --page-height: {$currentPageDimensions.height};"
+			>
+				<div
+					class="template-wrapper page"
+					style="--scale: {scale}; --page-width: {$currentPageDimensions.width}; --page-height: {$currentPageDimensions.height}; --margin-top: {$pageSettings.margins.top}mm; --margin-right: {$pageSettings.margins
+						.right}mm; --margin-bottom: {$pageSettings.margins.bottom}mm; --margin-left: {$pageSettings
+						.margins.left}mm;"
+				>
+					<TemplateComponent {invoice} {totals} />
+				</div>
+			</div>
 		</div>
-	</div>
+	{/if}
 {:else}
 	<div class="template-loading">
 		<p>Loading template...</p>
@@ -99,12 +227,28 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		justify-content: flex-start;
+		width: 100%;
+	}
+
+	/* Responsive mode container */
+	.preview-container.responsive-mode {
+		align-items: stretch;
+	}
+
+	/* Page mode container - centers the scaled content */
+	.preview-container.page-mode {
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		width: 100%;
 	}
 
 	.page-size-indicator {
 		position: absolute;
 		top: 0.5rem;
-		right: 0.5rem;
+		left: 50%;
+		transform: translateX(-50%);
 		z-index: 10;
 		padding: 0.25rem 0.625rem;
 		background: rgba(0, 0, 0, 0.65);
@@ -119,30 +263,47 @@
 		pointer-events: none;
 	}
 
-	.template-wrapper {
+	/* Scale wrapper - takes scaled dimensions for proper centering */
+	.scale-wrapper {
+		/* Width and height are scaled versions of the page dimensions */
+		width: calc(var(--page-width, 210mm) * var(--scale, 1));
+		height: calc(var(--page-height, 297mm) * var(--scale, 1));
+		position: relative;
+		overflow: visible;
+	}
+
+	/* Responsive mode: fluid width, no fixed dimensions */
+	.template-wrapper.responsive {
 		display: flex;
 		flex-direction: column;
-		width: var(--page-width, 210mm);
-		min-height: var(--page-height, 297mm);
-		margin: 0 auto;
+		width: 100%;
 		background: white;
 		box-shadow:
 			0 4px 6px -1px rgba(0, 0, 0, 0.1),
 			0 2px 4px -2px rgba(0, 0, 0, 0.1);
-		transform-origin: top center;
-		padding: var(--margin-top, 10mm) var(--margin-right, 10mm) var(--margin-bottom, 10mm)
-			var(--margin-left, 10mm);
+		border-radius: 0.5rem;
 		box-sizing: border-box;
 	}
 
-	/* Responsive scaling for smaller viewports */
-	@media (max-width: 900px) {
-		.template-wrapper {
-			/* Scale down to fit viewport with some margin */
-			--scale: calc((100vw - 2rem) / var(--page-width, 210mm));
-			transform: scale(var(--scale));
-			margin-bottom: calc((var(--page-height, 297mm) * var(--scale)) - var(--page-height, 297mm));
-		}
+	/* Page view mode: fixed dimensions with scaling */
+	.template-wrapper.page {
+		display: flex;
+		flex-direction: column;
+		flex-shrink: 0;
+		width: var(--page-width, 210mm);
+		min-height: var(--page-height, 297mm);
+		background: white;
+		box-shadow:
+			0 4px 6px -1px rgba(0, 0, 0, 0.1),
+			0 2px 4px -2px rgba(0, 0, 0, 0.1);
+		transform: scale(var(--scale, 1));
+		transform-origin: top left;
+		padding: var(--margin-top, 10mm) var(--margin-right, 10mm) var(--margin-bottom, 10mm)
+			var(--margin-left, 10mm);
+		box-sizing: border-box;
+		position: absolute;
+		top: 0;
+		left: 0;
 	}
 
 	/* Print styles - ensure full page size */
@@ -155,7 +316,19 @@
 			display: none !important;
 		}
 
-		.template-wrapper {
+		.scale-wrapper {
+			width: var(--page-width, 210mm) !important;
+			height: var(--page-height, 297mm) !important;
+		}
+
+		.template-wrapper.page {
+			position: static;
+			transform: none !important;
+			box-shadow: none;
+			border-radius: 0 !important;
+		}
+
+		.template-wrapper.responsive {
 			width: var(--page-width, 210mm);
 			min-height: var(--page-height, 297mm);
 			margin: 0;

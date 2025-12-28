@@ -308,6 +308,7 @@
 		.page-settings {
 			flex-wrap: wrap;
 			gap: 0.5rem;
+			position: relative;
 		}
 
 		.page-size-selector {
@@ -324,9 +325,18 @@
 			display: none;
 		}
 
+		.margin-toggle-wrapper {
+			position: static;
+		}
+
 		.margin-panel {
-			left: 0;
-			right: auto;
+			/* Position relative to .page-settings container */
+			position: absolute;
+			top: calc(100% + 0.5rem);
+			right: 0;
+			left: auto;
+			min-width: 200px;
+			max-width: calc(100vw - 2rem);
 		}
 	}
 </style>
