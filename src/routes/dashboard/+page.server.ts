@@ -10,11 +10,17 @@ export interface DashboardInvoice {
 	id: string;
 	invoiceNumber: string;
 	invoiceTo: string;
+	invoiceFrom: string;
 	date: string;
 	total: number;
+	balanceDue: number;
 	paid: boolean;
 	hasPdf: boolean;
 	updatedAt: Date;
+	archived: boolean;
+	draft: boolean;
+	draftName: string;
+	invoiceLabel: string;
 }
 
 export const load: PageServerLoad = async (event) => {
@@ -43,11 +49,17 @@ export const load: PageServerLoad = async (event) => {
 				id: row.id,
 				invoiceNumber: data.invoiceNumber || 'N/A',
 				invoiceTo: data.invoiceTo || 'Unknown Client',
+				invoiceFrom: data.invoiceFrom || '',
 				date: data.date || 'N/A',
 				total: data.total || 0,
+				balanceDue: data.balanceDue || data.total || 0,
 				paid: data.paid || false,
 				hasPdf: !!row.pdfKey,
-				updatedAt: row.updatedAt
+				updatedAt: row.updatedAt,
+				archived: data.archived || false,
+				draft: data.draft || false,
+				draftName: data.draftName || '',
+				invoiceLabel: data.invoiceLabel || 'INVOICE'
 			};
 		})
 		.reverse(); // Most recent first
