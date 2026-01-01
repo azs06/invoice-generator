@@ -165,5 +165,10 @@
 		"stats_remaining": "অবশিষ্ট",
 		"stats_filtered": "ফিল্টারকৃত",
 		"stats_archived": "আর্কাইভকৃত"
+	},
+	"view_mode": {
+		"back_to_dashboard": "ড্যাশবোর্ডে ফিরে যান",
+		"viewing_mode": "দেখার মোড",
+		"edit_disabled": "ভিউ মোডে সম্পাদনা নিষ্ক্রিয়"
 	}
 }

@@ -181,7 +181,7 @@
 	};
 
 	const editInvoice = (invoiceId: string): void => {
-		window.location.href = `/?invoice=${invoiceId}`;
+		window.location.href = `/?invoice=${invoiceId}#edit`;
 	};
 
 	const handleSearchInput = (value: string): void => {
@@ -356,7 +356,7 @@
 
 <style>
 	.dashboard {
-		max-width: 1400px;
+		max-width: 1280px;
 		margin: 0 auto;
 		padding: 2rem 1.5rem;
 	}
@@ -511,12 +511,12 @@
 		display: block;
 	}
 
-	.mobile-view {
+	.desktop-view.hidden {
 		display: none;
 	}
 
-	.desktop-view.hidden {
-		display: none;
+	.mobile-view {
+		display: block;
 	}
 
 	.mobile-view.hidden {

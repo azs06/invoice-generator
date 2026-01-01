@@ -165,5 +165,10 @@
 		"stats_remaining": "Remaining",
 		"stats_filtered": "Filtered",
 		"stats_archived": "Archived"
+	},
+	"view_mode": {
+		"back_to_dashboard": "Back to Dashboard",
+		"viewing_mode": "Viewing Mode",
+		"edit_disabled": "Editing is disabled in view mode"
 	}
 }

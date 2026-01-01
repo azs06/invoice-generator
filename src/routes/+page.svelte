@@ -433,14 +433,23 @@ ${clone.innerHTML}
 						loadedInvoice = storedInvoice;
 					}
 
-					currentUrl.searchParams.delete('invoice');
-					const cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
-					window.history.replaceState({}, '', cleanUrl);
+					// Handle missing invoice
+					if (invoiceIdFromQuery && !storedInvoice) {
+						console.warn(`Invoice ${invoiceIdFromQuery} not found`);
+						// Clear invalid query param and create new invoice
+						window.history.replaceState({}, '', '/');
+						// Let fallback create new invoice
+					}
+
+					// Keep query params in URL for refresh persistence
+					// Remove 'mode' param if it exists (legacy from view mode)
+					currentUrl.searchParams.delete('mode');
+					window.history.replaceState({}, '', currentUrl.toString());
 				}
 			}
 
 			if (!loadedInvoice && invoicesFromDb.length > 0) {
-				const latestInvoiceEntry = invoicesFromDb[invoicesFromDb.length - 1];
+				const latestInvoiceEntry = invoicesFromDb[0];
 				loadedInvoice = latestInvoiceEntry.invoice;
 			}
 
