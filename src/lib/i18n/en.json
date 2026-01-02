@@ -210,6 +210,7 @@
 		"saving": "Saving...",
 		"saved": "Settings saved successfully",
 		"billing": "Billing & Plans",
+		"billing_description": "Manage your subscription and payment methods",
 		"coming_soon": "Coming Soon"
 	},
 	"email_modal": {
