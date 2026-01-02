@@ -129,7 +129,12 @@
 				</button>
 
 				<div class="secondary-actions">
-					<button class="secondary-btn edit" onclick={() => onEdit(invoice.id)} title={$_('dashboard.edit') || 'Edit'}>
+					<button
+						class="secondary-btn edit"
+						onclick={() => onEdit(invoice.id)}
+						title={$_('dashboard.edit') || 'Edit'}
+						aria-label={$_('dashboard.edit') || 'Edit Invoice'}
+					>
 						<svg viewBox="0 0 20 20" fill="currentColor">
 							<path
 								d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z"
@@ -146,6 +151,13 @@
 						onclick={() => onDownloadPdf(invoice.id)}
 						disabled={downloadingId === invoice.id}
 						title="PDF"
+						aria-label={
+							invoice.hasPdf
+								? invoice.isPdfStale
+									? 'Regenerate PDF'
+									: 'Download PDF'
+								: 'Generate PDF'
+						}
 					>
 						{#if downloadingId === invoice.id}
 							<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -165,13 +177,27 @@
 							<span class="stale-indicator">!</span>
 						{/if}
 					</button>
-					<button class="secondary-btn share" onclick={() => onShare(invoice.id)} title={$_('dashboard.share') || 'Share'}>
+					<button
+						class="secondary-btn share"
+						onclick={() => onShare(invoice.id)}
+						title={$_('dashboard.share') || 'Share'}
+						aria-label={$_('dashboard.share') || 'Share'}
+					>
 						<svg viewBox="0 0 20 20" fill="currentColor">
 							<path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
 							<path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
 						</svg>
 					</button>
-					<button class="secondary-btn archive" onclick={() => onArchive(invoice.id)} title={invoice.archived ? $_('dashboard.unarchive') || 'Unarchive' : $_('dashboard.archive') || 'Archive'}>
+					<button
+						class="secondary-btn archive"
+						onclick={() => onArchive(invoice.id)}
+						title={invoice.archived ? $_('dashboard.unarchive') || 'Unarchive' : $_('dashboard.archive') || 'Archive'}
+						aria-label={
+							invoice.archived
+								? $_('dashboard.unarchive') || 'Unarchive'
+								: $_('dashboard.archive') || 'Archive'
+						}
+					>
 						<svg viewBox="0 0 20 20" fill="currentColor">
 							<path d="M2 3a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H2Z" />
 							<path fill-rule="evenodd" d="M2 7.5h16l-.811 7.71a2 2 0 0 1-1.99 1.79H4.802a2 2 0 0 1-1.99-1.79L2 7.5Zm5.22 1.72a.75.75 0 0 1 1.06 0L10 10.94l1.72-1.72a.75.75 0 1 1 1.06 1.06L11.06 12l1.72 1.72a.75.75 0 1 1-1.06 1.06L10 13.06l-1.72 1.72a.75.75 0 0 1-1.06-1.06L8.94 12l-1.72-1.72a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
@@ -182,6 +208,7 @@
 						onclick={() => onDelete(invoice.id)}
 						disabled={deletingId === invoice.id}
 						title={$_('dashboard.delete') || 'Delete'}
+						aria-label={$_('dashboard.delete') || 'Delete'}
 					>
 						{#if deletingId === invoice.id}
 							<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -215,12 +242,14 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
-		transition: all 0.2s;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		position: relative;
+		transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+		box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 10px 24px rgba(15, 23, 42, 0.08);
 	}
 
 	.invoice-card:hover {
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16), 0 16px 32px rgba(15, 23, 42, 0.12);
+		border-color: rgba(59, 130, 246, 0.25);
 		transform: translateY(-2px);
 	}
 
@@ -296,15 +325,17 @@
 		font-weight: 700;
 		color: var(--color-text-primary);
 		font-family: monospace;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.card-meta {
 		display: flex;
 		flex-direction: column;
 		gap: 0.625rem;
-		padding: 1rem 0;
-		border-top: 1px solid var(--color-border-primary);
-		border-bottom: 1px solid var(--color-border-primary);
+		padding: 0.875rem 1rem;
+		border: 1px solid var(--color-border-primary);
+		border-radius: var(--radius-md);
+		background: rgba(255, 255, 255, 0.6);
 	}
 
 	.meta-item {
@@ -341,16 +372,19 @@
 		border-radius: 9999px;
 		font-size: 0.8125rem;
 		font-weight: 600;
+		border: 1px solid transparent;
 	}
 
 	.status-badge.paid {
 		background: #d1fae5;
 		color: #047857;
+		border-color: #a7f3d0;
 	}
 
 	.status-badge.unpaid {
 		background: #fee2e2;
 		color: #b91c1c;
+		border-color: #fecaca;
 	}
 
 	.pdf-indicator {
@@ -360,6 +394,10 @@
 		color: #047857;
 		font-size: 0.8125rem;
 		font-weight: 500;
+		padding: 0.25rem 0.5rem;
+		background: #ecfdf5;
+		border-radius: 9999px;
+		border: 1px solid #a7f3d0;
 	}
 
 	.pdf-indicator svg {
@@ -386,16 +424,27 @@
 		font-size: 0.9375rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.2s;
+		box-shadow: 0 8px 18px rgba(59, 130, 246, 0.25);
+		transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
 	}
 
 	.primary-btn:hover {
 		background: #2563eb;
+		box-shadow: 0 10px 22px rgba(37, 99, 235, 0.3);
 	}
 
 	.primary-btn svg {
 		width: 1.125rem;
 		height: 1.125rem;
+	}
+
+	.primary-btn:active {
+		transform: translateY(1px);
+	}
+
+	.primary-btn:focus-visible {
+		outline: 2px solid rgba(59, 130, 246, 0.4);
+		outline-offset: 2px;
 	}
 
 	.secondary-actions {
@@ -414,17 +463,23 @@
 		background: var(--color-bg-primary);
 		color: var(--color-text-secondary);
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
 	}
 
 	.secondary-btn:hover {
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
+		transform: translateY(-1px);
 	}
 
 	.secondary-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.secondary-btn:focus-visible {
+		outline: 2px solid rgba(59, 130, 246, 0.3);
+		outline-offset: 2px;
 	}
 
 	.secondary-btn svg {

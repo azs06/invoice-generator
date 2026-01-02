@@ -59,13 +59,8 @@
 <div class="settings-page">
 	<div class="settings-container">
 		<header class="settings-header">
-			<a href="/dashboard" class="back-link">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M19 12H5M12 19l-7-7 7-7" />
-				</svg>
-				{$_('view_mode.back_to_dashboard')}
-			</a>
 			<h1>{$_('settings.title')}</h1>
+			<p class="subtitle">{$_('settings.subtitle') || 'Manage your account preferences'}</p>
 		</header>
 
 		<div class="settings-content">
@@ -136,7 +131,6 @@
 
 <style>
 	.settings-page {
-		min-height: 100vh;
 		background: var(--color-bg-primary);
 		padding: 2rem 1rem;
 	}
@@ -150,25 +144,16 @@
 		margin-bottom: 2rem;
 	}
 
-	.back-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		color: var(--color-text-secondary);
-		font-size: 0.875rem;
-		margin-bottom: 1rem;
-		text-decoration: none;
-		transition: color 0.15s ease;
-	}
-
-	.back-link:hover {
-		color: var(--color-accent-blue);
-	}
-
 	.settings-header h1 {
-		font-size: 1.75rem;
-		font-weight: 600;
+		font-size: 2rem;
+		font-weight: 700;
 		color: var(--color-text-primary);
+		margin: 0 0 0.25rem 0;
+	}
+
+	.subtitle {
+		font-size: 1rem;
+		color: var(--color-text-secondary);
 		margin: 0;
 	}
 

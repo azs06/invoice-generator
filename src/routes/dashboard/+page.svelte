@@ -504,7 +504,7 @@
 	.dashboard {
 		max-width: 1280px;
 		margin: 0 auto;
-		padding: 2rem 1.5rem;
+		padding: 2rem 1.5rem 5rem;
 	}
 
 	.dashboard-header {
