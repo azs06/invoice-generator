@@ -1,7 +1,7 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, and, desc, asc, count, sql } from 'drizzle-orm';
-import { invoices, sharedLinks, linkViews } from './schema';
+import { invoices, sharedLinks, linkViews, userSettings } from './schema';
 import type { InvoiceData, SavedInvoiceRecord } from '$lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -424,4 +424,71 @@ export async function recordLinkView(
 			lastViewedAt: now
 		})
 		.where(eq(sharedLinks.id, linkId));
+}
+
+// =====================================================
+// User Settings Functions
+// =====================================================
+
+export interface UserSettingsData {
+	invoicePrefix: string;
+	preferredCurrency: string;
+}
+
+/**
+ * Get user settings
+ */
+export async function getUserSettings(
+	db: D1Database,
+	userId: string
+): Promise<UserSettingsData | null> {
+	const d1 = drizzle(db);
+
+	const result = await d1
+		.select({
+			invoicePrefix: userSettings.invoicePrefix,
+			preferredCurrency: userSettings.preferredCurrency
+		})
+		.from(userSettings)
+		.where(eq(userSettings.userId, userId))
+		.get();
+
+	return result ?? null;
+}
+
+/**
+ * Create or update user settings
+ */
+export async function upsertUserSettings(
+	db: D1Database,
+	userId: string,
+	settings: Partial<UserSettingsData>
+): Promise<void> {
+	const d1 = drizzle(db);
+	const now = new Date();
+
+	const existing = await d1
+		.select({ id: userSettings.id })
+		.from(userSettings)
+		.where(eq(userSettings.userId, userId))
+		.get();
+
+	if (existing) {
+		await d1
+			.update(userSettings)
+			.set({
+				...settings,
+				updatedAt: now
+			})
+			.where(eq(userSettings.userId, userId));
+	} else {
+		await d1.insert(userSettings).values({
+			id: uuidv4(),
+			userId,
+			invoicePrefix: settings.invoicePrefix ?? 'INV-',
+			preferredCurrency: settings.preferredCurrency ?? 'USD',
+			createdAt: now,
+			updatedAt: now
+		});
+	}
 }

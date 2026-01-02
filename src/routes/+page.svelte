@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { replaceState } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
@@ -10,7 +11,7 @@
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
 	import CurrencySelector from '$components/CurrencySelector.svelte';
 	import LanguageSelector from '$components/LanguageSelector.svelte';
-	import { saveInvoice, getAllInvoices, getInvoice, getInvoiceUsage } from '$lib/db.js';
+	import { saveInvoice, getInvoice, getInvoiceUsage } from '$lib/db.js';
 	import { saveGuestInvoice, getAllGuestInvoices, getGuestInvoice } from '$lib/guestDb.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
@@ -47,6 +48,7 @@
 	let showLimitWarning = $state<boolean>(false);
 	let showSignUpPrompt = $state<boolean>(false);
 	let showShareModal = $state<boolean>(false);
+	let userInvoicePrefix = $state<string>('INV-');
 
 	// Derived state for share button availability
 	let isShareable = $derived(isInvoiceComplete(invoice));
@@ -54,7 +56,7 @@
 	const createNewInvoice = (): InvoiceData => ({
 		id: uuidv4(),
 		invoiceLabel: 'INVOICE',
-		invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+		invoiceNumber: `${userInvoicePrefix}${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
 		logo: DEFAULT_LOGO_PATH,
 		logoFilename: 'logo.png',
 		invoiceFrom: '',
@@ -114,7 +116,7 @@
 			const nextHash = `#${tab}`;
 
 			if (hash !== nextHash) {
-				window.history.replaceState({}, '', `${pathname}${search}${nextHash}`);
+				replaceState(`${pathname}${search}${nextHash}`, {});
 			}
 		}
 	};
@@ -330,14 +332,10 @@
 			// Run template migration for existing invoices
 			await runMigrationIfNeeded();
 
-			// Load invoices from appropriate storage based on auth status
-			const invoicesFromDb = $session.data
-				? await getAllInvoices()
-				: await getAllGuestInvoices();
+			// Always start with guest storage - it's local and fast
+			// We'll load from API only after session is confirmed
+			const invoicesFromDb = await getAllGuestInvoices();
 
-			if ($session.data) {
-				usage = await getInvoiceUsage();
-			}
 			let loadedInvoice = /** @type {InvoiceData | null} */ (null);
 
 			if (typeof window !== 'undefined') {
@@ -345,10 +343,8 @@
 				const invoiceIdFromQuery = currentUrl.searchParams.get('invoice');
 
 				if (invoiceIdFromQuery) {
-					// Get invoice from appropriate storage
-					const storedInvoice = $session.data
-						? await getInvoice(invoiceIdFromQuery)
-						: await getGuestInvoice(invoiceIdFromQuery);
+					// Get invoice from guest storage first (fast)
+					const storedInvoice = await getGuestInvoice(invoiceIdFromQuery);
 					if (storedInvoice) {
 						if (!storedInvoice.id) {
 							storedInvoice.id = invoiceIdFromQuery;
@@ -360,14 +356,14 @@
 					if (invoiceIdFromQuery && !storedInvoice) {
 						console.warn(`Invoice ${invoiceIdFromQuery} not found`);
 						// Clear invalid query param and create new invoice
-						window.history.replaceState({}, '', '/');
+						replaceState('/', {});
 						// Let fallback create new invoice
 					}
 
 					// Keep query params in URL for refresh persistence
 					// Remove 'mode' param if it exists (legacy from view mode)
 					currentUrl.searchParams.delete('mode');
-					window.history.replaceState({}, '', currentUrl.toString());
+					replaceState(currentUrl.toString(), {});
 				}
 			}
 
@@ -412,8 +408,45 @@
 		}
 	});
 
+	// Load user-specific data when session becomes available
+	let sessionLoaded = $state(false);
+	$effect(() => {
+		if (!$session.isPending && $session.data && !sessionLoaded) {
+			sessionLoaded = true;
+			(async () => {
+				try {
+					// Fetch usage and settings
+					usage = await getInvoiceUsage();
+					const settingsResponse = await fetch('/api/user/settings');
+					if (settingsResponse.ok) {
+						const settings = await settingsResponse.json();
+						if (settings.invoicePrefix) {
+							userInvoicePrefix = settings.invoicePrefix;
+						}
+					}
+
+					// If there's an invoice ID in URL, try to load from API
+					if (typeof window !== 'undefined') {
+						const invoiceIdFromQuery = new URL(window.location.href).searchParams.get('invoice');
+						if (invoiceIdFromQuery) {
+							const serverInvoice = await getInvoice(invoiceIdFromQuery);
+							if (serverInvoice) {
+								invoice = serverInvoice;
+							}
+						}
+					}
+				} catch (e) {
+					console.warn('Failed to fetch user data:', e);
+				}
+			})();
+		}
+	});
+
 	$effect(() => {
 		if (invoice && invoice.id) {
+			// Only save when session is resolved (not pending)
+			if ($session.isPending) return;
+
 			// Conditionally save based on authentication status
 			if ($session.data) {
 				// Logged-in user: save to server API

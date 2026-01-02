@@ -37,3 +37,18 @@
 - `tests/`: Playwright specs
 - `wrangler.toml`: Cloudflare Worker bindings (D1, R2, Browser)
 - Run `npm run check` before pushing
+
+# Current Check Status
+
+- `npm run check` currently fails
+- Errors:
+	- `src/routes/dashboard/+page.svelte`: comma operator used for reactive triggers (line ~99)
+- Warnings (high level):
+	- A11y click handlers on non-interactive elements in `src/components/Header.svelte`
+	- A11y missing labels on icon-only buttons in `src/components/dashboard/InvoiceCardGrid.svelte`,
+	  `src/components/dashboard/InvoiceTableView.svelte`, `src/routes/admin/+page.svelte`
+	- A11y click handlers on modal overlay/div in `src/routes/admin/+page.svelte`,
+	  `src/routes/admin/deleted/+page.svelte`
+	- Invalid SSR markup: `ul` inside `p` in `src/routes/admin/deleted/+page.svelte`
+	- Unused CSS selectors in `src/routes/shared/[token]/+page.svelte`
+	- CSS compatibility note for `appearance` in `src/components/PageSettingsSelector.svelte`

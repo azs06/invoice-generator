@@ -9,6 +9,7 @@
 	import InvoiceTableView from '$components/dashboard/InvoiceTableView.svelte';
 	import InvoiceCardGrid from '$components/dashboard/InvoiceCardGrid.svelte';
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
+	import SendEmailModal from '$components/SendEmailModal.svelte';
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import {
 		generatePdfFromPreview,
@@ -36,6 +37,7 @@
 	let archivingId = $state<string | null>(null);
 	let showDeleteConfirm = $state<string | null>(null);
 	let shareInvoiceId = $state<string | null>(null);
+	let emailInvoiceId = $state<string | null>(null);
 
 	// PDF regeneration state
 	let regeneratingInvoice = $state<InvoiceData | null>(null);
@@ -280,6 +282,14 @@
 		shareInvoiceId = null;
 	};
 
+	const openEmailModal = (invoiceId: string): void => {
+		emailInvoiceId = invoiceId;
+	};
+
+	const closeEmailModal = (): void => {
+		emailInvoiceId = null;
+	};
+
 	const handleSearchInput = (value: string): void => {
 		search = value;
 	};
@@ -395,6 +405,7 @@
 					onDownloadPdf={downloadPdf}
 					onArchive={archiveInvoice}
 					onShare={openShareModal}
+					onSendEmail={openEmailModal}
 					{deletingId}
 					{downloadingId}
 				/>
@@ -410,6 +421,7 @@
 					onArchive={archiveInvoice}
 					onDownloadPdf={downloadPdf}
 					onShare={openShareModal}
+					onSendEmail={openEmailModal}
 					{deletingId}
 					{downloadingId}
 				/>
@@ -457,6 +469,17 @@
 <!-- Share Invoice Modal -->
 {#if shareInvoiceId}
 	<ShareInvoiceModal invoiceId={shareInvoiceId} onClose={closeShareModal} />
+{/if}
+
+<!-- Send Email Modal -->
+{#if emailInvoiceId}
+	{@const emailInvoice = allInvoices.find((inv) => inv.id === emailInvoiceId)}
+	<SendEmailModal
+		invoiceId={emailInvoiceId}
+		invoiceNumber={emailInvoice?.invoiceNumber}
+		recipientName={emailInvoice?.invoiceTo}
+		onClose={closeEmailModal}
+	/>
 {/if}
 
 <!-- Hidden container for PDF regeneration -->
@@ -595,7 +618,6 @@
 		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-lg);
-		overflow: hidden;
 	}
 
 	.empty-state {

@@ -1,7 +1,10 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { drizzle } from 'drizzle-orm/d1';
-import * as schema from './schema';
+import { user, session, account, verification } from './schema';
+
+// Only pass auth-related tables to better-auth
+const authSchema = { user, session, account, verification };
 
 /**
  * Create a better-auth instance with the given Cloudflare environment.
@@ -15,7 +18,7 @@ export const createAuth = (env: Env) =>
 	betterAuth({
 		database: drizzleAdapter(drizzle(env.DB), {
 			provider: 'sqlite',
-			schema: schema
+			schema: authSchema
 		}),
 		socialProviders: {
 			google: {

@@ -87,3 +87,15 @@ export const linkViews = sqliteTable('link_views', {
 	ipAddress: text('ipAddress'),
 	userAgent: text('userAgent')
 });
+
+export const userSettings = sqliteTable('user_settings', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.unique()
+		.references(() => user.id),
+	invoicePrefix: text('invoicePrefix').notNull().default('INV-'),
+	preferredCurrency: text('preferredCurrency').notNull().default('USD'),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
+});

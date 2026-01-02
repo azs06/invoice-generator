@@ -98,17 +98,16 @@
 
 				{#if showMobileMenu}
 					<nav class="mobile-nav-dropdown" onclick={(e) => e.stopPropagation()}>
-						<a href="/" class="mobile-nav-link" onclick={closeMobileMenu}>
-							<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-								<path
-									fill-rule="evenodd"
-									d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-							{$_('nav.create_invoice')}
-						</a>
-						{#if !$session.data && !$session.isPending}
+						{#if $session.data}
+							<a href="/dashboard" class="mobile-nav-link" onclick={closeMobileMenu}>
+								<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+									<path
+										d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
+									/>
+								</svg>
+								{$_('nav.dashboard')}
+							</a>
+						{:else if !$session.isPending}
 							<a href="/history" class="mobile-nav-link" onclick={closeMobileMenu}>
 								<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
 									<path
@@ -117,7 +116,7 @@
 										clip-rule="evenodd"
 									/>
 								</svg>
-								History
+								{$_('nav.history')}
 							</a>
 						{/if}
 					</nav>
@@ -129,9 +128,10 @@
 			</a>
 
 			<nav class="nav-links desktop-nav">
-				<a href="/" class="nav-link">{$_('nav.create_invoice')}</a>
-				{#if !$session.data && !$session.isPending}
-					<a href="/history" class="nav-link">History</a>
+				{#if $session.data}
+					<a href="/dashboard" class="nav-link">{$_('nav.dashboard')}</a>
+				{:else if !$session.isPending}
+					<a href="/history" class="nav-link">{$_('nav.history')}</a>
 				{/if}
 			</nav>
 		</div>
@@ -185,7 +185,17 @@
 										d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
 									/>
 								</svg>
-								Dashboard
+								{$_('nav.dashboard')}
+							</a>
+							<a href="/dashboard/settings" class="dropdown-item" onclick={closeProfileMenu}>
+								<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
+									<path
+										fill-rule="evenodd"
+										d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+										clip-rule="evenodd"
+									/>
+								</svg>
+								{$_('nav.settings')}
 							</a>
 							{#if isAdmin}
 								<a

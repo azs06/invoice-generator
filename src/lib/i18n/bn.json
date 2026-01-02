@@ -7,6 +7,8 @@
 		"home": "হোম",
 		"saved_invoices": "সংরক্ষিত ইনভয়েস",
 		"history": "ইতিহাস",
+		"dashboard": "ড্যাশবোর্ড",
+		"settings": "সেটিংস",
 		"about": "সম্পর্কে",
 		"how_it_works": "কিভাবে এটি কাজ করে",
 		"create_invoice": "ইনভয়েস তৈরি করুন",
@@ -165,7 +167,10 @@
 		"stats_total": "সর্বমোট",
 		"stats_remaining": "অবশিষ্ট",
 		"stats_filtered": "ফিল্টারকৃত",
-		"stats_archived": "আর্কাইভকৃত"
+		"stats_archived": "আর্কাইভকৃত",
+		"more_actions": "আরও অ্যাকশন",
+		"share": "শেয়ার করুন",
+		"send_email": "ইমেইল পাঠান"
 	},
 	"view_mode": {
 		"back_to_dashboard": "ড্যাশবোর্ডে ফিরে যান",
@@ -195,5 +200,29 @@
 		"delete_confirm_title": "এই ইনভয়েস মুছবেন?",
 		"delete_confirm_message": "এই ইনভয়েস শুধুমাত্র আপনার ব্রাউজারে সংরক্ষিত। মুছে ফেললে পুনরুদ্ধার করা যাবে না।",
 		"signup_prompt": "ক্লাউডে আপনার ইনভয়েস সংরক্ষণ করতে সাইন আপ করুন।"
+	},
+	"settings": {
+		"title": "সেটিংস",
+		"invoice_prefix": "ইনভয়েস প্রিফিক্স",
+		"invoice_prefix_description": "নতুন ইনভয়েস নম্বরের প্রিফিক্স কাস্টমাইজ করুন",
+		"preferred_currency": "পছন্দের মুদ্রা",
+		"save": "সেটিংস সংরক্ষণ করুন",
+		"saving": "সংরক্ষণ হচ্ছে...",
+		"saved": "সেটিংস সফলভাবে সংরক্ষিত হয়েছে",
+		"billing": "বিলিং এবং প্ল্যান",
+		"coming_soon": "শীঘ্রই আসছে"
+	},
+	"email_modal": {
+		"title": "ইমেইলে ইনভয়েস পাঠান",
+		"recipient_email": "প্রাপকের ইমেইল",
+		"recipient_email_placeholder": "client@example.com",
+		"subject": "বিষয়",
+		"subject_placeholder": "ইনভয়েস #১২৩",
+		"message": "বার্তা (ঐচ্ছিক)",
+		"message_placeholder": "একটি ব্যক্তিগত বার্তা লিখুন...",
+		"send": "ইমেইল পাঠান",
+		"sending": "পাঠানো হচ্ছে...",
+		"cancel": "বাতিল",
+		"not_implemented": "ইমেইল পাঠানোর সুবিধা ভবিষ্যতে আপডেটে পাওয়া যাবে।"
 	}
 }

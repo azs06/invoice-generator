@@ -3,7 +3,7 @@
  * Handles migration of existing invoices to include template IDs
  */
 
-import { getAllInvoices, saveInvoice } from '$lib/db.js';
+import { getAllGuestInvoices, saveGuestInvoice } from '$lib/guestDb.js';
 import { getDefaultTemplateId } from '$lib/templates/registry.js';
 
 export interface MigrationResult {
@@ -35,7 +35,7 @@ export interface MigrationIfNeededResult {
  */
 export async function migrateInvoicesToIncludeTemplateId(): Promise<MigrationResult> {
 	try {
-		const invoices = await getAllInvoices();
+		const invoices = await getAllGuestInvoices();
 		const defaultTemplateId = getDefaultTemplateId();
 		let migrationCount = 0;
 
@@ -47,7 +47,7 @@ export async function migrateInvoicesToIncludeTemplateId(): Promise<MigrationRes
 					templateId: defaultTemplateId
 				};
 
-				await saveInvoice(id, updatedInvoice);
+				await saveGuestInvoice(id, updatedInvoice);
 				migrationCount++;
 			}
 		}
@@ -74,7 +74,7 @@ export async function migrateInvoicesToIncludeTemplateId(): Promise<MigrationRes
  */
 export async function isMigrationNeeded(): Promise<boolean> {
 	try {
-		const invoices = await getAllInvoices();
+		const invoices = await getAllGuestInvoices();
 		return invoices.some(({ invoice }) => !invoice.templateId);
 	} catch (error) {
 		console.error('Failed to check migration status:', error);
@@ -87,7 +87,7 @@ export async function isMigrationNeeded(): Promise<boolean> {
  */
 export async function getMigrationStatus(): Promise<MigrationStatus> {
 	try {
-		const invoices = await getAllInvoices();
+		const invoices = await getAllGuestInvoices();
 		const totalInvoices = invoices.length;
 		const migratedInvoices = invoices.filter(({ invoice }) => invoice.templateId).length;
 		const needsMigration = totalInvoices > migratedInvoices;

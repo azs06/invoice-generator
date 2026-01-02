@@ -7,6 +7,8 @@
 		"home": "Home",
 		"saved_invoices": "Saved Invoices",
 		"history": "History",
+		"dashboard": "Dashboard",
+		"settings": "Settings",
 		"about": "About",
 		"how_it_works": "How It Works",
 		"create_invoice": "Create Invoice",
@@ -165,7 +167,10 @@
 		"stats_total": "Total",
 		"stats_remaining": "Remaining",
 		"stats_filtered": "Filtered",
-		"stats_archived": "Archived"
+		"stats_archived": "Archived",
+		"more_actions": "More actions",
+		"share": "Share",
+		"send_email": "Send via Email"
 	},
 	"view_mode": {
 		"back_to_dashboard": "Back to Dashboard",
@@ -195,5 +200,29 @@
 		"delete_confirm_title": "Delete this invoice?",
 		"delete_confirm_message": "This invoice is only stored in your browser. Deleting it cannot be undone and the data cannot be recovered.",
 		"signup_prompt": "Sign up to save your invoices to the cloud."
+	},
+	"settings": {
+		"title": "Settings",
+		"invoice_prefix": "Invoice Prefix",
+		"invoice_prefix_description": "Customize the prefix for new invoice numbers",
+		"preferred_currency": "Preferred Currency",
+		"save": "Save Settings",
+		"saving": "Saving...",
+		"saved": "Settings saved successfully",
+		"billing": "Billing & Plans",
+		"coming_soon": "Coming Soon"
+	},
+	"email_modal": {
+		"title": "Send Invoice via Email",
+		"recipient_email": "Recipient Email",
+		"recipient_email_placeholder": "client@example.com",
+		"subject": "Subject",
+		"subject_placeholder": "Invoice #123",
+		"message": "Message (optional)",
+		"message_placeholder": "Add a personal message...",
+		"send": "Send Email",
+		"sending": "Sending...",
+		"cancel": "Cancel",
+		"not_implemented": "Email sending will be available in a future update."
 	}
 }
