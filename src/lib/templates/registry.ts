@@ -22,7 +22,7 @@ export interface TemplateOption {
 	premium: boolean;
 }
 
-export type TemplateId = 'modern' | 'classic' | 'minimal' | 'atlantic';
+export type TemplateId = 'modern' | 'simple' | 'standard' | 'classic' | 'minimal' | 'atlantic';
 
 export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 	modern: {
@@ -34,13 +34,31 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		premium: false,
 		preview: '/templates/modern-preview.png'
 	},
+	simple: {
+		id: 'simple',
+		name: 'Simple',
+		description: 'Clean, minimal black and white design',
+		component: () => import('./components/SimpleTemplate.svelte'),
+		tags: ['simple', 'minimal', 'free'],
+		premium: false,
+		preview: '/templates/simple-preview.png'
+	},
+	standard: {
+		id: 'standard',
+		name: 'Standard',
+		description: 'Professional layout with company header',
+		component: () => import('./components/StandardTemplate.svelte'),
+		tags: ['standard', 'professional', 'free'],
+		premium: false,
+		preview: '/templates/standard-preview.png'
+	},
 	classic: {
 		id: 'classic',
 		name: 'Classic',
 		description: 'Traditional invoice layout with formal styling',
 		component: () => import('./components/ClassicTemplate.svelte'),
 		tags: ['traditional', 'formal', 'business'],
-		premium: false,
+		premium: true,
 		preview: '/templates/classic-preview.png'
 	},
 	minimal: {
@@ -49,7 +67,7 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Simple and focused design with essential elements only',
 		component: () => import('./components/MinimalTemplate.svelte'),
 		tags: ['simple', 'clean', 'essential'],
-		premium: false,
+		premium: true,
 		preview: '/templates/minimal-preview.png'
 	},
 	atlantic: {
@@ -58,7 +76,7 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Editorial serif layout with warm neutral palette',
 		component: () => import('./components/AtlanticTemplate.svelte'),
 		tags: ['serif', 'editorial', 'warm'],
-		premium: false,
+		premium: true,
 		preview: '/templates/atlantic-preview.png'
 	}
 };

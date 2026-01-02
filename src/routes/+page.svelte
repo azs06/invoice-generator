@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { replaceState } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
@@ -10,16 +11,23 @@
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
 	import CurrencySelector from '$components/CurrencySelector.svelte';
 	import LanguageSelector from '$components/LanguageSelector.svelte';
-	import { saveInvoice, getAllInvoices, getInvoice, getInvoiceUsage } from '$lib/db.js';
+	import { saveInvoice, getInvoice, getInvoiceUsage } from '$lib/db.js';
+	import { saveGuestInvoice, getAllGuestInvoices, getGuestInvoice } from '$lib/guestDb.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
-	import { pageSettings, getJsPDFFormat, getMarginsInInches, viewMode } from '../stores/pageSettingsStore.js';
+	import { pageSettings, viewMode } from '../stores/pageSettingsStore.js';
 	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
 	import { authClient } from '$lib/auth';
 	import { isInvoiceComplete } from '$lib/invoiceValidation';
+	import {
+		generatePdfFromPreview,
+		generatePdfClientSide,
+		downloadBlob,
+		type PageSettings
+	} from '$lib/pdfGenerator';
 
 	type PDFAction = 'download' | 'print' | null;
 	type TabName = 'edit' | 'preview';
@@ -40,6 +48,7 @@
 	let showLimitWarning = $state<boolean>(false);
 	let showSignUpPrompt = $state<boolean>(false);
 	let showShareModal = $state<boolean>(false);
+	let userInvoicePrefix = $state<string>('INV-');
 
 	// Derived state for share button availability
 	let isShareable = $derived(isInvoiceComplete(invoice));
@@ -47,7 +56,7 @@
 	const createNewInvoice = (): InvoiceData => ({
 		id: uuidv4(),
 		invoiceLabel: 'INVOICE',
-		invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+		invoiceNumber: `${userInvoicePrefix}${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
 		logo: DEFAULT_LOGO_PATH,
 		logoFilename: 'logo.png',
 		invoiceFrom: '',
@@ -107,7 +116,7 @@
 			const nextHash = `#${tab}`;
 
 			if (hash !== nextHash) {
-				window.history.replaceState({}, '', `${pathname}${search}${nextHash}`);
+				replaceState(`${pathname}${search}${nextHash}`, {});
 			}
 		}
 	};
@@ -122,30 +131,6 @@
 		if (validTabs.has(hashValue)) {
 			activeTab = hashValue as TabName;
 		}
-	};
-
-	const waitForPreviewImages = async (): Promise<void> => {
-		if (!previewRef) {
-			return;
-		}
-
-		const images = Array.from(previewRef.querySelectorAll('img'));
-
-		if (images.length === 0) {
-			return;
-		}
-
-		await Promise.all(
-			images.map((img) => {
-				if (img.complete) {
-					return Promise.resolve();
-				}
-				return new Promise((resolve) => {
-					img.onload = resolve;
-					img.onerror = resolve;
-				});
-			})
-		);
 	};
 
 	const session = authClient.useSession();
@@ -180,161 +165,37 @@
 		isGeneratingPDF = true;
 		pdfAction = 'download';
 
+		// Get current page settings
+		const currentPageSettings: PageSettings = {
+			pageSize: $pageSettings.pageSize as 'a4' | 'letter' | 'legal' | 'a5',
+			margins: $pageSettings.margins
+		};
+
 		try {
-			await waitForPreviewImages();
-
 			if ($session.data) {
-				// Server-side generation for logged-in users
-				// Clone the preview element to avoid modifying the original
-				const clone = previewRef.cloneNode(true) as HTMLElement;
-
-				// Convert images to base64 to ensure they render in the PDF
-				const images = clone.querySelectorAll('img');
-				for (const img of images) {
-					if (img.src && !img.src.startsWith('data:')) {
-						try {
-							const response = await fetch(img.src);
-							const blob = await response.blob();
-							const base64 = await new Promise<string>((resolve) => {
-								const reader = new FileReader();
-								reader.onloadend = () => resolve(reader.result as string);
-								reader.readAsDataURL(blob);
-							});
-							img.src = base64;
-						} catch (e) {
-							console.warn('Failed to convert image to base64:', img.src, e);
-							// Keep original src if conversion fails
-						}
-					}
-				}
-
-				// Extract all stylesheets from the document for accurate template rendering
-				const extractStyles = (): string => {
-					const styles: string[] = [];
-
-					// Get all style elements (includes Svelte component styles)
-					for (const style of document.querySelectorAll('style')) {
-						styles.push(style.textContent || '');
-					}
-
-					// Get all linked stylesheets (same-origin only)
-					for (const link of document.querySelectorAll('link[rel="stylesheet"]')) {
-						try {
-							const sheet = (link as HTMLLinkElement).sheet;
-							if (sheet) {
-								for (const rule of sheet.cssRules) {
-									styles.push(rule.cssText);
-								}
-							}
-						} catch {
-							// Cross-origin stylesheet, skip
-						}
-					}
-
-					return styles.join('\n');
-				};
-
-				const cssStyles = extractStyles();
-
-				// Build a self-contained HTML document with extracted styles
-				const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-${cssStyles}
-/* Print overrides */
-* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-body { margin: 0; padding: 20px; background: white; }
-</style>
-</head>
-<body>
-${clone.innerHTML}
-</body>
-</html>`;
-
-				let useClientSide = false;
-
+				// Server-side generation for logged-in users (high quality)
 				try {
-					const response = await fetch('/api/pdf', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({
-							html: htmlContent,
-							invoiceId: currentInvoice.id,
-							invoiceTo: currentInvoice.invoiceTo
-						})
+					const { blob, storageStatus } = await generatePdfFromPreview({
+						invoice: currentInvoice,
+						previewElement: previewRef,
+						pageSettings: currentPageSettings
 					});
 
-					if (!response.ok) {
-						// Fall back to client-side generation if server-side fails
-						console.warn('Server-side PDF generation unavailable, using client-side fallback');
-						useClientSide = true;
+					downloadBlob(blob, `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`);
+
+					if (storageStatus === 'saved') {
+						console.log('[PDF] Successfully saved to cloud storage');
 					} else {
-						const blob = await response.blob();
-						const url = window.URL.createObjectURL(blob);
-						const a = document.createElement('a');
-						a.href = url;
-						a.download = `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`;
-						document.body.appendChild(a);
-						a.click();
-						window.URL.revokeObjectURL(url);
-						document.body.removeChild(a);
+						console.warn('[PDF] Cloud storage unavailable, PDF downloaded locally only');
 					}
-				} catch {
-					console.warn('Server-side PDF generation failed, using client-side fallback');
-					useClientSide = true;
-				}
-
-				if (useClientSide) {
-					// Fall back to client-side generation
-					const html2pdf = (await import('html2pdf.js')).default;
-					const currentSettings = $pageSettings;
-					const pdfFormat = getJsPDFFormat(currentSettings.pageSize);
-					const margins = getMarginsInInches(currentSettings.margins);
-
-					await html2pdf()
-						.from(previewRef)
-						.set({
-							margin: [margins.top, margins.right, margins.bottom, margins.left],
-							filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
-							html2canvas: {
-								scale: 3,
-								useCORS: true
-							},
-							jsPDF: {
-								unit: 'in',
-								format: pdfFormat,
-								orientation: 'portrait'
-							}
-						})
-						.save();
+				} catch (serverError) {
+					// Fall back to client-side generation if server-side fails
+					console.warn('Server-side PDF generation failed, using client-side fallback:', serverError);
+					await generatePdfClientSide(previewRef, currentInvoice, currentPageSettings);
 				}
 			} else {
-				// Client-side generation for guests
-				const html2pdf = (await import('html2pdf.js')).default;
-				const currentSettings = $pageSettings;
-				const pdfFormat = getJsPDFFormat(currentSettings.pageSize);
-				const margins = getMarginsInInches(currentSettings.margins);
-
-				await html2pdf()
-					.from(previewRef)
-					.set({
-						margin: [margins.top, margins.right, margins.bottom, margins.left],
-						filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
-						html2canvas: {
-							scale: 3,
-							useCORS: true
-						},
-						jsPDF: {
-							unit: 'in',
-							format: pdfFormat,
-							orientation: 'portrait'
-						}
-					})
-					.save();
+				// Client-side generation for guests (with fixes applied)
+				await generatePdfClientSide(previewRef, currentInvoice, currentPageSettings);
 			}
 		} catch (error) {
 			console.error('Failed to export PDF:', error);
@@ -363,38 +224,95 @@ ${clone.innerHTML}
 		isGeneratingPDF = true;
 		pdfAction = 'print';
 
+		// Get current page settings
+		const currentPageSettings: PageSettings = {
+			pageSize: $pageSettings.pageSize as 'a4' | 'letter' | 'legal' | 'a5',
+			margins: $pageSettings.margins
+		};
+
 		try {
-			await waitForPreviewImages();
-
 			const html2pdf = (await import('html2pdf.js')).default;
-			const currentSettings = $pageSettings;
-			const pdfFormat = getJsPDFFormat(currentSettings.pageSize);
-			const margins = getMarginsInInches(currentSettings.margins);
 
-			const worker = html2pdf()
-				.from(previewRef)
-				.set({
-					margin: [margins.top, margins.right, margins.bottom, margins.left],
-					filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
-					html2canvas: {
-						scale: 3,
-						useCORS: true
-					},
-					jsPDF: {
-						unit: 'in',
-						format: pdfFormat,
-						orientation: 'portrait'
-					}
-				});
+			// Apply same fixes as generatePdfClientSide for print
+			const indicator = previewRef.querySelector('.page-size-indicator') as HTMLElement | null;
+			const templateWrapper = previewRef.querySelector('.template-wrapper.page') as HTMLElement | null;
+			const scaleWrapper = previewRef.querySelector('.scale-wrapper') as HTMLElement | null;
 
-			const pdfInstance = await worker.toPdf().get('pdf');
-			pdfInstance.autoPrint();
+			const originalStyles = {
+				indicatorDisplay: indicator?.style.display || '',
+				wrapperTransform: templateWrapper?.style.transform || '',
+				wrapperPosition: templateWrapper?.style.position || '',
+				scaleWrapperWidth: scaleWrapper?.style.width || '',
+				scaleWrapperHeight: scaleWrapper?.style.height || ''
+			};
 
-			const blobUrl = pdfInstance.output('bloburl');
-			const printWindow = window.open(blobUrl, '_blank');
+			try {
+				// Apply fixes
+				if (indicator) indicator.style.display = 'none';
+				if (templateWrapper) {
+					templateWrapper.style.transform = 'none';
+					templateWrapper.style.position = 'static';
+				}
+				if (scaleWrapper) {
+					scaleWrapper.style.width = 'auto';
+					scaleWrapper.style.height = 'auto';
+				}
 
-			if (!printWindow) {
-				pdfInstance.output('dataurlnewwindow');
+				// Convert page size to jsPDF format
+				const formatMap: Record<string, [number, number]> = {
+					letter: [8.5, 11],
+					a4: [8.27, 11.69],
+					legal: [8.5, 14],
+					a5: [5.83, 8.27]
+				};
+				const pdfFormat = formatMap[currentPageSettings.pageSize] || formatMap.letter;
+
+				// Convert margins from mm to inches
+				const mmToInches = (mm: number) => mm / 25.4;
+				const margins = {
+					top: mmToInches(currentPageSettings.margins.top),
+					right: mmToInches(currentPageSettings.margins.right),
+					bottom: mmToInches(currentPageSettings.margins.bottom),
+					left: mmToInches(currentPageSettings.margins.left)
+				};
+
+				const worker = html2pdf()
+					.from(previewRef)
+					.set({
+						margin: [margins.top, margins.right, margins.bottom, margins.left],
+						filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
+						html2canvas: {
+							scale: 2,
+							useCORS: true,
+							logging: false
+						},
+						jsPDF: {
+							unit: 'in',
+							format: pdfFormat,
+							orientation: 'portrait'
+						}
+					});
+
+				const pdfInstance = await worker.toPdf().get('pdf');
+				pdfInstance.autoPrint();
+
+				const blobUrl = pdfInstance.output('bloburl');
+				const printWindow = window.open(blobUrl, '_blank');
+
+				if (!printWindow) {
+					pdfInstance.output('dataurlnewwindow');
+				}
+			} finally {
+				// Restore original styles
+				if (indicator) indicator.style.display = originalStyles.indicatorDisplay;
+				if (templateWrapper) {
+					templateWrapper.style.transform = originalStyles.wrapperTransform;
+					templateWrapper.style.position = originalStyles.wrapperPosition;
+				}
+				if (scaleWrapper) {
+					scaleWrapper.style.width = originalStyles.scaleWrapperWidth;
+					scaleWrapper.style.height = originalStyles.scaleWrapperHeight;
+				}
 			}
 		} catch (error) {
 			console.error('Failed to print PDF:', error);
@@ -414,10 +332,10 @@ ${clone.innerHTML}
 			// Run template migration for existing invoices
 			await runMigrationIfNeeded();
 
-			const invoicesFromDb = await getAllInvoices();
-			if ($session.data) {
-				usage = await getInvoiceUsage();
-			}
+			// Always start with guest storage - it's local and fast
+			// We'll load from API only after session is confirmed
+			const invoicesFromDb = await getAllGuestInvoices();
+
 			let loadedInvoice = /** @type {InvoiceData | null} */ (null);
 
 			if (typeof window !== 'undefined') {
@@ -425,7 +343,8 @@ ${clone.innerHTML}
 				const invoiceIdFromQuery = currentUrl.searchParams.get('invoice');
 
 				if (invoiceIdFromQuery) {
-					const storedInvoice = await getInvoice(invoiceIdFromQuery);
+					// Get invoice from guest storage first (fast)
+					const storedInvoice = await getGuestInvoice(invoiceIdFromQuery);
 					if (storedInvoice) {
 						if (!storedInvoice.id) {
 							storedInvoice.id = invoiceIdFromQuery;
@@ -433,14 +352,23 @@ ${clone.innerHTML}
 						loadedInvoice = storedInvoice;
 					}
 
-					currentUrl.searchParams.delete('invoice');
-					const cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
-					window.history.replaceState({}, '', cleanUrl);
+					// Handle missing invoice
+					if (invoiceIdFromQuery && !storedInvoice) {
+						console.warn(`Invoice ${invoiceIdFromQuery} not found`);
+						// Clear invalid query param and create new invoice
+						replaceState('/', {});
+						// Let fallback create new invoice
+					}
+
+					// Keep query params in URL for refresh persistence
+					// Remove 'mode' param if it exists (legacy from view mode)
+					currentUrl.searchParams.delete('mode');
+					replaceState(currentUrl.toString(), {});
 				}
 			}
 
 			if (!loadedInvoice && invoicesFromDb.length > 0) {
-				const latestInvoiceEntry = invoicesFromDb[invoicesFromDb.length - 1];
+				const latestInvoiceEntry = invoicesFromDb[0];
 				loadedInvoice = latestInvoiceEntry.invoice;
 			}
 
@@ -480,9 +408,53 @@ ${clone.innerHTML}
 		}
 	});
 
+	// Load user-specific data when session becomes available
+	let sessionLoaded = $state(false);
+	$effect(() => {
+		if (!$session.isPending && $session.data && !sessionLoaded) {
+			sessionLoaded = true;
+			(async () => {
+				try {
+					// Fetch usage and settings
+					usage = await getInvoiceUsage();
+					const settingsResponse = await fetch('/api/user/settings');
+					if (settingsResponse.ok) {
+						const settings = await settingsResponse.json();
+						if (settings.invoicePrefix) {
+							userInvoicePrefix = settings.invoicePrefix;
+						}
+					}
+
+					// If there's an invoice ID in URL, try to load from API
+					if (typeof window !== 'undefined') {
+						const invoiceIdFromQuery = new URL(window.location.href).searchParams.get('invoice');
+						if (invoiceIdFromQuery) {
+							const serverInvoice = await getInvoice(invoiceIdFromQuery);
+							if (serverInvoice) {
+								invoice = serverInvoice;
+							}
+						}
+					}
+				} catch (e) {
+					console.warn('Failed to fetch user data:', e);
+				}
+			})();
+		}
+	});
+
 	$effect(() => {
 		if (invoice && invoice.id) {
-			saveInvoice(invoice.id, invoice);
+			// Only save when session is resolved (not pending)
+			if ($session.isPending) return;
+
+			// Conditionally save based on authentication status
+			if ($session.data) {
+				// Logged-in user: save to server API
+				saveInvoice(invoice.id, invoice);
+			} else {
+				// Guest: save to IndexedDB
+				saveGuestInvoice(invoice.id, invoice);
+			}
 		}
 		if (invoice && invoice.items) {
 			invoice.subTotal = invoice.items.reduce(

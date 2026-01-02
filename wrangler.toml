@@ -11,11 +11,11 @@ binding = "ASSETS"
 binding = "DB"
 database_name = "invoice-db"
 database_id = "2f6cfba4-f98c-499e-acf4-f64f87ca9061"
-
+preview_database_id = "e43b2514-dc6c-4d4c-902c-d2aa850d1e10"
 [[r2_buckets]]
 binding = "BUCKET"
 bucket_name = "invoice-bucket"
-
+preview_bucket_name = "invoice-bucket-preview"
 # Browser Rendering for PDF generation
 [browser]
 binding = "BROWSER"

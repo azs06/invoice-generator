@@ -98,26 +98,27 @@
 
 				{#if showMobileMenu}
 					<nav class="mobile-nav-dropdown" onclick={(e) => e.stopPropagation()}>
-						<a href="/" class="mobile-nav-link" onclick={closeMobileMenu}>
-							<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-								<path
-									fill-rule="evenodd"
-									d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-							{$_('nav.create_invoice')}
-						</a>
-						<a href="/saved-invoices" class="mobile-nav-link" onclick={closeMobileMenu}>
-							<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-								<path
-									fill-rule="evenodd"
-									d="M10 2c-1.716 0-3.408.106-5.07.31C3.806 2.45 3 3.414 3 4.517V17.25a.75.75 0 001.075.676L10 15.082l5.925 2.844A.75.75 0 0017 17.25V4.517c0-1.103-.806-2.068-1.93-2.207A41.403 41.403 0 0010 2z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-							{$_('nav.saved_invoices')}
-						</a>
+						{#if $session.data}
+							<a href="/dashboard" class="mobile-nav-link" onclick={closeMobileMenu}>
+								<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+									<path
+										d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
+									/>
+								</svg>
+								{$_('nav.dashboard')}
+							</a>
+						{:else if !$session.isPending}
+							<a href="/history" class="mobile-nav-link" onclick={closeMobileMenu}>
+								<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+									<path
+										fill-rule="evenodd"
+										d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
+										clip-rule="evenodd"
+									/>
+								</svg>
+								{$_('nav.history')}
+							</a>
+						{/if}
 					</nav>
 				{/if}
 			</div>
@@ -127,8 +128,11 @@
 			</a>
 
 			<nav class="nav-links desktop-nav">
-				<a href="/" class="nav-link">{$_('nav.create_invoice')}</a>
-				<a href="/saved-invoices" class="nav-link">{$_('nav.saved_invoices')}</a>
+				{#if $session.data}
+					<a href="/dashboard" class="nav-link">{$_('nav.dashboard')}</a>
+				{:else if !$session.isPending}
+					<a href="/history" class="nav-link">{$_('nav.history')}</a>
+				{/if}
 			</nav>
 		</div>
 
@@ -181,17 +185,7 @@
 										d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
 									/>
 								</svg>
-								Dashboard
-							</a>
-							<a href="/saved-invoices" class="dropdown-item" onclick={closeProfileMenu}>
-								<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
-									<path
-										fill-rule="evenodd"
-										d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-								Saved Invoices
+								{$_('nav.dashboard')}
 							</a>
 							{#if isAdmin}
 								<a

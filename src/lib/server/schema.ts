@@ -60,6 +60,7 @@ export const invoices = sqliteTable('invoices', {
 		.notNull()
 		.references(() => user.id),
 	pdfKey: text('pdfKey'),
+	pdfGeneratedAt: integer('pdf_generated_at', { mode: 'timestamp' }),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
@@ -85,4 +86,16 @@ export const linkViews = sqliteTable('link_views', {
 	viewedAt: integer('viewedAt', { mode: 'timestamp' }).notNull(),
 	ipAddress: text('ipAddress'),
 	userAgent: text('userAgent')
+});
+
+export const userSettings = sqliteTable('user_settings', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.unique()
+		.references(() => user.id),
+	invoicePrefix: text('invoicePrefix').notNull().default('INV-'),
+	preferredCurrency: text('preferredCurrency').notNull().default('USD'),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
 });

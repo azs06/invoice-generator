@@ -28,6 +28,8 @@
 	--shadow-soft: 0 1px 4px rgba(15, 23, 42, 0.08);
 	--shadow-medium: 0 6px 16px -10px rgba(15, 23, 42, 0.18);
 	--shadow-focus: 0 0 0 2px rgba(59, 130, 246, 0.18);
+	--color-theme-toggle: #9ca3af;  /* gray-400 */
+	--color-theme-toggle-hover: #374151;  /* gray-700 - darker on hover */
 }
 
 .dark {
@@ -58,6 +60,8 @@
 	--shadow-soft: 0 1px 4px rgba(2, 6, 23, 0.32);
 	--shadow-medium: 0 6px 16px -10px rgba(2, 6, 23, 0.45);
 	--shadow-focus: 0 0 0 2px rgba(96, 165, 250, 0.32);
+	--color-theme-toggle: #6b7280;  /* gray-500 */
+	--color-theme-toggle-hover: #f3f4f6;  /* gray-100 */
 }
 
 * {

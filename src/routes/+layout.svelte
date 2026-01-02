@@ -20,6 +20,7 @@
 
 	// Check if we're on a shared route (no app chrome)
 	const isSharedRoute = $derived($page.url.pathname.startsWith('/shared'));
+	const isDashboardRoute = $derived($page.url.pathname.startsWith('/dashboard'));
 </script>
 
 {#if $isLoading}
@@ -30,7 +31,7 @@
 	<!-- Shared routes get a clean layout without app Header/Footer -->
 	{@render children()}
 {:else}
-	<div class="page-shell">
+	<div class="page-shell" class:dashboard-shell={isDashboardRoute}>
 		{#if accountStatus === 'banned'}
 			<div class="account-banner banned">
 				<svg viewBox="0 0 20 20" fill="currentColor" class="banner-icon">
@@ -73,6 +74,17 @@
 			color-mix(in srgb, var(--surface-page-background) 92%, white 8%),
 			transparent 65%
 		);
+	}
+
+	.page-shell.dashboard-shell {
+		background-color: var(--color-bg-primary);
+		background-image: none;
+	}
+
+	:global(.page-shell.dashboard-shell .app-footer) {
+		margin-top: 0;
+		background: var(--color-bg-primary);
+		border-top-color: var(--color-border-primary);
 	}
 
 	.loading-screen {
