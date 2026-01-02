@@ -108,6 +108,18 @@
 							</svg>
 							{$_('nav.create_invoice')}
 						</a>
+						{#if !$session.data && !$session.isPending}
+							<a href="/history" class="mobile-nav-link" onclick={closeMobileMenu}>
+								<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+									<path
+										fill-rule="evenodd"
+										d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
+										clip-rule="evenodd"
+									/>
+								</svg>
+								History
+							</a>
+						{/if}
 					</nav>
 				{/if}
 			</div>
@@ -118,6 +130,9 @@
 
 			<nav class="nav-links desktop-nav">
 				<a href="/" class="nav-link">{$_('nav.create_invoice')}</a>
+				{#if !$session.data && !$session.isPending}
+					<a href="/history" class="nav-link">History</a>
+				{/if}
 			</nav>
 		</div>
 

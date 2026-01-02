@@ -31,9 +31,26 @@
 		if (invoice.tax.type === 'percent') return `${invoice.tax.rate}%`;
 		return '';
 	};
+
+	// Extract company name from first line of invoiceFrom
+	const companyName = (): string => {
+		if (!invoice.invoiceFrom) return '';
+		return invoice.invoiceFrom.split('\n')[0] || '';
+	};
 </script>
 
 <div class="invoice-preview simple-template">
+	<header class="document-header">
+		<div class="header-left">
+			<span class="company-name">{companyName()}</span>
+		</div>
+		<div class="header-right">
+			<div class="invoice-number"># {invoice.invoiceNumber || ''}</div>
+			<div class="invoice-date">{invoice.date || ''}</div>
+		</div>
+	</header>
+	<div class="header-divider"></div>
+
 	<header class="simple-header">
 		<h1 class="invoice-title">{invoice.invoiceLabel || $_('invoice.invoice_label')}</h1>
 	</header>
@@ -157,6 +174,45 @@
 		width: 100%;
 		box-sizing: border-box;
 		line-height: 1.5;
+	}
+
+	.document-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+	}
+
+	.header-left {
+		display: flex;
+		align-items: center;
+	}
+
+	.company-name {
+		font-size: 1rem;
+		font-weight: 500;
+		color: #333;
+	}
+
+	.header-right {
+		text-align: right;
+	}
+
+	.invoice-number {
+		font-size: 1rem;
+		font-weight: 600;
+		color: #333;
+	}
+
+	.invoice-date {
+		font-size: 0.875rem;
+		color: #666;
+		margin-top: 0.125rem;
+	}
+
+	.header-divider {
+		height: 3px;
+		background: #e5e5e5;
+		margin: 1rem 0 1.5rem 0;
 	}
 
 	.simple-header {

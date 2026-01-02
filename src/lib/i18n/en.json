@@ -6,6 +6,7 @@
 	"nav": {
 		"home": "Home",
 		"saved_invoices": "Saved Invoices",
+		"history": "History",
 		"about": "About",
 		"how_it_works": "How It Works",
 		"create_invoice": "Create Invoice",
@@ -170,5 +171,29 @@
 		"back_to_dashboard": "Back to Dashboard",
 		"viewing_mode": "Viewing Mode",
 		"edit_disabled": "Editing is disabled in view mode"
+	},
+	"history": {
+		"title": "Invoice History",
+		"subtitle": "Your invoices are stored locally in this browser.",
+		"search_placeholder": "Search by client, label, or invoice #",
+		"new_invoice": "New Invoice",
+		"create_invoice": "Create Invoice",
+		"collection": "Collection",
+		"active": "Active",
+		"archived": "Archived",
+		"status": "Status",
+		"all": "All",
+		"drafts": "Drafts",
+		"finalized": "Finalized",
+		"loading": "Loading your invoices...",
+		"no_invoices_title": "No invoices yet",
+		"no_invoices_description": "Start creating an invoice and it will automatically save here.",
+		"browser_storage_warning": "These invoices are stored only in this browser. Clearing your browser data will permanently delete them.",
+		"delete_all": "Delete All Invoices",
+		"delete_all_title": "Delete All Invoices?",
+		"delete_all_message": "This will permanently delete all your locally stored invoices. Since these are only stored in your browser, this action cannot be undone and the data cannot be recovered.",
+		"delete_confirm_title": "Delete this invoice?",
+		"delete_confirm_message": "This invoice is only stored in your browser. Deleting it cannot be undone and the data cannot be recovered.",
+		"signup_prompt": "Sign up to save your invoices to the cloud."
 	}
 }

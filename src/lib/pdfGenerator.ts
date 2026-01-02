@@ -175,10 +175,9 @@ export async function generatePdfFromPreview(
 
 /**
  * Generate a PDF using client-side html2pdf.js (fallback for guests or when server fails)
- * Includes targeted fixes for common html2pdf.js rendering issues:
- * 1. Hide A4 badge (html2pdf doesn't apply @media print rules)
- * 2. Remove transform: scale() which breaks layout calculations
- * 3. Reduce html2canvas scale from 3 to 2 to minimize rounding errors
+ *
+ * Approach: Temporarily modify the preview element's styles to remove scaling,
+ * then capture just the .invoice-preview content with proper dimensions.
  */
 export async function generatePdfClientSide(
 	previewElement: HTMLElement,
@@ -187,86 +186,98 @@ export async function generatePdfClientSide(
 ): Promise<void> {
 	const html2pdf = (await import('html2pdf.js')).default;
 
-	// Store original styles for restoration
-	const indicator = previewElement.querySelector('.page-size-indicator') as HTMLElement | null;
-	const templateWrapper = previewElement.querySelector('.template-wrapper.page') as HTMLElement | null;
+	// Find the actual invoice content element
+	const invoicePreview = previewElement.querySelector('.invoice-preview') as HTMLElement | null;
+	const templateWrapper = previewElement.querySelector('.template-wrapper') as HTMLElement | null;
 	const scaleWrapper = previewElement.querySelector('.scale-wrapper') as HTMLElement | null;
+	const indicator = previewElement.querySelector('.page-size-indicator') as HTMLElement | null;
 
-	const originalStyles = {
-		indicatorDisplay: indicator?.style.display || '',
-		wrapperTransform: templateWrapper?.style.transform || '',
-		wrapperPosition: templateWrapper?.style.position || '',
-		scaleWrapperWidth: scaleWrapper?.style.width || '',
-		scaleWrapperHeight: scaleWrapper?.style.height || ''
+	if (!invoicePreview) {
+		console.error('Could not find .invoice-preview element');
+		return;
+	}
+
+	// Page dimensions in inches
+	const pageSizes: Record<string, { width: number; height: number }> = {
+		letter: { width: 8.5, height: 11 },
+		a4: { width: 8.27, height: 11.69 },
+		legal: { width: 8.5, height: 14 },
+		a5: { width: 5.83, height: 8.27 }
+	};
+	const pageSize = pageSizes[pageSettings.pageSize] || pageSizes.letter;
+
+	// Convert margins from mm to inches
+	const mmToInches = (mm: number) => mm / 25.4;
+	const margins = {
+		top: mmToInches(pageSettings.margins.top),
+		right: mmToInches(pageSettings.margins.right),
+		bottom: mmToInches(pageSettings.margins.bottom),
+		left: mmToInches(pageSettings.margins.left)
+	};
+
+	// Store original styles
+	const origStyles = {
+		indicator: indicator?.style.cssText || '',
+		wrapper: templateWrapper?.style.cssText || '',
+		scaleWrapper: scaleWrapper?.style.cssText || '',
+		preview: invoicePreview.style.cssText || ''
 	};
 
 	try {
-		// Fix 1: Hide A4 badge (html2pdf ignores @media print)
+		// Hide the page size indicator
 		if (indicator) {
 			indicator.style.display = 'none';
 		}
 
-		// Fix 2: Remove transform scale which causes layout issues
+		// Remove transform and reset wrapper - make it flow naturally
 		if (templateWrapper) {
 			templateWrapper.style.transform = 'none';
 			templateWrapper.style.position = 'static';
+			templateWrapper.style.width = `${pageSize.width}in`;
+			templateWrapper.style.minHeight = 'auto';
+			templateWrapper.style.height = 'auto';
+			templateWrapper.style.padding = '0';
 		}
 
-		// Fix 2b: Reset scale wrapper dimensions
+		// Reset scale wrapper
 		if (scaleWrapper) {
-			scaleWrapper.style.width = 'auto';
+			scaleWrapper.style.width = `${pageSize.width}in`;
 			scaleWrapper.style.height = 'auto';
 		}
 
-		// Convert page size to jsPDF format
-		const formatMap: Record<string, [number, number]> = {
-			letter: [8.5, 11],
-			a4: [8.27, 11.69],
-			legal: [8.5, 14],
-			a5: [5.83, 8.27]
-		};
-		const pdfFormat = formatMap[pageSettings.pageSize] || formatMap.letter;
+		// Reset invoice preview to natural flow
+		invoicePreview.style.minHeight = 'auto';
+		invoicePreview.style.height = 'auto';
 
-		// Convert margins from mm to inches
-		const mmToInches = (mm: number) => mm / 25.4;
-		const margins = {
-			top: mmToInches(pageSettings.margins.top),
-			right: mmToInches(pageSettings.margins.right),
-			bottom: mmToInches(pageSettings.margins.bottom),
-			left: mmToInches(pageSettings.margins.left)
-		};
+		// Wait for reflow
+		await new Promise((r) => requestAnimationFrame(r));
 
-		// Fix 3: Reduce scale from 3 to 2 to minimize layout shift
+		// Generate PDF targeting just the invoice content
 		await html2pdf()
-			.from(previewElement)
+			.from(invoicePreview)
 			.set({
 				margin: [margins.top, margins.right, margins.bottom, margins.left],
-				filename: `invoice-${invoice.invoiceTo || 'unknown'}.pdf`,
+				filename: `invoice-${invoice.invoiceTo?.replace(/[^a-zA-Z0-9]/g, '-') || 'invoice'}.pdf`,
+				image: { type: 'jpeg', quality: 0.98 },
 				html2canvas: {
-					scale: 2, // Reduced from 3 to minimize rounding errors
+					scale: 2,
 					useCORS: true,
 					logging: false
 				},
 				jsPDF: {
 					unit: 'in',
-					format: pdfFormat,
+					format: [pageSize.width, pageSize.height],
 					orientation: 'portrait'
-				}
+				},
+				pagebreak: { mode: 'avoid-all' }
 			})
 			.save();
 	} finally {
 		// Restore original styles
-		if (indicator) {
-			indicator.style.display = originalStyles.indicatorDisplay;
-		}
-		if (templateWrapper) {
-			templateWrapper.style.transform = originalStyles.wrapperTransform;
-			templateWrapper.style.position = originalStyles.wrapperPosition;
-		}
-		if (scaleWrapper) {
-			scaleWrapper.style.width = originalStyles.scaleWrapperWidth;
-			scaleWrapper.style.height = originalStyles.scaleWrapperHeight;
-		}
+		if (indicator) indicator.style.cssText = origStyles.indicator;
+		if (templateWrapper) templateWrapper.style.cssText = origStyles.wrapper;
+		if (scaleWrapper) scaleWrapper.style.cssText = origStyles.scaleWrapper;
+		invoicePreview.style.cssText = origStyles.preview;
 	}
 }
 

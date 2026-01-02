@@ -11,6 +11,7 @@
 	import CurrencySelector from '$components/CurrencySelector.svelte';
 	import LanguageSelector from '$components/LanguageSelector.svelte';
 	import { saveInvoice, getAllInvoices, getInvoice, getInvoiceUsage } from '$lib/db.js';
+	import { saveGuestInvoice, getAllGuestInvoices, getGuestInvoice } from '$lib/guestDb.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
@@ -329,7 +330,11 @@
 			// Run template migration for existing invoices
 			await runMigrationIfNeeded();
 
-			const invoicesFromDb = await getAllInvoices();
+			// Load invoices from appropriate storage based on auth status
+			const invoicesFromDb = $session.data
+				? await getAllInvoices()
+				: await getAllGuestInvoices();
+
 			if ($session.data) {
 				usage = await getInvoiceUsage();
 			}
@@ -340,7 +345,10 @@
 				const invoiceIdFromQuery = currentUrl.searchParams.get('invoice');
 
 				if (invoiceIdFromQuery) {
-					const storedInvoice = await getInvoice(invoiceIdFromQuery);
+					// Get invoice from appropriate storage
+					const storedInvoice = $session.data
+						? await getInvoice(invoiceIdFromQuery)
+						: await getGuestInvoice(invoiceIdFromQuery);
 					if (storedInvoice) {
 						if (!storedInvoice.id) {
 							storedInvoice.id = invoiceIdFromQuery;
@@ -406,7 +414,14 @@
 
 	$effect(() => {
 		if (invoice && invoice.id) {
-			saveInvoice(invoice.id, invoice);
+			// Conditionally save based on authentication status
+			if ($session.data) {
+				// Logged-in user: save to server API
+				saveInvoice(invoice.id, invoice);
+			} else {
+				// Guest: save to IndexedDB
+				saveGuestInvoice(invoice.id, invoice);
+			}
 		}
 		if (invoice && invoice.items) {
 			invoice.subTotal = invoice.items.reduce(
