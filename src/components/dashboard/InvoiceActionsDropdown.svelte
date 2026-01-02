@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy, onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 
 	interface Props {
@@ -31,19 +32,83 @@
 
 	let isOpen = $state<boolean>(false);
 	let triggerEl = $state<HTMLButtonElement | null>(null);
+	let menuEl = $state<HTMLDivElement | null>(null);
 	let menuStyle = $state<string>('');
+	let scrollTargets: (HTMLElement | Window)[] = [];
+	let removeListeners: (() => void) | null = null;
+
+	const updateMenuPosition = () => {
+		if (!triggerEl || typeof window === 'undefined') return;
+		const rect = triggerEl.getBoundingClientRect();
+		const menuWidth = menuEl?.offsetWidth ?? 200;
+		const menuHeight = menuEl?.offsetHeight ?? 220;
+		const viewportPadding = 8;
+		let topOffset = rect.bottom + 6;
+		let leftOffset = rect.right - menuWidth;
+
+		if (topOffset + menuHeight > window.innerHeight - viewportPadding) {
+			topOffset = rect.top - menuHeight - 6;
+		}
+
+		if (topOffset < viewportPadding) {
+			topOffset = viewportPadding;
+		}
+
+		if (leftOffset < viewportPadding) {
+			leftOffset = viewportPadding;
+		}
+
+		if (leftOffset + menuWidth > window.innerWidth - viewportPadding) {
+			leftOffset = window.innerWidth - menuWidth - viewportPadding;
+		}
+
+		menuStyle = `top: ${topOffset}px; left: ${leftOffset}px;`;
+	};
+
+	const startListeners = () => {
+		if (removeListeners) return;
+		scrollTargets = [];
+		const handler = () => {
+			if (isOpen) updateMenuPosition();
+		};
+		const dashboardScroll = document.querySelector('.dashboard-main');
+		const tableScroll = triggerEl?.closest('.table-wrapper');
+		scrollTargets = [window];
+		if (dashboardScroll) scrollTargets.push(dashboardScroll);
+		if (tableScroll) scrollTargets.push(tableScroll);
+		scrollTargets.forEach((target) => {
+			target.addEventListener('scroll', handler, { passive: true });
+		});
+		window.addEventListener('resize', handler);
+		removeListeners = () => {
+			scrollTargets.forEach((target) => {
+				target.removeEventListener('scroll', handler);
+			});
+			window.removeEventListener('resize', handler);
+			scrollTargets = [];
+			removeListeners = null;
+		};
+	};
+
+	const stopListeners = () => {
+		if (removeListeners) {
+			removeListeners();
+		}
+	};
 
 	const toggleDropdown = (e: MouseEvent) => {
 		e.stopPropagation();
-		if (!isOpen && triggerEl) {
-			const rect = triggerEl.getBoundingClientRect();
-			menuStyle = `top: ${rect.bottom + 4}px; right: ${window.innerWidth - rect.right}px;`;
+		if (!isOpen) {
+			updateMenuPosition();
+			startListeners();
 		}
 		isOpen = !isOpen;
+		if (!isOpen) stopListeners();
 	};
 
 	const closeDropdown = () => {
 		isOpen = false;
+		stopListeners();
 	};
 
 	const handleAction = (action: () => void) => {
@@ -56,6 +121,20 @@
 			closeDropdown();
 		}
 	};
+
+	$effect(() => {
+		if (isOpen && menuEl) updateMenuPosition();
+	});
+
+	onMount(() => {
+		return () => {
+			stopListeners();
+		};
+	});
+
+	onDestroy(() => {
+		stopListeners();
+	});
 </script>
 
 <svelte:window onclick={closeDropdown} onkeydown={handleKeydown} />
@@ -75,7 +154,13 @@
 	</button>
 
 	{#if isOpen}
-		<div class="dropdown-menu" style={menuStyle} onclick={(e) => e.stopPropagation()} role="menu">
+		<div
+			bind:this={menuEl}
+			class="dropdown-menu"
+			style={menuStyle}
+			onclick={(e) => e.stopPropagation()}
+			role="menu"
+		>
 			<button
 				class="dropdown-item"
 				onclick={() => handleAction(() => onDownloadPdf(invoiceId))}

@@ -4,9 +4,8 @@
 
 <button
 	onclick={toggleTheme}
-	class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+	class="theme-toggle-btn p-2 rounded-lg transition-colors"
 	aria-label="Toggle theme"
-	title="Toggle dark/light mode"
 >
 	{#if $theme === 'dark'}
 		<!-- Sun icon for light mode -->
@@ -42,3 +41,13 @@
 		</svg>
 	{/if}
 </button>
+
+<style>
+	.theme-toggle-btn {
+		color: var(--color-theme-toggle);
+	}
+
+	.theme-toggle-btn:hover {
+		color: var(--color-theme-toggle-hover);
+	}
+</style>
