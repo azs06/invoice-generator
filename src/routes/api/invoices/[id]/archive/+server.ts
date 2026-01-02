@@ -11,7 +11,7 @@ export const PUT: RequestHandler = async (event) => {
 	}
 
 	const db = requireDB(event);
-	const bucket = event.platform?.env?.INVOICE_BUCKET;
+	const bucket = event.platform?.env?.BUCKET;
 	const invoiceId = event.params.id;
 
 	if (!invoiceId) {

@@ -178,7 +178,7 @@ export async function updateInvoicePdfKey(
 	const d1 = drizzle(db);
 	await d1
 		.update(invoices)
-		.set({ pdfKey })
+		.set({ pdfKey, pdfGeneratedAt: new Date() })
 		.where(and(eq(invoices.id, id), eq(invoices.userId, userId)));
 }
 

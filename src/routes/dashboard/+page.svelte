@@ -1,11 +1,22 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import type { PageData } from './$types';
 	import type { DashboardInvoice } from './+page.server';
+	import type { InvoiceData } from '$lib/types';
 	import DashboardStats from '$components/dashboard/DashboardStats.svelte';
 	import DashboardFilters from '$components/dashboard/DashboardFilters.svelte';
 	import InvoiceTableView from '$components/dashboard/InvoiceTableView.svelte';
 	import InvoiceCardGrid from '$components/dashboard/InvoiceCardGrid.svelte';
+	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
+	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
+	import {
+		generatePdfFromPreview,
+		waitForPreviewImages,
+		downloadBlob,
+		type PageSettings
+	} from '$lib/pdfGenerator';
+	import { pageSettings } from '../../stores/pageSettingsStore';
 
 	let { data }: { data: PageData } = $props();
 
@@ -24,6 +35,11 @@
 	let downloadingId = $state<string | null>(null);
 	let archivingId = $state<string | null>(null);
 	let showDeleteConfirm = $state<string | null>(null);
+	let shareInvoiceId = $state<string | null>(null);
+
+	// PDF regeneration state
+	let regeneratingInvoice = $state<InvoiceData | null>(null);
+	let previewRef = $state<HTMLElement | null>(null);
 
 	// Computed values
 	let archivedCount = $derived(allInvoices.filter((inv) => inv.archived).length);
@@ -85,6 +101,18 @@
 	});
 
 	const downloadPdf = async (invoiceId: string): Promise<void> => {
+		const invoice = allInvoices.find((i) => i.id === invoiceId);
+
+		// If PDF is stale or doesn't exist, regenerate it
+		if (invoice?.isPdfStale || !invoice?.hasPdf) {
+			await regeneratePdf(invoiceId);
+		} else {
+			// Fresh PDF: download from R2
+			await downloadStoredPdf(invoiceId);
+		}
+	};
+
+	const downloadStoredPdf = async (invoiceId: string): Promise<void> => {
 		downloadingId = invoiceId;
 		try {
 			const response = await fetch(`/api/invoices/${invoiceId}/download`);
@@ -111,6 +139,66 @@
 			console.error('Download failed:', err);
 			alert('Failed to download PDF. Please try again.');
 		} finally {
+			downloadingId = null;
+		}
+	};
+
+	const regeneratePdf = async (invoiceId: string): Promise<void> => {
+		downloadingId = invoiceId;
+
+		try {
+			// 1. Fetch full invoice data
+			const response = await fetch(`/api/invoices/${invoiceId}`);
+			if (!response.ok) {
+				throw new Error('Failed to fetch invoice data');
+			}
+			const invoiceData: InvoiceData = await response.json();
+
+			// 2. Render preview (triggers reactivity)
+			regeneratingInvoice = invoiceData;
+
+			// 3. Wait for render and images
+			await tick();
+			// Give it a moment for the component to mount
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			if (!previewRef) {
+				throw new Error('Preview element not available');
+			}
+
+			await waitForPreviewImages(previewRef);
+
+			// 4. Generate PDF using shared utility with current page settings
+			const currentPageSettings: PageSettings = {
+				pageSize: $pageSettings.pageSize as 'a4' | 'letter' | 'legal' | 'a5',
+				margins: $pageSettings.margins
+			};
+
+			const { blob, storageStatus } = await generatePdfFromPreview({
+				invoice: invoiceData,
+				previewElement: previewRef,
+				pageSettings: currentPageSettings
+			});
+
+			// 5. Download the blob
+			const filename = invoiceData.invoiceTo
+				? `invoice-${invoiceData.invoiceTo.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 50)}.pdf`
+				: 'invoice.pdf';
+			downloadBlob(blob, filename);
+
+			// 6. Update local state (isPdfStale = false, hasPdf = true)
+			if (storageStatus === 'saved') {
+				allInvoices = allInvoices.map((inv) =>
+					inv.id === invoiceId ? { ...inv, isPdfStale: false, hasPdf: true } : inv
+				);
+			}
+
+			console.log(`[PDF] Regenerated and ${storageStatus === 'saved' ? 'saved to cloud' : 'downloaded locally'}`);
+		} catch (err) {
+			console.error('PDF regeneration failed:', err);
+			alert('Failed to regenerate PDF. Please try again.');
+		} finally {
+			regeneratingInvoice = null;
 			downloadingId = null;
 		}
 	};
@@ -182,6 +270,14 @@
 
 	const editInvoice = (invoiceId: string): void => {
 		window.location.href = `/?invoice=${invoiceId}#edit`;
+	};
+
+	const openShareModal = (invoiceId: string): void => {
+		shareInvoiceId = invoiceId;
+	};
+
+	const closeShareModal = (): void => {
+		shareInvoiceId = null;
 	};
 
 	const handleSearchInput = (value: string): void => {
@@ -298,6 +394,7 @@
 					onDelete={confirmDelete}
 					onDownloadPdf={downloadPdf}
 					onArchive={archiveInvoice}
+					onShare={openShareModal}
 					{deletingId}
 					{downloadingId}
 				/>
@@ -311,7 +408,10 @@
 					onEdit={editInvoice}
 					onDelete={confirmDelete}
 					onArchive={archiveInvoice}
+					onDownloadPdf={downloadPdf}
+					onShare={openShareModal}
 					{deletingId}
+					{downloadingId}
 				/>
 			</div>
 		{/if}
@@ -354,7 +454,30 @@
 	</div>
 {/if}
 
+<!-- Share Invoice Modal -->
+{#if shareInvoiceId}
+	<ShareInvoiceModal invoiceId={shareInvoiceId} onClose={closeShareModal} />
+{/if}
+
+<!-- Hidden container for PDF regeneration -->
+{#if regeneratingInvoice}
+	<div class="pdf-render-container" aria-hidden="true">
+		<div bind:this={previewRef}>
+			<InvoicePreviewWrapper invoice={regeneratingInvoice} />
+		</div>
+	</div>
+{/if}
+
 <style>
+	/* Hidden container for PDF generation - off-screen but rendered */
+	.pdf-render-container {
+		position: absolute;
+		left: -9999px;
+		top: 0;
+		width: 800px;
+		background: white;
+	}
+
 	.dashboard {
 		max-width: 1280px;
 		margin: 0 auto;

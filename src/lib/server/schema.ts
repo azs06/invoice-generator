@@ -60,6 +60,7 @@ export const invoices = sqliteTable('invoices', {
 		.notNull()
 		.references(() => user.id),
 	pdfKey: text('pdfKey'),
+	pdfGeneratedAt: integer('pdf_generated_at', { mode: 'timestamp' }),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });

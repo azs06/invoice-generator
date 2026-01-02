@@ -16,6 +16,7 @@ export interface DashboardInvoice {
 	balanceDue: number;
 	paid: boolean;
 	hasPdf: boolean;
+	isPdfStale: boolean;
 	updatedAt: Date;
 	archived: boolean;
 	draft: boolean;
@@ -45,6 +46,11 @@ export const load: PageServerLoad = async (event) => {
 	const dashboardInvoices: DashboardInvoice[] = rawInvoices
 		.map((row) => {
 			const data = JSON.parse(row.data);
+			// PDF is stale if it was generated before the last update
+			const isPdfStale =
+				!!row.pdfKey &&
+				!!row.pdfGeneratedAt &&
+				row.updatedAt.getTime() > row.pdfGeneratedAt.getTime();
 			return {
 				id: row.id,
 				invoiceNumber: data.invoiceNumber || 'N/A',
@@ -55,6 +61,7 @@ export const load: PageServerLoad = async (event) => {
 				balanceDue: data.balanceDue || data.total || 0,
 				paid: data.paid || false,
 				hasPdf: !!row.pdfKey,
+				isPdfStale,
 				updatedAt: row.updatedAt,
 				archived: data.archived || false,
 				draft: data.draft || false,

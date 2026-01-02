@@ -244,7 +244,6 @@
 		background: var(--color-bg-primary);
 		/* Width/height controlled by A4 wrapper in InvoicePreviewWrapper */
 		width: 100%;
-		flex: 1;
 		box-sizing: border-box;
 	}
 

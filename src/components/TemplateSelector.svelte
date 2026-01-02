@@ -1,5 +1,13 @@
 <script lang="ts">
 	import { TEMPLATE_OPTIONS, selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
+	import { authClient } from '$lib/auth';
+
+	const session = authClient.useSession();
+
+	// Filter templates based on auth status - guests only see free templates
+	let availableTemplates = $derived(
+		$session.data ? TEMPLATE_OPTIONS : TEMPLATE_OPTIONS.filter((opt) => !opt.premium)
+	);
 
 	const handleChange = (event: Event): void => {
 		const target = event.currentTarget;
@@ -19,9 +27,9 @@
 		onchange={handleChange}
 		data-testid="template-select"
 	>
-		{#each TEMPLATE_OPTIONS as option}
+		{#each availableTemplates as option}
 			<option value={option.id}>
-				{option.premium ? `${option.label} (PRO)` : option.label}
+				{option.label}
 			</option>
 		{/each}
 	</select>

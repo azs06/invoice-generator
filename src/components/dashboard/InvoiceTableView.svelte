@@ -10,11 +10,12 @@
 		onDelete: (id: string) => void;
 		onDownloadPdf: (id: string) => void;
 		onArchive: (id: string) => void;
+		onShare: (id: string) => void;
 		deletingId: string | null;
 		downloadingId: string | null;
 	}
 
-	let { invoices, onView, onEdit, onDelete, onDownloadPdf, onArchive, deletingId, downloadingId }: Props = $props();
+	let { invoices, onView, onEdit, onDelete, onDownloadPdf, onArchive, onShare, deletingId, downloadingId }: Props = $props();
 
 	const formatDate = (dateStr: string): string => {
 		if (!dateStr || dateStr === 'N/A') return 'N/A';
@@ -39,7 +40,6 @@
 				<th>{$_('dashboard.date') || 'Date'}</th>
 				<th>{$_('dashboard.amount') || 'Amount'}</th>
 				<th>{$_('dashboard.status') || 'Status'}</th>
-				<th>{$_('dashboard.pdf') || 'PDF'}</th>
 				<th>{$_('dashboard.actions') || 'Actions'}</th>
 			</tr>
 		</thead>
@@ -63,47 +63,61 @@
 							{/if}
 						</div>
 					</td>
-					<td>
-						{#if invoice.hasPdf}
-							<span class="pdf-badge available">
-								<svg viewBox="0 0 20 20" fill="currentColor">
-									<path
-										fill-rule="evenodd"
-										d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-								{$_('dashboard.available') || 'Available'}
-							</span>
-						{:else}
-							<span class="pdf-badge unavailable">—</span>
-						{/if}
-					</td>
 					<td class="actions">
 						<div class="action-buttons">
-							{#if invoice.hasPdf}
-								<button
-									class="action-btn download"
-									title={$_('dashboard.download_pdf') || 'Download PDF'}
-									onclick={() => onDownloadPdf(invoice.id)}
-									disabled={downloadingId === invoice.id}
-								>
-									{#if downloadingId === invoice.id}
-										<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-											<circle cx="12" cy="12" r="9" stroke-width="2" stroke-dasharray="45 15" />
-										</svg>
-									{:else}
-										<svg viewBox="0 0 20 20" fill="currentColor">
-											<path
-												d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"
-											/>
-											<path
-												d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
-											/>
-										</svg>
+							<button
+								class="action-btn download"
+								class:stale={invoice.isPdfStale}
+								class:generate={!invoice.hasPdf}
+								title={!invoice.hasPdf
+									? 'Generate PDF'
+									: invoice.isPdfStale
+										? 'PDF outdated - click to regenerate'
+										: $_('dashboard.download_pdf') || 'Download PDF'}
+								onclick={() => onDownloadPdf(invoice.id)}
+								disabled={downloadingId === invoice.id}
+							>
+								{#if downloadingId === invoice.id}
+									<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+										<circle cx="12" cy="12" r="9" stroke-width="2" stroke-dasharray="45 15" />
+									</svg>
+								{:else if !invoice.hasPdf}
+									<!-- Generate icon (document + plus) -->
+									<svg viewBox="0 0 20 20" fill="currentColor">
+										<path
+											fill-rule="evenodd"
+											d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm5.75 6.75a.75.75 0 0 0-1.5 0v1.5h-1.5a.75.75 0 0 0 0 1.5h1.5v1.5a.75.75 0 0 0 1.5 0v-1.5h1.5a.75.75 0 0 0 0-1.5h-1.5v-1.5Z"
+											clip-rule="evenodd"
+										/>
+									</svg>
+								{:else}
+									<svg viewBox="0 0 20 20" fill="currentColor">
+										<path
+											d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"
+										/>
+										<path
+											d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+										/>
+									</svg>
+									{#if invoice.isPdfStale}
+										<span class="stale-indicator">!</span>
 									{/if}
-								</button>
-							{/if}
+								{/if}
+							</button>
+							<button
+								class="action-btn share"
+								title="Share"
+								onclick={() => onShare(invoice.id)}
+							>
+								<svg viewBox="0 0 20 20" fill="currentColor">
+									<path
+										d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z"
+									/>
+									<path
+										d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z"
+									/>
+								</svg>
+							</button>
 							<button
 								class="action-btn view"
 								title={$_('dashboard.view') || 'View Invoice'}
@@ -282,26 +296,6 @@
 		color: #374151;
 	}
 
-	.pdf-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-		font-size: 0.8125rem;
-	}
-
-	.pdf-badge svg {
-		width: 1rem;
-		height: 1rem;
-	}
-
-	.pdf-badge.available {
-		color: #047857;
-	}
-
-	.pdf-badge.unavailable {
-		color: var(--color-text-secondary);
-	}
-
 	.actions {
 		width: 1%;
 		white-space: nowrap;
@@ -344,6 +338,50 @@
 	.action-btn.download:hover {
 		border-color: #3b82f6;
 		color: #3b82f6;
+	}
+
+	.action-btn.download.generate {
+		border-color: #10b981;
+		color: #10b981;
+	}
+
+	.action-btn.download.generate:hover {
+		border-color: #059669;
+		color: #059669;
+		background: #ecfdf5;
+	}
+
+	.action-btn.download.stale {
+		position: relative;
+		border-color: #f59e0b;
+		color: #f59e0b;
+	}
+
+	.action-btn.download.stale:hover {
+		border-color: #d97706;
+		color: #d97706;
+	}
+
+	.stale-indicator {
+		position: absolute;
+		top: -4px;
+		right: -4px;
+		width: 12px;
+		height: 12px;
+		background: #f59e0b;
+		color: white;
+		border-radius: 50%;
+		font-size: 9px;
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+	}
+
+	.action-btn.share:hover {
+		border-color: #10b981;
+		color: #10b981;
 	}
 
 	.action-btn.view:hover {

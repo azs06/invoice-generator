@@ -16,10 +16,16 @@
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
-	import { pageSettings, getJsPDFFormat, getMarginsInInches, viewMode } from '../stores/pageSettingsStore.js';
+	import { pageSettings, viewMode } from '../stores/pageSettingsStore.js';
 	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
 	import { authClient } from '$lib/auth';
 	import { isInvoiceComplete } from '$lib/invoiceValidation';
+	import {
+		generatePdfFromPreview,
+		generatePdfClientSide,
+		downloadBlob,
+		type PageSettings
+	} from '$lib/pdfGenerator';
 
 	type PDFAction = 'download' | 'print' | null;
 	type TabName = 'edit' | 'preview';
@@ -124,30 +130,6 @@
 		}
 	};
 
-	const waitForPreviewImages = async (): Promise<void> => {
-		if (!previewRef) {
-			return;
-		}
-
-		const images = Array.from(previewRef.querySelectorAll('img'));
-
-		if (images.length === 0) {
-			return;
-		}
-
-		await Promise.all(
-			images.map((img) => {
-				if (img.complete) {
-					return Promise.resolve();
-				}
-				return new Promise((resolve) => {
-					img.onload = resolve;
-					img.onerror = resolve;
-				});
-			})
-		);
-	};
-
 	const session = authClient.useSession();
 
 	const saveAsPDF = async (): Promise<void> => {
@@ -180,161 +162,37 @@
 		isGeneratingPDF = true;
 		pdfAction = 'download';
 
+		// Get current page settings
+		const currentPageSettings: PageSettings = {
+			pageSize: $pageSettings.pageSize as 'a4' | 'letter' | 'legal' | 'a5',
+			margins: $pageSettings.margins
+		};
+
 		try {
-			await waitForPreviewImages();
-
 			if ($session.data) {
-				// Server-side generation for logged-in users
-				// Clone the preview element to avoid modifying the original
-				const clone = previewRef.cloneNode(true) as HTMLElement;
-
-				// Convert images to base64 to ensure they render in the PDF
-				const images = clone.querySelectorAll('img');
-				for (const img of images) {
-					if (img.src && !img.src.startsWith('data:')) {
-						try {
-							const response = await fetch(img.src);
-							const blob = await response.blob();
-							const base64 = await new Promise<string>((resolve) => {
-								const reader = new FileReader();
-								reader.onloadend = () => resolve(reader.result as string);
-								reader.readAsDataURL(blob);
-							});
-							img.src = base64;
-						} catch (e) {
-							console.warn('Failed to convert image to base64:', img.src, e);
-							// Keep original src if conversion fails
-						}
-					}
-				}
-
-				// Extract all stylesheets from the document for accurate template rendering
-				const extractStyles = (): string => {
-					const styles: string[] = [];
-
-					// Get all style elements (includes Svelte component styles)
-					for (const style of document.querySelectorAll('style')) {
-						styles.push(style.textContent || '');
-					}
-
-					// Get all linked stylesheets (same-origin only)
-					for (const link of document.querySelectorAll('link[rel="stylesheet"]')) {
-						try {
-							const sheet = (link as HTMLLinkElement).sheet;
-							if (sheet) {
-								for (const rule of sheet.cssRules) {
-									styles.push(rule.cssText);
-								}
-							}
-						} catch {
-							// Cross-origin stylesheet, skip
-						}
-					}
-
-					return styles.join('\n');
-				};
-
-				const cssStyles = extractStyles();
-
-				// Build a self-contained HTML document with extracted styles
-				const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-${cssStyles}
-/* Print overrides */
-* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-body { margin: 0; padding: 20px; background: white; }
-</style>
-</head>
-<body>
-${clone.innerHTML}
-</body>
-</html>`;
-
-				let useClientSide = false;
-
+				// Server-side generation for logged-in users (high quality)
 				try {
-					const response = await fetch('/api/pdf', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({
-							html: htmlContent,
-							invoiceId: currentInvoice.id,
-							invoiceTo: currentInvoice.invoiceTo
-						})
+					const { blob, storageStatus } = await generatePdfFromPreview({
+						invoice: currentInvoice,
+						previewElement: previewRef,
+						pageSettings: currentPageSettings
 					});
 
-					if (!response.ok) {
-						// Fall back to client-side generation if server-side fails
-						console.warn('Server-side PDF generation unavailable, using client-side fallback');
-						useClientSide = true;
+					downloadBlob(blob, `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`);
+
+					if (storageStatus === 'saved') {
+						console.log('[PDF] Successfully saved to cloud storage');
 					} else {
-						const blob = await response.blob();
-						const url = window.URL.createObjectURL(blob);
-						const a = document.createElement('a');
-						a.href = url;
-						a.download = `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`;
-						document.body.appendChild(a);
-						a.click();
-						window.URL.revokeObjectURL(url);
-						document.body.removeChild(a);
+						console.warn('[PDF] Cloud storage unavailable, PDF downloaded locally only');
 					}
-				} catch {
-					console.warn('Server-side PDF generation failed, using client-side fallback');
-					useClientSide = true;
-				}
-
-				if (useClientSide) {
-					// Fall back to client-side generation
-					const html2pdf = (await import('html2pdf.js')).default;
-					const currentSettings = $pageSettings;
-					const pdfFormat = getJsPDFFormat(currentSettings.pageSize);
-					const margins = getMarginsInInches(currentSettings.margins);
-
-					await html2pdf()
-						.from(previewRef)
-						.set({
-							margin: [margins.top, margins.right, margins.bottom, margins.left],
-							filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
-							html2canvas: {
-								scale: 3,
-								useCORS: true
-							},
-							jsPDF: {
-								unit: 'in',
-								format: pdfFormat,
-								orientation: 'portrait'
-							}
-						})
-						.save();
+				} catch (serverError) {
+					// Fall back to client-side generation if server-side fails
+					console.warn('Server-side PDF generation failed, using client-side fallback:', serverError);
+					await generatePdfClientSide(previewRef, currentInvoice, currentPageSettings);
 				}
 			} else {
-				// Client-side generation for guests
-				const html2pdf = (await import('html2pdf.js')).default;
-				const currentSettings = $pageSettings;
-				const pdfFormat = getJsPDFFormat(currentSettings.pageSize);
-				const margins = getMarginsInInches(currentSettings.margins);
-
-				await html2pdf()
-					.from(previewRef)
-					.set({
-						margin: [margins.top, margins.right, margins.bottom, margins.left],
-						filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
-						html2canvas: {
-							scale: 3,
-							useCORS: true
-						},
-						jsPDF: {
-							unit: 'in',
-							format: pdfFormat,
-							orientation: 'portrait'
-						}
-					})
-					.save();
+				// Client-side generation for guests (with fixes applied)
+				await generatePdfClientSide(previewRef, currentInvoice, currentPageSettings);
 			}
 		} catch (error) {
 			console.error('Failed to export PDF:', error);
@@ -363,38 +221,95 @@ ${clone.innerHTML}
 		isGeneratingPDF = true;
 		pdfAction = 'print';
 
+		// Get current page settings
+		const currentPageSettings: PageSettings = {
+			pageSize: $pageSettings.pageSize as 'a4' | 'letter' | 'legal' | 'a5',
+			margins: $pageSettings.margins
+		};
+
 		try {
-			await waitForPreviewImages();
-
 			const html2pdf = (await import('html2pdf.js')).default;
-			const currentSettings = $pageSettings;
-			const pdfFormat = getJsPDFFormat(currentSettings.pageSize);
-			const margins = getMarginsInInches(currentSettings.margins);
 
-			const worker = html2pdf()
-				.from(previewRef)
-				.set({
-					margin: [margins.top, margins.right, margins.bottom, margins.left],
-					filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
-					html2canvas: {
-						scale: 3,
-						useCORS: true
-					},
-					jsPDF: {
-						unit: 'in',
-						format: pdfFormat,
-						orientation: 'portrait'
-					}
-				});
+			// Apply same fixes as generatePdfClientSide for print
+			const indicator = previewRef.querySelector('.page-size-indicator') as HTMLElement | null;
+			const templateWrapper = previewRef.querySelector('.template-wrapper.page') as HTMLElement | null;
+			const scaleWrapper = previewRef.querySelector('.scale-wrapper') as HTMLElement | null;
 
-			const pdfInstance = await worker.toPdf().get('pdf');
-			pdfInstance.autoPrint();
+			const originalStyles = {
+				indicatorDisplay: indicator?.style.display || '',
+				wrapperTransform: templateWrapper?.style.transform || '',
+				wrapperPosition: templateWrapper?.style.position || '',
+				scaleWrapperWidth: scaleWrapper?.style.width || '',
+				scaleWrapperHeight: scaleWrapper?.style.height || ''
+			};
 
-			const blobUrl = pdfInstance.output('bloburl');
-			const printWindow = window.open(blobUrl, '_blank');
+			try {
+				// Apply fixes
+				if (indicator) indicator.style.display = 'none';
+				if (templateWrapper) {
+					templateWrapper.style.transform = 'none';
+					templateWrapper.style.position = 'static';
+				}
+				if (scaleWrapper) {
+					scaleWrapper.style.width = 'auto';
+					scaleWrapper.style.height = 'auto';
+				}
 
-			if (!printWindow) {
-				pdfInstance.output('dataurlnewwindow');
+				// Convert page size to jsPDF format
+				const formatMap: Record<string, [number, number]> = {
+					letter: [8.5, 11],
+					a4: [8.27, 11.69],
+					legal: [8.5, 14],
+					a5: [5.83, 8.27]
+				};
+				const pdfFormat = formatMap[currentPageSettings.pageSize] || formatMap.letter;
+
+				// Convert margins from mm to inches
+				const mmToInches = (mm: number) => mm / 25.4;
+				const margins = {
+					top: mmToInches(currentPageSettings.margins.top),
+					right: mmToInches(currentPageSettings.margins.right),
+					bottom: mmToInches(currentPageSettings.margins.bottom),
+					left: mmToInches(currentPageSettings.margins.left)
+				};
+
+				const worker = html2pdf()
+					.from(previewRef)
+					.set({
+						margin: [margins.top, margins.right, margins.bottom, margins.left],
+						filename: `invoice-${currentInvoice.invoiceTo || 'unknown'}.pdf`,
+						html2canvas: {
+							scale: 2,
+							useCORS: true,
+							logging: false
+						},
+						jsPDF: {
+							unit: 'in',
+							format: pdfFormat,
+							orientation: 'portrait'
+						}
+					});
+
+				const pdfInstance = await worker.toPdf().get('pdf');
+				pdfInstance.autoPrint();
+
+				const blobUrl = pdfInstance.output('bloburl');
+				const printWindow = window.open(blobUrl, '_blank');
+
+				if (!printWindow) {
+					pdfInstance.output('dataurlnewwindow');
+				}
+			} finally {
+				// Restore original styles
+				if (indicator) indicator.style.display = originalStyles.indicatorDisplay;
+				if (templateWrapper) {
+					templateWrapper.style.transform = originalStyles.wrapperTransform;
+					templateWrapper.style.position = originalStyles.wrapperPosition;
+				}
+				if (scaleWrapper) {
+					scaleWrapper.style.width = originalStyles.scaleWrapperWidth;
+					scaleWrapper.style.height = originalStyles.scaleWrapperHeight;
+				}
 			}
 		} catch (error) {
 			console.error('Failed to print PDF:', error);
