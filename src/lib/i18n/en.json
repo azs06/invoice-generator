@@ -228,5 +228,21 @@
 		"sending": "Sending...",
 		"cancel": "Cancel",
 		"not_implemented": "Email sending will be available in a future update."
+	},
+	"export_import": {
+		"import": "Import",
+		"importing": "Importing...",
+		"export": "Export",
+		"export_all": "Export All",
+		"export_selected": "Export Selected",
+		"select": "Select",
+		"cancel": "Cancel",
+		"selected": "selected",
+		"select_all": "Select all",
+		"deselect_all": "Deselect all",
+		"import_result": "Import Result",
+		"invoices_imported": "invoice(s) imported successfully",
+		"invoices_skipped": "invoice(s) skipped",
+		"done": "Done"
 	}
 }
