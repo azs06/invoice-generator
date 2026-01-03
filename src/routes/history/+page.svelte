@@ -10,6 +10,12 @@
 		getGuestInvoice
 	} from '$lib/guestDb.js';
 	import { toUSCurrency } from '$lib/currency.js';
+	import {
+		exportInvoicesToFile,
+		exportSingleInvoice,
+		readExportFile,
+		importInvoices
+	} from '$lib/invoiceExport.js';
 	import CloudModeBanner from '$components/CloudModeBanner.svelte';
 	import type { SavedInvoiceRecord, SavedInvoicesFilterMode, InvoiceData } from '$lib/types';
 
@@ -23,6 +29,16 @@
 	let filterMode = $state<SavedInvoicesFilterMode>('all');
 	let isLoading = $state<boolean>(true);
 	let formatCurrencyFn = $state<(value: number) => string>(() => '');
+
+	// Selection state for bulk export
+	let selectedInvoices = $state<Set<string>>(new Set());
+	let selectionMode = $state<boolean>(false);
+
+	// Import state
+	let fileInput = $state<HTMLInputElement | null>(null);
+	let isImporting = $state<boolean>(false);
+	let showImportResultModal = $state<boolean>(false);
+	let importResult = $state<{ imported: number; skipped: number; errors: string[] } | null>(null);
 
 	$effect(() => {
 		formatCurrencyFn = $toUSCurrency;
@@ -190,6 +206,94 @@
 		goto(`/?invoice=${id}`);
 	};
 
+	// Selection functions for bulk operations
+	const toggleSelection = (id: string): void => {
+		const newSet = new Set(selectedInvoices);
+		if (newSet.has(id)) {
+			newSet.delete(id);
+		} else {
+			newSet.add(id);
+		}
+		selectedInvoices = newSet;
+	};
+
+	const selectAll = (): void => {
+		selectedInvoices = new Set(savedInvoices.map((r) => r.id));
+	};
+
+	const deselectAll = (): void => {
+		selectedInvoices = new Set();
+	};
+
+	const toggleSelectionMode = (): void => {
+		selectionMode = !selectionMode;
+		if (!selectionMode) {
+			selectedInvoices = new Set();
+		}
+	};
+
+	// Export functions
+	const exportAllInvoices = (): void => {
+		if (allInvoices.length === 0) return;
+		const invoices = allInvoices.map((r) => r.invoice);
+		exportInvoicesToFile(invoices);
+	};
+
+	const exportSelectedInvoices = (): void => {
+		if (selectedInvoices.size === 0) return;
+		const invoices = allInvoices
+			.filter((r) => selectedInvoices.has(r.id))
+			.map((r) => r.invoice);
+		exportInvoicesToFile(invoices);
+		// Exit selection mode after export
+		selectionMode = false;
+		selectedInvoices = new Set();
+	};
+
+	const exportInvoice = (invoice: InvoiceData): void => {
+		exportSingleInvoice(invoice);
+	};
+
+	// Import functions
+	const triggerImport = (): void => {
+		fileInput?.click();
+	};
+
+	const handleFileSelect = async (event: Event): Promise<void> => {
+		const target = event.target as HTMLInputElement;
+		const file = target.files?.[0];
+		if (!file) return;
+
+		isImporting = true;
+		try {
+			const exportData = await readExportFile(file);
+			const result = await importInvoices(exportData.invoices, saveGuestInvoice);
+			importResult = {
+				imported: result.imported,
+				skipped: result.skipped,
+				errors: result.errors
+			};
+			showImportResultModal = true;
+			await loadInvoices();
+		} catch (error) {
+			importResult = {
+				imported: 0,
+				skipped: 0,
+				errors: [error instanceof Error ? error.message : 'Failed to import file']
+			};
+			showImportResultModal = true;
+		} finally {
+			isImporting = false;
+			// Reset file input
+			if (target) target.value = '';
+		}
+	};
+
+	const closeImportResultModal = (): void => {
+		showImportResultModal = false;
+		importResult = null;
+	};
+
 	onMount(() => {
 		loadInvoices();
 	});
@@ -228,17 +332,97 @@
 						oninput={onSearchInput}
 					/>
 				</label>
-				<button class="primary-button" type="button" onclick={() => goto('/')}>
-					<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							fill-rule="evenodd"
-							d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 0 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					<span>New Invoice</span>
-				</button>
+				<div class="header-buttons">
+					<!-- Hidden file input for import -->
+					<input
+						type="file"
+						accept=".json"
+						class="sr-only"
+						bind:this={fileInput}
+						onchange={handleFileSelect}
+					/>
+					<button
+						class="secondary-button"
+						type="button"
+						onclick={triggerImport}
+						disabled={isImporting}
+					>
+						<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path
+								d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"
+							/>
+							<path
+								d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+							/>
+						</svg>
+						<span>{isImporting ? $_('export_import.importing') : $_('export_import.import')}</span>
+					</button>
+					{#if allInvoices.length > 0}
+						<button class="secondary-button" type="button" onclick={toggleSelectionMode}>
+							<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path
+									fill-rule="evenodd"
+									d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							<span>{selectionMode ? $_('export_import.cancel') : $_('export_import.select')}</span>
+						</button>
+						<button class="secondary-button" type="button" onclick={exportAllInvoices}>
+							<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path
+									d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z"
+								/>
+								<path
+									d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+								/>
+							</svg>
+							<span>{$_('export_import.export_all')}</span>
+						</button>
+					{/if}
+					<button class="primary-button" type="button" onclick={() => goto('/')}>
+						<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path
+								fill-rule="evenodd"
+								d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 0 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+						<span>New Invoice</span>
+					</button>
+				</div>
 			</div>
+
+			<!-- Selection toolbar -->
+			{#if selectionMode}
+				<div class="selection-toolbar">
+					<div class="selection-info">
+						<span>{selectedInvoices.size} {$_('export_import.selected')}</span>
+						<button class="link-button" type="button" onclick={selectAll}>
+							{$_('export_import.select_all')}
+						</button>
+						<button class="link-button" type="button" onclick={deselectAll}>
+							{$_('export_import.deselect_all')}
+						</button>
+					</div>
+					<button
+						class="primary-button"
+						type="button"
+						onclick={exportSelectedInvoices}
+						disabled={selectedInvoices.size === 0}
+					>
+						<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path
+								d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z"
+							/>
+							<path
+								d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+							/>
+						</svg>
+						<span>{$_('export_import.export_selected')}</span>
+					</button>
+				</div>
+			{/if}
 
 			<div class="filter-toolbar">
 				<div class="filter-group">
@@ -319,7 +503,17 @@
 			<div class="invoice-grid">
 				{#each savedInvoices as record (record.id)}
 					{#if record.invoice}
-						<article class="invoice-card">
+						<article class="invoice-card" class:selected={selectedInvoices.has(record.id)}>
+							{#if selectionMode}
+								<label class="selection-checkbox">
+									<input
+										type="checkbox"
+										checked={selectedInvoices.has(record.id)}
+										onchange={() => toggleSelection(record.id)}
+									/>
+									<span class="checkbox-custom"></span>
+								</label>
+							{/if}
 							<div class="invoice-card__top">
 								<div>
 									<h3 class="invoice-card__title">{invoiceTitle(record.invoice)}</h3>
@@ -372,6 +566,23 @@
 								</button>
 
 								<div class="card-actions__secondary">
+									<button
+										class="ghost-button"
+										type="button"
+										onclick={() => exportInvoice(record.invoice)}
+										title={$_('export_import.export')}
+									>
+										<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+											<path
+												d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z"
+											/>
+											<path
+												d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+											/>
+										</svg>
+										<span>{$_('export_import.export')}</span>
+									</button>
+
 									{#if record.invoice.archived}
 										<button
 											class="ghost-button ghost-button--success"
@@ -497,6 +708,58 @@
 			</div>
 		</div>
 	{/if}
+
+	<!-- Import Result Modal -->
+	{#if showImportResultModal && importResult}
+		<div class="modal-backdrop" role="dialog" aria-modal="true">
+			<div class="modal" role="document">
+				<div class="modal-icon" class:success={importResult.imported > 0} class:error={importResult.errors.length > 0 && importResult.imported === 0}>
+					{#if importResult.imported > 0}
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path
+								d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+					{:else}
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path
+								d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+					{/if}
+				</div>
+				<h2>{$_('export_import.import_result')}</h2>
+				<div class="import-result-details">
+					{#if importResult.imported > 0}
+						<p class="result-success">
+							{importResult.imported} {$_('export_import.invoices_imported')}
+						</p>
+					{/if}
+					{#if importResult.skipped > 0}
+						<p class="result-warning">
+							{importResult.skipped} {$_('export_import.invoices_skipped')}
+						</p>
+					{/if}
+					{#if importResult.errors.length > 0}
+						<div class="result-errors">
+							{#each importResult.errors as error}
+								<p class="result-error">{error}</p>
+							{/each}
+						</div>
+					{/if}
+				</div>
+				<div class="modal-actions">
+					<button class="primary-button" type="button" onclick={closeImportResultModal}>
+						{$_('export_import.done')}
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </section>
 
 <style>
@@ -569,6 +832,125 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 		align-items: center;
+	}
+
+	.header-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
+	.secondary-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
+		color: var(--color-text-primary);
+		padding: 0.6rem 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease,
+			transform 0.2s ease;
+	}
+
+	.secondary-button:hover {
+		background: var(--color-bg-secondary);
+		border-color: var(--color-accent-blue);
+		transform: translateY(-1px);
+	}
+
+	.secondary-button:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	.selection-toolbar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 1rem;
+		padding: 1rem;
+		background: rgba(59, 130, 246, 0.08);
+		border: 1px solid rgba(59, 130, 246, 0.25);
+		border-radius: var(--radius-md);
+	}
+
+	.selection-info {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		font-weight: 500;
+		color: var(--color-text-primary);
+	}
+
+	.link-button {
+		background: none;
+		border: none;
+		color: var(--color-accent-blue);
+		font-weight: 500;
+		cursor: pointer;
+		padding: 0;
+		text-decoration: underline;
+	}
+
+	.link-button:hover {
+		color: #2563eb;
+	}
+
+	.selection-checkbox {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		z-index: 2;
+		cursor: pointer;
+	}
+
+	.selection-checkbox input {
+		position: absolute;
+		opacity: 0;
+		cursor: pointer;
+		height: 0;
+		width: 0;
+	}
+
+	.checkbox-custom {
+		display: block;
+		width: 1.5rem;
+		height: 1.5rem;
+		background: var(--color-bg-primary);
+		border: 2px solid var(--color-border-primary);
+		border-radius: var(--radius-sm);
+		transition:
+			background-color 0.2s,
+			border-color 0.2s;
+	}
+
+	.selection-checkbox input:checked + .checkbox-custom {
+		background: var(--color-accent-blue);
+		border-color: var(--color-accent-blue);
+	}
+
+	.selection-checkbox input:checked + .checkbox-custom::after {
+		content: '';
+		display: block;
+		width: 0.4rem;
+		height: 0.7rem;
+		border: solid white;
+		border-width: 0 2px 2px 0;
+		transform: rotate(45deg);
+		margin: 0.15rem auto;
+	}
+
+	.invoice-card.selected {
+		border-color: var(--color-accent-blue);
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 	}
 
 	.search-field {
@@ -1041,6 +1423,45 @@
 
 	.modal--warning .modal-actions {
 		justify-content: center;
+	}
+
+	.modal-icon.success {
+		background: rgba(16, 185, 129, 0.1);
+		color: #10b981;
+	}
+
+	.modal-icon.error {
+		background: rgba(239, 68, 68, 0.1);
+		color: #ef4444;
+	}
+
+	.import-result-details {
+		text-align: left;
+	}
+
+	.result-success {
+		color: #10b981;
+		font-weight: 500;
+		margin: 0.5rem 0;
+	}
+
+	.result-warning {
+		color: #f59e0b;
+		font-weight: 500;
+		margin: 0.5rem 0;
+	}
+
+	.result-errors {
+		margin-top: 0.75rem;
+		padding: 0.75rem;
+		background: rgba(239, 68, 68, 0.08);
+		border-radius: var(--radius-sm);
+	}
+
+	.result-error {
+		color: #ef4444;
+		font-size: 0.875rem;
+		margin: 0.25rem 0;
 	}
 
 	.danger-button {
