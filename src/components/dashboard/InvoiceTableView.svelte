@@ -13,11 +13,15 @@
 		onArchive: (id: string) => void;
 		onShare: (id: string) => void;
 		onSendEmail: (id: string) => void;
+		onExport: (id: string) => void;
 		deletingId: string | null;
 		downloadingId: string | null;
+		selectionMode?: boolean;
+		selectedInvoices?: Set<string>;
+		onToggleSelection?: (id: string) => void;
 	}
 
-	let { invoices, onView, onEdit, onDelete, onDownloadPdf, onArchive, onShare, onSendEmail, deletingId, downloadingId }: Props = $props();
+	let { invoices, onView, onEdit, onDelete, onDownloadPdf, onArchive, onShare, onSendEmail, onExport, deletingId, downloadingId, selectionMode = false, selectedInvoices = new Set(), onToggleSelection }: Props = $props();
 
 	const formatDate = (dateStr: string): string => {
 		if (!dateStr || dateStr === 'N/A') return 'N/A';
@@ -37,6 +41,9 @@
 	<table class="invoices-table">
 		<thead>
 			<tr>
+				{#if selectionMode}
+					<th class="checkbox-col"></th>
+				{/if}
 				<th>{$_('dashboard.invoice_number') || 'Invoice #'}</th>
 				<th>{$_('dashboard.client') || 'Client'}</th>
 				<th>{$_('dashboard.date') || 'Date'}</th>
@@ -47,7 +54,19 @@
 		</thead>
 		<tbody>
 			{#each invoices as invoice (invoice.id)}
-				<tr class:deleting={deletingId === invoice.id}>
+				<tr class:deleting={deletingId === invoice.id} class:selected={selectionMode && selectedInvoices.has(invoice.id)}>
+					{#if selectionMode}
+						<td class="checkbox-col">
+							<label class="checkbox-wrapper">
+								<input
+									type="checkbox"
+									checked={selectedInvoices.has(invoice.id)}
+									onchange={() => onToggleSelection?.(invoice.id)}
+								/>
+								<span class="checkbox-custom"></span>
+							</label>
+						</td>
+					{/if}
 					<td class="invoice-number">{invoice.invoiceNumber}</td>
 					<td class="client-name">{invoice.invoiceTo}</td>
 					<td class="date">{formatDate(invoice.date)}</td>
@@ -103,6 +122,7 @@
 								{onDownloadPdf}
 								{onShare}
 								{onSendEmail}
+								{onExport}
 								{onArchive}
 								{onDelete}
 								isDownloading={downloadingId === invoice.id}
@@ -155,6 +175,65 @@
 
 	.invoices-table tbody tr.deleting {
 		opacity: 0.5;
+	}
+
+	.invoices-table tbody tr.selected {
+		background: rgba(59, 130, 246, 0.08);
+	}
+
+	.invoices-table tbody tr.selected:hover {
+		background: rgba(59, 130, 246, 0.12);
+	}
+
+	.checkbox-col {
+		width: 3rem;
+		text-align: center;
+	}
+
+	.checkbox-wrapper {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		position: relative;
+	}
+
+	.checkbox-wrapper input[type="checkbox"] {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.checkbox-custom {
+		width: 1.25rem;
+		height: 1.25rem;
+		border: 2px solid var(--color-border-primary);
+		border-radius: 0.25rem;
+		background: var(--color-bg-primary);
+		transition: all 0.15s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.checkbox-wrapper:hover .checkbox-custom {
+		border-color: var(--color-accent-blue);
+	}
+
+	.checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom {
+		background: var(--color-accent-blue);
+		border-color: var(--color-accent-blue);
+	}
+
+	.checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom::after {
+		content: '';
+		width: 0.375rem;
+		height: 0.625rem;
+		border: solid white;
+		border-width: 0 2px 2px 0;
+		transform: rotate(45deg);
+		margin-bottom: 2px;
 	}
 
 	.invoice-number {

@@ -366,6 +366,15 @@
 		selectedInvoices = new Set();
 	};
 
+	const exportInvoice = async (invoiceId: string): Promise<void> => {
+		// Fetch full invoice data for the specific invoice
+		const records = await getAllInvoices();
+		const invoice = records.find((r) => r.id === invoiceId)?.invoice;
+		if (invoice) {
+			exportInvoicesToFile([invoice]);
+		}
+	};
+
 	// Import functions
 	const triggerImport = (): void => {
 		fileInput?.click();
@@ -608,8 +617,12 @@
 					onArchive={archiveInvoice}
 					onShare={openShareModal}
 					onSendEmail={openEmailModal}
+					onExport={exportInvoice}
 					{deletingId}
 					{downloadingId}
+					{selectionMode}
+					{selectedInvoices}
+					onToggleSelection={toggleSelection}
 				/>
 			</div>
 
@@ -624,8 +637,12 @@
 					onDownloadPdf={downloadPdf}
 					onShare={openShareModal}
 					onSendEmail={openEmailModal}
+					onExport={exportInvoice}
 					{deletingId}
 					{downloadingId}
+					{selectionMode}
+					{selectedInvoices}
+					onToggleSelection={toggleSelection}
 				/>
 			</div>
 		{/if}
