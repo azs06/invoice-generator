@@ -22,13 +22,20 @@ export interface ImportResult {
 	errors: string[];
 }
 
+export interface ExportOptions {
+	filename?: string;
+	excludeLogo?: boolean;
+}
+
 /**
  * Export invoices to a JSON file and trigger download
  */
 export function exportInvoicesToFile(
 	invoices: InvoiceData[] | SavedInvoiceRecord[],
-	filename?: string
+	options: ExportOptions = {}
 ): void {
+	const { filename, excludeLogo = false } = options;
+
 	// Normalize to InvoiceData array, filtering out null/undefined invoices
 	const invoiceData: InvoiceData[] = invoices
 		.map((item) => {
@@ -37,7 +44,14 @@ export function exportInvoicesToFile(
 			}
 			return item;
 		})
-		.filter((invoice): invoice is InvoiceData => invoice != null);
+		.filter((invoice): invoice is InvoiceData => invoice != null)
+		.map((invoice) => {
+			if (excludeLogo) {
+				const { logo, logoFilename, ...rest } = invoice;
+				return rest as InvoiceData;
+			}
+			return invoice;
+		});
 
 	const exportData: InvoiceExportData = {
 		version: EXPORT_FORMAT_VERSION,
@@ -62,14 +76,17 @@ export function exportInvoicesToFile(
 /**
  * Export a single invoice to a JSON file
  */
-export function exportSingleInvoice(invoice: InvoiceData): void {
+export function exportSingleInvoice(
+	invoice: InvoiceData,
+	options: Omit<ExportOptions, 'filename'> = {}
+): void {
 	const clientName = invoice.invoiceTo?.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 30) || 'invoice';
 	const invoiceNumber = invoice.invoiceNumber?.replace(/[^a-zA-Z0-9]/g, '-') || '';
 	const filename = invoiceNumber
 		? `invoice-${clientName}-${invoiceNumber}.json`
 		: `invoice-${clientName}.json`;
 
-	exportInvoicesToFile([invoice], filename);
+	exportInvoicesToFile([invoice], { ...options, filename });
 }
 
 /**

@@ -232,11 +232,11 @@
 		}
 	};
 
-	// Export functions
+	// Export functions - excludeLogo for guest mode to reduce file size
 	const exportAllInvoices = (): void => {
 		if (allInvoices.length === 0) return;
 		const invoices = allInvoices.map((r) => r.invoice);
-		exportInvoicesToFile(invoices);
+		exportInvoicesToFile(invoices, { excludeLogo: true });
 	};
 
 	const exportSelectedInvoices = (): void => {
@@ -244,14 +244,14 @@
 		const invoices = allInvoices
 			.filter((r) => selectedInvoices.has(r.id))
 			.map((r) => r.invoice);
-		exportInvoicesToFile(invoices);
+		exportInvoicesToFile(invoices, { excludeLogo: true });
 		// Exit selection mode after export
 		selectionMode = false;
 		selectedInvoices = new Set();
 	};
 
 	const exportInvoice = (invoice: InvoiceData): void => {
-		exportSingleInvoice(invoice);
+		exportSingleInvoice(invoice, { excludeLogo: true });
 	};
 
 	// Import functions
@@ -503,7 +503,7 @@
 			<div class="invoice-grid">
 				{#each savedInvoices as record (record.id)}
 					{#if record.invoice}
-						<article class="invoice-card" class:selected={selectedInvoices.has(record.id)}>
+						<article class="invoice-card" class:selected={selectedInvoices.has(record.id)} class:selection-mode={selectionMode}>
 							{#if selectionMode}
 								<label class="selection-checkbox">
 									<input
@@ -955,6 +955,10 @@
 	.invoice-card.selected {
 		border-color: var(--color-accent-blue);
 		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+	}
+
+	.invoice-card.selection-mode .invoice-card__amount {
+		padding-right: 2.5rem;
 	}
 
 	.search-field {
