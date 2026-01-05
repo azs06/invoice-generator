@@ -665,9 +665,10 @@
 
 	<!-- Delete Single Invoice Modal -->
 	{#if showInvoiceDeleteModal}
-		<div class="modal-backdrop" role="dialog" aria-modal="true">
-			<div class="modal" role="document">
-				<h2>Delete this invoice?</h2>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="modal-backdrop" onclick={cancelDelete} onkeydown={(e) => e.key === 'Escape' && cancelDelete()}>
+			<div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-invoice-title" onpointerdown={(e) => e.stopPropagation()}>
+				<h2 id="delete-invoice-title">Delete this invoice?</h2>
 				<p>
 					This invoice is only stored in your browser. Deleting it cannot be undone and the data
 					cannot be recovered.
@@ -683,8 +684,9 @@
 
 	<!-- Delete All Invoices Modal -->
 	{#if showDeleteAllModal}
-		<div class="modal-backdrop" role="dialog" aria-modal="true">
-			<div class="modal modal--warning" role="document">
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="modal-backdrop" onclick={cancelDeleteAll} onkeydown={(e) => e.key === 'Escape' && cancelDeleteAll()}>
+			<div class="modal modal--warning" role="dialog" aria-modal="true" aria-labelledby="delete-all-title" onpointerdown={(e) => e.stopPropagation()}>
 				<div class="modal-icon">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path
@@ -694,7 +696,7 @@
 						/>
 					</svg>
 				</div>
-				<h2>Delete All Invoices?</h2>
+				<h2 id="delete-all-title">Delete All Invoices?</h2>
 				<p>
 					This will permanently delete <strong>all</strong> your locally stored invoices. Since these
 					are only stored in your browser, this action cannot be undone and the data cannot be recovered.
@@ -711,8 +713,9 @@
 
 	<!-- Import Result Modal -->
 	{#if showImportResultModal && importResult}
-		<div class="modal-backdrop" role="dialog" aria-modal="true">
-			<div class="modal" role="document">
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="modal-backdrop" onclick={closeImportResultModal} onkeydown={(e) => e.key === 'Escape' && closeImportResultModal()}>
+			<div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-result-title" onpointerdown={(e) => e.stopPropagation()}>
 				<div class="modal-icon" class:success={importResult.imported > 0} class:error={importResult.errors.length > 0 && importResult.imported === 0}>
 					{#if importResult.imported > 0}
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -732,7 +735,7 @@
 						</svg>
 					{/if}
 				</div>
-				<h2>{$_('export_import.import_result')}</h2>
+				<h2 id="import-result-title">{$_('export_import.import_result')}</h2>
 				<div class="import-result-details">
 					{#if importResult.imported > 0}
 						<p class="result-success">
@@ -901,7 +904,8 @@
 	}
 
 	.link-button:hover {
-		color: #2563eb;
+		color: var(--color-accent-blue);
+		opacity: 0.8;
 	}
 
 	.selection-checkbox {
@@ -1427,12 +1431,12 @@
 
 	.modal-icon.success {
 		background: rgba(16, 185, 129, 0.1);
-		color: #10b981;
+		color: var(--color-success, #10b981);
 	}
 
 	.modal-icon.error {
 		background: rgba(239, 68, 68, 0.1);
-		color: #ef4444;
+		color: var(--color-error, #ef4444);
 	}
 
 	.import-result-details {
@@ -1440,13 +1444,13 @@
 	}
 
 	.result-success {
-		color: #10b981;
+		color: var(--color-success, #10b981);
 		font-weight: 500;
 		margin: 0.5rem 0;
 	}
 
 	.result-warning {
-		color: #f59e0b;
+		color: var(--color-warning, #f59e0b);
 		font-weight: 500;
 		margin: 0.5rem 0;
 	}
@@ -1459,7 +1463,7 @@
 	}
 
 	.result-error {
-		color: #ef4444;
+		color: var(--color-error, #ef4444);
 		font-size: 0.875rem;
 		margin: 0.25rem 0;
 	}

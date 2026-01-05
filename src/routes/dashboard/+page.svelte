@@ -20,7 +20,6 @@
 	import { saveInvoice, getAllInvoices } from '$lib/db';
 	import {
 		exportInvoicesToFile,
-		exportSingleInvoice,
 		readExportFile,
 		importInvoices
 	} from '$lib/invoiceExport';
@@ -367,15 +366,6 @@
 		selectedInvoices = new Set();
 	};
 
-	const exportInvoice = async (invoiceId: string): Promise<void> => {
-		// Fetch full invoice data
-		const response = await fetch(`/api/invoices/${invoiceId}`);
-		if (response.ok) {
-			const invoice: InvoiceData = await response.json();
-			exportSingleInvoice(invoice);
-		}
-	};
-
 	// Import functions
 	const triggerImport = (): void => {
 		fileInput?.click();
@@ -644,14 +634,13 @@
 
 <!-- Delete Confirmation Modal -->
 {#if showDeleteConfirm}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="modal-backdrop"
-		role="button"
-		tabindex="0"
 		onclick={cancelDelete}
 		onkeydown={(e) => e.key === 'Escape' && cancelDelete()}
 	>
-		<div class="modal" role="dialog" aria-modal="true" onpointerdown={(e) => e.stopPropagation()}>
+		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title" onpointerdown={(e) => e.stopPropagation()}>
 			<div class="modal-icon danger">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path
@@ -661,7 +650,7 @@
 					/>
 				</svg>
 			</div>
-			<h3>{$_('dashboard.delete_confirm_title') || 'Delete Invoice?'}</h3>
+			<h3 id="delete-confirm-title">{$_('dashboard.delete_confirm_title') || 'Delete Invoice?'}</h3>
 			<p>
 				{$_('dashboard.delete_confirm_message') ||
 					'This will permanently delete this invoice and its PDF. This action cannot be undone.'}
@@ -705,14 +694,13 @@
 
 <!-- Import Result Modal -->
 {#if showImportResultModal && importResult}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="modal-backdrop"
-		role="button"
-		tabindex="0"
 		onclick={closeImportResultModal}
 		onkeydown={(e) => e.key === 'Escape' && closeImportResultModal()}
 	>
-		<div class="modal" role="dialog" aria-modal="true" onpointerdown={(e) => e.stopPropagation()}>
+		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-result-title" onpointerdown={(e) => e.stopPropagation()}>
 			<div class="modal-icon" class:success={importResult.imported > 0} class:error={importResult.errors.length > 0 && importResult.imported === 0}>
 				{#if importResult.imported > 0}
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -732,7 +720,7 @@
 					</svg>
 				{/if}
 			</div>
-			<h3>{$_('export_import.import_result') || 'Import Result'}</h3>
+			<h3 id="import-result-title">{$_('export_import.import_result') || 'Import Result'}</h3>
 			<div class="import-result-details">
 				{#if importResult.imported > 0}
 					<p class="result-success">
@@ -861,7 +849,7 @@
 	.link-button {
 		background: none;
 		border: none;
-		color: #3b82f6;
+		color: var(--color-accent-blue);
 		font-weight: 500;
 		cursor: pointer;
 		padding: 0;
@@ -869,7 +857,8 @@
 	}
 
 	.link-button:hover {
-		color: #2563eb;
+		color: var(--color-accent-blue);
+		opacity: 0.8;
 	}
 
 	.view-toggle {
@@ -894,12 +883,12 @@
 
 	.toggle-btn:hover {
 		background: var(--color-bg-secondary);
-		border-color: #3b82f6;
+		border-color: var(--color-accent-blue);
 	}
 
 	.toggle-btn.active {
-		background: #3b82f6;
-		border-color: #3b82f6;
+		background: var(--color-accent-blue);
+		border-color: var(--color-accent-blue);
 		color: white;
 	}
 
@@ -913,7 +902,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.5rem 1rem;
-		background: #3b82f6;
+		background: var(--color-accent-blue);
 		color: white;
 		border: none;
 		border-radius: var(--radius-md);
@@ -921,11 +910,11 @@
 		font-weight: 500;
 		text-decoration: none;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition: background 0.2s, opacity 0.2s;
 	}
 
 	.create-button:hover {
-		background: #2563eb;
+		opacity: 0.9;
 	}
 
 	.create-button svg {
@@ -1084,12 +1073,12 @@
 
 	.modal-icon.success {
 		background: rgba(16, 185, 129, 0.1);
-		color: #10b981;
+		color: var(--color-success, #10b981);
 	}
 
 	.modal-icon.error {
 		background: rgba(239, 68, 68, 0.1);
-		color: #ef4444;
+		color: var(--color-error, #ef4444);
 	}
 
 	.import-result-details {
@@ -1097,13 +1086,13 @@
 	}
 
 	.result-success {
-		color: #10b981;
+		color: var(--color-success, #10b981);
 		font-weight: 500;
 		margin: 0.5rem 0;
 	}
 
 	.result-warning {
-		color: #f59e0b;
+		color: var(--color-warning, #f59e0b);
 		font-weight: 500;
 		margin: 0.5rem 0;
 	}
@@ -1116,7 +1105,7 @@
 	}
 
 	.result-error {
-		color: #ef4444;
+		color: var(--color-error, #ef4444);
 		font-size: 0.875rem;
 		margin: 0.25rem 0;
 	}

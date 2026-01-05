@@ -29,13 +29,15 @@ export function exportInvoicesToFile(
 	invoices: InvoiceData[] | SavedInvoiceRecord[],
 	filename?: string
 ): void {
-	// Normalize to InvoiceData array
-	const invoiceData: InvoiceData[] = invoices.map((item) => {
-		if ('invoice' in item) {
-			return item.invoice;
-		}
-		return item;
-	});
+	// Normalize to InvoiceData array, filtering out null/undefined invoices
+	const invoiceData: InvoiceData[] = invoices
+		.map((item) => {
+			if ('invoice' in item) {
+				return item.invoice;
+			}
+			return item;
+		})
+		.filter((invoice): invoice is InvoiceData => invoice != null);
 
 	const exportData: InvoiceExportData = {
 		version: EXPORT_FORMAT_VERSION,
