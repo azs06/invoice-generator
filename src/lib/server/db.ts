@@ -1,6 +1,6 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import { drizzle } from 'drizzle-orm/d1';
-import { eq, and, desc, asc, count, sql } from 'drizzle-orm';
+import { eq, and, desc, asc, count, sql, inArray } from 'drizzle-orm';
 import { invoices, sharedLinks, linkViews, userSettings } from './schema';
 import type { InvoiceData, SavedInvoiceRecord } from '$lib/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -100,14 +100,19 @@ export async function deleteInvoice(
 ): Promise<void> {
 	const d1 = drizzle(db);
 
-	// Get invoice to check for PDF key
+	// Get invoice to check for PDF key and verify ownership
 	const invoice = await d1
 		.select()
 		.from(invoices)
 		.where(and(eq(invoices.id, id), eq(invoices.userId, userId)))
 		.get();
 
-	if (invoice && invoice.pdfKey && bucket) {
+	if (!invoice) {
+		return;
+	}
+
+	// Delete PDF from R2 if it exists (outside transaction - R2 ops can't be rolled back anyway)
+	if (invoice.pdfKey && bucket) {
 		try {
 			await bucket.delete(invoice.pdfKey);
 		} catch (e) {
@@ -115,7 +120,29 @@ export async function deleteInvoice(
 		}
 	}
 
-	await d1.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, userId)));
+	// Get all shared links for this invoice to delete their views
+	const links = await d1
+		.select({ id: sharedLinks.id })
+		.from(sharedLinks)
+		.where(eq(sharedLinks.invoiceId, id));
+
+	const linkIds = links.map((l) => l.id);
+
+	// Execute all deletes as a single atomic batch (if any fails, all roll back)
+	if (linkIds.length > 0) {
+		// Has link views to delete
+		await d1.batch([
+			d1.delete(linkViews).where(inArray(linkViews.linkId, linkIds)),
+			d1.delete(sharedLinks).where(eq(sharedLinks.invoiceId, id)),
+			d1.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, userId)))
+		]);
+	} else {
+		// No link views, just delete shared links and invoice
+		await d1.batch([
+			d1.delete(sharedLinks).where(eq(sharedLinks.invoiceId, id)),
+			d1.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, userId)))
+		]);
+	}
 }
 
 export async function getAllInvoices(
@@ -145,6 +172,11 @@ export async function clearAllInvoices(
 	// Get all invoices to delete PDFs
 	const allInvoices = await d1.select().from(invoices).where(eq(invoices.userId, userId)).all();
 
+	if (allInvoices.length === 0) {
+		return;
+	}
+
+	// Delete PDFs from R2 (outside transaction - R2 ops can't be rolled back anyway)
 	if (bucket) {
 		const keys = allInvoices.map((i) => i.pdfKey).filter((k) => k !== null) as string[];
 		if (keys.length > 0) {
@@ -156,7 +188,30 @@ export async function clearAllInvoices(
 		}
 	}
 
-	await d1.delete(invoices).where(eq(invoices.userId, userId));
+	// Get all shared links for user's invoices
+	const invoiceIds = allInvoices.map((i) => i.id);
+	const links = await d1
+		.select({ id: sharedLinks.id })
+		.from(sharedLinks)
+		.where(inArray(sharedLinks.invoiceId, invoiceIds));
+
+	const linkIds = links.map((l) => l.id);
+
+	// Execute all deletes as a single atomic batch (if any fails, all roll back)
+	if (linkIds.length > 0) {
+		// Has link views to delete
+		await d1.batch([
+			d1.delete(linkViews).where(inArray(linkViews.linkId, linkIds)),
+			d1.delete(sharedLinks).where(inArray(sharedLinks.invoiceId, invoiceIds)),
+			d1.delete(invoices).where(eq(invoices.userId, userId))
+		]);
+	} else {
+		// No link views, just delete shared links and invoices
+		await d1.batch([
+			d1.delete(sharedLinks).where(inArray(sharedLinks.invoiceId, invoiceIds)),
+			d1.delete(invoices).where(eq(invoices.userId, userId))
+		]);
+	}
 }
 
 export async function getInvoiceCount(db: D1Database, userId: string): Promise<number> {
