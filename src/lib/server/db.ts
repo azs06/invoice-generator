@@ -8,6 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 const INVOICE_LIMIT = 12;
 const SHARE_LINK_DEFAULT_DAYS = 30;
 const SHARE_LINK_MAX_DAYS = 90;
+const SHARE_LINK_TOKEN_BYTES = 32;
+const SHARE_LINK_TOKEN_RETRIES = 5;
 
 export async function getInvoice(
 	db: D1Database,
@@ -36,41 +38,55 @@ export async function saveInvoice(
 	id: string,
 	invoiceData: InvoiceData,
 	userId: string
-): Promise<void> {
+): Promise<boolean> {
 	const d1 = drizzle(db);
 	const data = JSON.stringify(invoiceData);
 	const now = new Date();
 
 	// Check if invoice exists
 	const existing = await d1
-		.select({ id: invoices.id })
+		.select({ id: invoices.id, userId: invoices.userId })
 		.from(invoices)
 		.where(eq(invoices.id, id))
 		.get();
 
-	if (!existing) {
-		// Check limit
-		const countResult = await d1
-			.select({ count: count() })
+	if (existing) {
+		if (existing.userId !== userId) {
+			return false;
+		}
+
+		await d1
+			.update(invoices)
+			.set({
+				data,
+				updatedAt: now
+			})
+			.where(and(eq(invoices.id, id), eq(invoices.userId, userId)));
+
+		return true;
+	}
+
+	// Check limit
+	const countResult = await d1
+		.select({ count: count() })
+		.from(invoices)
+		.where(eq(invoices.userId, userId))
+		.get();
+	const currentCount = countResult?.count ?? 0;
+
+	if (currentCount >= INVOICE_LIMIT) {
+		// Find oldest invoice
+		const oldest = await d1
+			.select()
 			.from(invoices)
 			.where(eq(invoices.userId, userId))
+			.orderBy(asc(invoices.updatedAt))
+			.limit(1)
 			.get();
-		const currentCount = countResult?.count ?? 0;
 
-		if (currentCount >= INVOICE_LIMIT) {
-			// Find oldest invoice
-			const oldest = await d1
-				.select()
-				.from(invoices)
-				.where(eq(invoices.userId, userId))
-				.orderBy(asc(invoices.updatedAt))
-				.limit(1)
-				.get();
-
-			if (oldest) {
-				// Delete oldest invoice and its PDF
-				await deleteInvoice(db, bucket, oldest.id, userId);
-			}
+		if (oldest) {
+			// Delete oldest invoice and its PDF
+			await deleteInvoice(db, bucket, oldest.id, userId);
 		}
 	}
 
@@ -82,14 +98,9 @@ export async function saveInvoice(
 			userId,
 			createdAt: now,
 			updatedAt: now
-		})
-		.onConflictDoUpdate({
-			target: invoices.id,
-			set: {
-				data,
-				updatedAt: now
-			}
 		});
+
+	return true;
 }
 
 export async function deleteInvoice(
@@ -277,13 +288,20 @@ function calculateExpirationDate(dueDate: string | null): Date {
  * Generate a secure random token for share links
  */
 function generateShareToken(): string {
-	// Use a URL-safe base64-like format
-	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	let token = '';
-	for (let i = 0; i < 32; i++) {
-		token += chars.charAt(Math.floor(Math.random() * chars.length));
+	const cryptoObj = globalThis.crypto;
+	if (!cryptoObj?.getRandomValues) {
+		throw new Error('Crypto API not available for token generation');
 	}
-	return token;
+
+	const bytes = new Uint8Array(SHARE_LINK_TOKEN_BYTES);
+	cryptoObj.getRandomValues(bytes);
+	return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+	if (!error || typeof error !== 'object' || !('message' in error)) return false;
+	const message = (error as { message?: unknown }).message;
+	return typeof message === 'string' && message.toLowerCase().includes('unique constraint');
 }
 
 /**
@@ -309,30 +327,40 @@ export async function createShareLink(
 	}
 
 	const id = uuidv4();
-	const token = generateShareToken();
 	const now = new Date();
 	const expiresAt = calculateExpirationDate(dueDate);
 
-	await d1.insert(sharedLinks).values({
-		id,
-		invoiceId,
-		token,
-		createdAt: now,
-		expiresAt,
-		revoked: false,
-		viewCount: 0,
-		lastViewedAt: null
-	});
+	for (let attempt = 0; attempt < SHARE_LINK_TOKEN_RETRIES; attempt++) {
+		const token = generateShareToken();
+		try {
+			await d1.insert(sharedLinks).values({
+				id,
+				invoiceId,
+				token,
+				createdAt: now,
+				expiresAt,
+				revoked: false,
+				viewCount: 0,
+				lastViewedAt: null
+			});
 
-	return {
-		id,
-		token,
-		createdAt: now,
-		expiresAt,
-		revoked: false,
-		viewCount: 0,
-		lastViewedAt: null
-	};
+			return {
+				id,
+				token,
+				createdAt: now,
+				expiresAt,
+				revoked: false,
+				viewCount: 0,
+				lastViewedAt: null
+			};
+		} catch (err) {
+			if (!isUniqueConstraintError(err)) {
+				throw err;
+			}
+		}
+	}
+
+	return null;
 }
 
 /**

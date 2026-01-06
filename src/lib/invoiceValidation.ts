@@ -1,5 +1,9 @@
 import type { InvoiceData, InvoiceItem } from './types';
 
+export function isValidInvoiceId(id: string): boolean {
+	return /^[a-zA-Z0-9-]{1,36}$/.test(id);
+}
+
 /**
  * Checks if an invoice item is valid (has required fields with valid values)
  */

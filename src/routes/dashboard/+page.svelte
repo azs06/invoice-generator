@@ -113,8 +113,11 @@
 
 	// Apply filters reactively
 	$effect(() => {
-		// Trigger when any filter changes
-		search, showArchived, filterMode, allInvoices;
+		// Trigger when any filter changes - reference variables to track dependencies
+		void search;
+		void showArchived;
+		void filterMode;
+		void allInvoices;
 		applyFilters();
 	});
 

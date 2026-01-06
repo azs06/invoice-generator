@@ -97,6 +97,8 @@
 				</button>
 
 				{#if showMobileMenu}
+					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<nav class="mobile-nav-dropdown" onclick={(e) => e.stopPropagation()}>
 						{#if $session.data}
 							<a href="/dashboard" class="mobile-nav-link" onclick={closeMobileMenu}>
@@ -173,6 +175,8 @@
 					</button>
 
 					{#if showProfileMenu}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div class="profile-dropdown" onclick={(e) => e.stopPropagation()}>
 							<div class="dropdown-header">
 								<span class="user-name">{$session.data.user.name || 'User'}</span>

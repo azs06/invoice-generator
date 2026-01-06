@@ -225,8 +225,9 @@
 												class="action-btn demote"
 												onclick={() => changeRole(user.id, 'user')}
 												title="Remove admin"
+												aria-label="Remove admin"
 											>
-												<svg viewBox="0 0 20 20" fill="currentColor">
+												<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 													<path
 														fill-rule="evenodd"
 														d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z"
@@ -239,8 +240,9 @@
 												class="action-btn promote"
 												onclick={() => changeRole(user.id, 'admin')}
 												title="Make admin"
+												aria-label="Make admin"
 											>
-												<svg viewBox="0 0 20 20" fill="currentColor">
+												<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 													<path
 														fill-rule="evenodd"
 														d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
@@ -256,8 +258,9 @@
 											onclick={() =>
 												(confirmModal = { action: 'unban', userId: user.id, userName: user.name })}
 											title="Unban user"
+											aria-label="Unban user"
 										>
-											<svg viewBox="0 0 20 20" fill="currentColor">
+											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 												<path
 													fill-rule="evenodd"
 													d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -271,8 +274,9 @@
 											onclick={() =>
 												(confirmModal = { action: 'ban', userId: user.id, userName: user.name })}
 											title="Ban user"
+											aria-label="Ban user"
 										>
-											<svg viewBox="0 0 20 20" fill="currentColor">
+											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 												<path
 													fill-rule="evenodd"
 													d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
@@ -286,8 +290,9 @@
 										onclick={() =>
 											(confirmModal = { action: 'delete', userId: user.id, userName: user.name })}
 										title="Delete user"
+										aria-label="Delete user"
 									>
-										<svg viewBox="0 0 20 20" fill="currentColor">
+										<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 											<path
 												fill-rule="evenodd"
 												d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
@@ -313,7 +318,11 @@
 
 <!-- Confirmation Modal -->
 {#if confirmModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal-overlay" onclick={() => (confirmModal = null)}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="modal" onclick={(e) => e.stopPropagation()}>
 			<h3>
 				{#if confirmModal.action === 'ban'}

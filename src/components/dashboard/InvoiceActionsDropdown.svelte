@@ -73,8 +73,8 @@
 		const handler = () => {
 			if (isOpen) updateMenuPosition();
 		};
-		const dashboardScroll = document.querySelector('.dashboard-main');
-		const tableScroll = triggerEl?.closest('.table-wrapper');
+		const dashboardScroll = document.querySelector('.dashboard-main') as HTMLElement | null;
+		const tableScroll = triggerEl?.closest('.table-wrapper') as HTMLElement | null;
 		scrollTargets = [window];
 		if (dashboardScroll) scrollTargets.push(dashboardScroll);
 		if (tableScroll) scrollTargets.push(tableScroll);
@@ -156,12 +156,15 @@
 	</button>
 
 	{#if isOpen}
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<div
 			bind:this={menuEl}
 			class="dropdown-menu"
 			style={menuStyle}
 			onclick={(e) => e.stopPropagation()}
 			role="menu"
+			tabindex="0"
 		>
 			<button
 				class="dropdown-item"

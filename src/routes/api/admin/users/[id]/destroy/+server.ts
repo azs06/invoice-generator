@@ -7,7 +7,8 @@ import {
 	requirePlatform
 } from '$lib/server/session';
 import { drizzle } from 'drizzle-orm/d1';
-import { user, session as sessionTable, account, invoices, verification } from '$lib/server/schema';
+import { clearAllInvoices } from '$lib/server/db';
+import { user, session as sessionTable, account, userSettings } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -37,31 +38,16 @@ export const DELETE: RequestHandler = async (event) => {
 		throw error(400, 'Cannot permanently delete super admin');
 	}
 
-	// Delete PDFs from R2
-	if (bucket) {
-		const userInvoices = await d1
-			.select({ pdfKey: invoices.pdfKey })
-			.from(invoices)
-			.where(eq(invoices.userId, id))
-			.all();
-
-		const pdfKeys = userInvoices.map((i) => i.pdfKey).filter((k): k is string => k !== null);
-
-		if (pdfKeys.length > 0) {
-			try {
-				await bucket.delete(pdfKeys);
-			} catch (e) {
-				console.error('Failed to delete PDFs from R2:', e);
-			}
-		}
-	}
+	await clearAllInvoices(db, bucket, id);
 
 	// Delete all user data (foreign keys with CASCADE will handle related tables)
 	// But we need to manually delete some since they might not cascade properly
-	await d1.delete(invoices).where(eq(invoices.userId, id));
-	await d1.delete(sessionTable).where(eq(sessionTable.userId, id));
-	await d1.delete(account).where(eq(account.userId, id));
-	await d1.delete(user).where(eq(user.id, id));
+	await d1.batch([
+		d1.delete(sessionTable).where(eq(sessionTable.userId, id)),
+		d1.delete(account).where(eq(account.userId, id)),
+		d1.delete(userSettings).where(eq(userSettings.userId, id)),
+		d1.delete(user).where(eq(user.id, id))
+	]);
 
 	return json({
 		success: true,

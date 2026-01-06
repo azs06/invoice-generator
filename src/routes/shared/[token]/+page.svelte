@@ -122,22 +122,6 @@
 		border-bottom: 1px solid var(--color-border-primary, #e5e7eb);
 	}
 
-	.branding {
-		display: flex;
-		align-items: center;
-	}
-
-	.logo-link {
-		display: flex;
-		align-items: center;
-		text-decoration: none;
-	}
-
-	.logo {
-		height: 32px;
-		width: auto;
-	}
-
 	.actions {
 		display: flex;
 		gap: 0.75rem;

@@ -45,7 +45,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			// Redirect to home with ban message (don't redirect if already at home with query)
 			if (!event.url.pathname.startsWith('/api')) {
 				const reason = userStatus.isBanned ? 'banned' : 'deleted';
-				redirect(302, `/?account=${reason}`);
+				throw redirect(302, `/?account=${reason}`);
 			}
 		}
 	}

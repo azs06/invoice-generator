@@ -1,5 +1,6 @@
 import puppeteer, { type PaperFormat } from '@cloudflare/puppeteer';
 import { error } from '@sveltejs/kit';
+import { isValidInvoiceId } from '$lib/invoiceValidation';
 import { updateInvoicePdfKey } from '$lib/server/db';
 import { requirePlatform, getBucket } from '$lib/server/session';
 import type { RequestHandler } from './$types';
@@ -15,15 +16,10 @@ const PAGE_FORMAT_MAP: Record<string, PaperFormat> = {
 // Convert mm to inches string
 const mmToInches = (mm: number): string => `${mm / 25.4}in`;
 
-// Validate invoice ID format (UUID: alphanumeric with hyphens, max 36 chars)
-const isValidInvoiceId = (id: string): boolean => {
-	return /^[a-zA-Z0-9-]{1,36}$/.test(id);
-};
-
 export const POST: RequestHandler = async (event) => {
 	const session = event.locals.session;
 	if (!session) {
-		error(401, 'Unauthorized');
+		throw error(401, 'Unauthorized');
 	}
 
 	const env = requirePlatform(event);
@@ -36,12 +32,12 @@ export const POST: RequestHandler = async (event) => {
 		margins?: { top: number; right: number; bottom: number; left: number };
 	};
 	if (!html) {
-		error(400, 'Missing HTML content');
+		throw error(400, 'Missing HTML content');
 	}
 
 	// Validate invoice ID to prevent path traversal
 	if (invoiceId && !isValidInvoiceId(invoiceId)) {
-		error(400, 'Invalid invoice ID format');
+		throw error(400, 'Invalid invoice ID format');
 	}
 
 	// Check if Browser Rendering is available (only in Cloudflare environment)
@@ -49,7 +45,7 @@ export const POST: RequestHandler = async (event) => {
 		console.error(
 			'Browser Rendering not available - this endpoint requires Cloudflare environment'
 		);
-		error(
+		throw error(
 			503,
 			'PDF generation is not available in local development. Please use the client-side download instead.'
 		);
@@ -143,6 +139,6 @@ export const POST: RequestHandler = async (event) => {
 		});
 	} catch (err) {
 		console.error('PDF generation failed:', err);
-		error(500, 'PDF generation failed');
+		throw error(500, 'PDF generation failed');
 	}
 };

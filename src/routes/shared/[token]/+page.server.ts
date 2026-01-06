@@ -10,7 +10,7 @@ export const load: PageServerLoad = async (event) => {
 	const result = await getInvoiceByShareToken(db, token);
 
 	if (!result) {
-		error(404, 'This shared invoice link is invalid, expired, or has been revoked.');
+		throw error(404, 'This shared invoice link is invalid, expired, or has been revoked.');
 	}
 
 	// Record the view (async, don't wait for it)

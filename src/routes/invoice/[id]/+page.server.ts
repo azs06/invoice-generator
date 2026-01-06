@@ -9,13 +9,13 @@ export const load: PageServerLoad = async (event) => {
 	// Optional: redirect to login if not authenticated?
 	// Or allow public access if shared? For now, let's assume private.
 	if (!session) {
-		error(401, 'Unauthorized');
+		throw error(401, 'Unauthorized');
 	}
 
 	const db = requireDB(event);
 	const invoice = await getInvoice(db, event.params.id, session.user.id);
 	if (!invoice) {
-		error(404, 'Invoice not found');
+		throw error(404, 'Invoice not found');
 	}
 
 	return {

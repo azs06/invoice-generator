@@ -8,14 +8,14 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async (event) => {
 	const session = event.locals.session;
 	if (!session) {
-		error(401, 'Unauthorized');
+		throw error(401, 'Unauthorized');
 	}
 
 	const db = requireDB(event);
 	const bucket = getBucket(event);
 
 	if (!bucket) {
-		error(503, 'Storage service unavailable');
+		throw error(503, 'Storage service unavailable');
 	}
 
 	const { id } = event.params;
@@ -29,18 +29,18 @@ export const GET: RequestHandler = async (event) => {
 		.get();
 
 	if (!invoice) {
-		error(404, 'Invoice not found');
+		throw error(404, 'Invoice not found');
 	}
 
 	if (!invoice.pdfKey) {
-		error(404, 'PDF not available for this invoice');
+		throw error(404, 'PDF not available for this invoice');
 	}
 
 	// Fetch PDF from R2
 	const pdfObject = await bucket.get(invoice.pdfKey);
 
 	if (!pdfObject) {
-		error(404, 'PDF file not found in storage');
+		throw error(404, 'PDF file not found in storage');
 	}
 
 	// Parse invoice data for filename
