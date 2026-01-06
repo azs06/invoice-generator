@@ -18,11 +18,7 @@
 		type PageSettings
 	} from '$lib/pdfGenerator';
 	import { saveInvoice, getAllInvoices } from '$lib/db';
-	import {
-		exportInvoicesToFile,
-		readExportFile,
-		importInvoices
-	} from '$lib/invoiceExport';
+	import { selectionHelpers, exportHelpers, importHelpers } from '$lib/useSelection.svelte';
 	import { pageSettings } from '../../stores/pageSettingsStore';
 
 	let { data }: { data: PageData } = $props();
@@ -321,66 +317,47 @@
 		filterMode = mode;
 	};
 
-	// Selection functions for bulk operations
+	// Selection functions for bulk operations (using shared helpers)
 	const toggleSelection = (id: string): void => {
-		const newSet = new Set(selectedInvoices);
-		if (newSet.has(id)) {
-			newSet.delete(id);
-		} else {
-			newSet.add(id);
-		}
-		selectedInvoices = newSet;
+		selectedInvoices = selectionHelpers.toggle(selectedInvoices, id);
 	};
 
 	const selectAll = (): void => {
-		selectedInvoices = new Set(filteredInvoices.map((r) => r.id));
+		selectedInvoices = selectionHelpers.selectAll(filteredInvoices.map((r) => r.id));
 	};
 
 	const deselectAll = (): void => {
-		selectedInvoices = new Set();
+		selectedInvoices = selectionHelpers.deselectAll();
 	};
 
 	const toggleSelectionMode = (): void => {
 		selectionMode = !selectionMode;
 		if (!selectionMode) {
-			selectedInvoices = new Set();
+			selectedInvoices = selectionHelpers.deselectAll();
 		}
 	};
 
-	// Export functions
+	// Export functions (using shared helpers)
 	const exportAllInvoices = async (): Promise<void> => {
 		if (allInvoices.length === 0) return;
-		// Fetch full invoice data for export
-		const records = await getAllInvoices();
-		const invoices = records.map((r) => r.invoice);
-		exportInvoicesToFile(invoices);
+		await exportHelpers.exportAll(getAllInvoices);
 	};
 
 	const exportSelectedInvoices = async (): Promise<void> => {
 		if (selectedInvoices.size === 0) return;
-		// Fetch full invoice data for selected invoices
-		const records = await getAllInvoices();
-		const invoices = records
-			.filter((r) => selectedInvoices.has(r.id))
-			.map((r) => r.invoice);
-		exportInvoicesToFile(invoices);
+		await exportHelpers.exportSelected(getAllInvoices, selectedInvoices);
 		// Exit selection mode after export
 		selectionMode = false;
-		selectedInvoices = new Set();
+		selectedInvoices = selectionHelpers.deselectAll();
 	};
 
 	const exportInvoice = async (invoiceId: string): Promise<void> => {
-		// Fetch full invoice data for the specific invoice
-		const records = await getAllInvoices();
-		const invoice = records.find((r) => r.id === invoiceId)?.invoice;
-		if (invoice) {
-			exportInvoicesToFile([invoice]);
-		}
+		await exportHelpers.exportSingle(getAllInvoices, invoiceId);
 	};
 
-	// Import functions
+	// Import functions (using shared helpers)
 	const triggerImport = (): void => {
-		fileInput?.click();
+		importHelpers.triggerFileInput(fileInput);
 	};
 
 	const handleFileSelect = async (event: Event): Promise<void> => {
@@ -390,15 +367,10 @@
 
 		isImporting = true;
 		try {
-			const exportData = await readExportFile(file);
-			const result = await importInvoices(exportData.invoices, saveInvoice);
-			importResult = {
-				imported: result.imported,
-				skipped: result.skipped,
-				errors: result.errors
-			};
+			const result = await importHelpers.handleFileSelect(file, saveInvoice);
+			importResult = result;
 			showImportResultModal = true;
-			// Reload invoices
+			// Reload invoices with dashboard-specific format
 			const records = await getAllInvoices();
 			allInvoices = records.map((r) => ({
 				id: r.id,
@@ -417,13 +389,6 @@
 				isPdfStale: true,
 				updatedAt: new Date()
 			}));
-		} catch (error) {
-			importResult = {
-				imported: 0,
-				skipped: 0,
-				errors: [error instanceof Error ? error.message : 'Failed to import file']
-			};
-			showImportResultModal = true;
 		} finally {
 			isImporting = false;
 			// Reset file input
@@ -852,8 +817,8 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 		padding: 1rem;
-		background: rgba(59, 130, 246, 0.08);
-		border: 1px solid rgba(59, 130, 246, 0.25);
+		background: color-mix(in srgb, var(--color-accent-blue) 8%, transparent);
+		border: 1px solid color-mix(in srgb, var(--color-accent-blue) 25%, transparent);
 		border-radius: var(--radius-md);
 		margin-top: 1rem;
 	}
@@ -1034,8 +999,8 @@
 	}
 
 	.modal-icon.danger {
-		background: #fee2e2;
-		color: #dc2626;
+		background: color-mix(in srgb, var(--color-error, #ef4444) 10%, transparent);
+		color: var(--color-error, #dc2626);
 	}
 
 	.modal-icon svg {
@@ -1082,22 +1047,22 @@
 	}
 
 	.modal-btn.delete {
-		background: #dc2626;
-		border: 1px solid #dc2626;
+		background: var(--color-error, #dc2626);
+		border: 1px solid var(--color-error, #dc2626);
 		color: white;
 	}
 
 	.modal-btn.delete:hover {
-		background: #b91c1c;
+		background: color-mix(in srgb, var(--color-error, #dc2626) 85%, black);
 	}
 
 	.modal-icon.success {
-		background: rgba(16, 185, 129, 0.1);
+		background: color-mix(in srgb, var(--color-success, #10b981) 10%, transparent);
 		color: var(--color-success, #10b981);
 	}
 
 	.modal-icon.error {
-		background: rgba(239, 68, 68, 0.1);
+		background: color-mix(in srgb, var(--color-error, #ef4444) 10%, transparent);
 		color: var(--color-error, #ef4444);
 	}
 
@@ -1120,7 +1085,7 @@
 	.result-errors {
 		margin-top: 0.75rem;
 		padding: 0.75rem;
-		background: rgba(239, 68, 68, 0.08);
+		background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent);
 		border-radius: var(--radius-sm);
 	}
 

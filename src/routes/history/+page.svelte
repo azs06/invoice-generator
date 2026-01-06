@@ -10,12 +10,8 @@
 		getGuestInvoice
 	} from '$lib/guestDb.js';
 	import { toUSCurrency } from '$lib/currency.js';
-	import {
-		exportInvoicesToFile,
-		exportSingleInvoice,
-		readExportFile,
-		importInvoices
-	} from '$lib/invoiceExport.js';
+	import { exportSingleInvoice } from '$lib/invoiceExport.js';
+	import { selectionHelpers, exportHelpers, importHelpers } from '$lib/useSelection.svelte';
 	import CloudModeBanner from '$components/CloudModeBanner.svelte';
 	import type { SavedInvoiceRecord, SavedInvoicesFilterMode, InvoiceData } from '$lib/types';
 
@@ -206,57 +202,49 @@
 		goto(`/?invoice=${id}`);
 	};
 
-	// Selection functions for bulk operations
+	// Selection functions for bulk operations (using shared helpers)
 	const toggleSelection = (id: string): void => {
-		const newSet = new Set(selectedInvoices);
-		if (newSet.has(id)) {
-			newSet.delete(id);
-		} else {
-			newSet.add(id);
-		}
-		selectedInvoices = newSet;
+		selectedInvoices = selectionHelpers.toggle(selectedInvoices, id);
 	};
 
 	const selectAll = (): void => {
-		selectedInvoices = new Set(savedInvoices.map((r) => r.id));
+		selectedInvoices = selectionHelpers.selectAll(savedInvoices.map((r) => r.id));
 	};
 
 	const deselectAll = (): void => {
-		selectedInvoices = new Set();
+		selectedInvoices = selectionHelpers.deselectAll();
 	};
 
 	const toggleSelectionMode = (): void => {
 		selectionMode = !selectionMode;
 		if (!selectionMode) {
-			selectedInvoices = new Set();
+			selectedInvoices = selectionHelpers.deselectAll();
 		}
 	};
 
-	// Export functions - excludeLogo for guest mode to reduce file size
-	const exportAllInvoices = (): void => {
+	// Export functions - excludeLogo for guest mode to reduce file size (using shared helpers)
+	const getInvoicesAsync = async () => allInvoices;
+
+	const exportAllInvoices = async (): Promise<void> => {
 		if (allInvoices.length === 0) return;
-		const invoices = allInvoices.map((r) => r.invoice);
-		exportInvoicesToFile(invoices, { excludeLogo: true });
+		await exportHelpers.exportAll(getInvoicesAsync, { excludeLogo: true });
 	};
 
-	const exportSelectedInvoices = (): void => {
+	const exportSelectedInvoices = async (): Promise<void> => {
 		if (selectedInvoices.size === 0) return;
-		const invoices = allInvoices
-			.filter((r) => selectedInvoices.has(r.id))
-			.map((r) => r.invoice);
-		exportInvoicesToFile(invoices, { excludeLogo: true });
+		await exportHelpers.exportSelected(getInvoicesAsync, selectedInvoices, { excludeLogo: true });
 		// Exit selection mode after export
 		selectionMode = false;
-		selectedInvoices = new Set();
+		selectedInvoices = selectionHelpers.deselectAll();
 	};
 
 	const exportInvoice = (invoice: InvoiceData): void => {
 		exportSingleInvoice(invoice, { excludeLogo: true });
 	};
 
-	// Import functions
+	// Import functions (using shared helpers)
 	const triggerImport = (): void => {
-		fileInput?.click();
+		importHelpers.triggerFileInput(fileInput);
 	};
 
 	const handleFileSelect = async (event: Event): Promise<void> => {
@@ -266,22 +254,10 @@
 
 		isImporting = true;
 		try {
-			const exportData = await readExportFile(file);
-			const result = await importInvoices(exportData.invoices, saveGuestInvoice);
-			importResult = {
-				imported: result.imported,
-				skipped: result.skipped,
-				errors: result.errors
-			};
+			const result = await importHelpers.handleFileSelect(file, saveGuestInvoice);
+			importResult = result;
 			showImportResultModal = true;
 			await loadInvoices();
-		} catch (error) {
-			importResult = {
-				imported: 0,
-				skipped: 0,
-				errors: [error instanceof Error ? error.message : 'Failed to import file']
-			};
-			showImportResultModal = true;
 		} finally {
 			isImporting = false;
 			// Reset file input
@@ -916,7 +892,7 @@
 	}
 
 	.toolbar-btn--primary:hover {
-		background: #2563eb;
+		background: color-mix(in srgb, var(--color-accent-blue) 85%, black);
 	}
 
 	.toolbar-icon {
@@ -1121,15 +1097,15 @@
 	}
 
 	.action-btn--danger:hover {
-		border-color: #ef4444;
-		color: #ef4444;
-		background: rgba(239, 68, 68, 0.08);
+		border-color: var(--color-error, #ef4444);
+		color: var(--color-error, #ef4444);
+		background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent);
 	}
 
 	.action-btn--success:hover {
-		border-color: #10b981;
-		color: #047857;
-		background: rgba(16, 185, 129, 0.08);
+		border-color: var(--color-success, #10b981);
+		color: color-mix(in srgb, var(--color-success, #10b981) 70%, black);
+		background: color-mix(in srgb, var(--color-success, #10b981) 8%, transparent);
 	}
 
 	/* Row Checkbox */
@@ -1198,14 +1174,14 @@
 	}
 
 	.ghost-button--danger {
-		border-color: rgba(239, 68, 68, 0.55);
-		color: #b91c1c;
+		border-color: color-mix(in srgb, var(--color-error, #ef4444) 55%, transparent);
+		color: color-mix(in srgb, var(--color-error, #ef4444) 80%, black);
 	}
 
 	.ghost-button--danger:hover {
-		background: rgba(239, 68, 68, 0.08);
-		border-color: #ef4444;
-		color: #ef4444;
+		background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent);
+		border-color: var(--color-error, #ef4444);
+		color: var(--color-error, #ef4444);
 	}
 
 	/* Primary button for empty state */
@@ -1225,7 +1201,7 @@
 	}
 
 	.primary-button:hover {
-		background: #2563eb;
+		background: color-mix(in srgb, var(--color-accent-blue) 85%, black);
 	}
 
 	.primary-button svg,
@@ -1349,12 +1325,12 @@
 		width: 3rem;
 		height: 3rem;
 		margin: 0 auto 0.5rem;
-		background: rgba(239, 68, 68, 0.1);
+		background: color-mix(in srgb, var(--color-error, #ef4444) 10%, transparent);
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: #dc2626;
+		color: var(--color-error, #dc2626);
 	}
 
 	.modal-icon svg {
@@ -1386,12 +1362,12 @@
 	}
 
 	.modal-icon.success {
-		background: rgba(16, 185, 129, 0.1);
+		background: color-mix(in srgb, var(--color-success, #10b981) 10%, transparent);
 		color: var(--color-success, #10b981);
 	}
 
 	.modal-icon.error {
-		background: rgba(239, 68, 68, 0.1);
+		background: color-mix(in srgb, var(--color-error, #ef4444) 10%, transparent);
 		color: var(--color-error, #ef4444);
 	}
 
@@ -1414,7 +1390,7 @@
 	.result-errors {
 		margin-top: 0.75rem;
 		padding: 0.75rem;
-		background: rgba(239, 68, 68, 0.08);
+		background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent);
 		border-radius: var(--radius-sm);
 	}
 
@@ -1427,7 +1403,7 @@
 	.danger-button {
 		border: none;
 		border-radius: var(--radius-pill);
-		background: #ef4444;
+		background: var(--color-error, #ef4444);
 		color: #ffffff;
 		padding: 0.55rem 1.2rem;
 		font-weight: 600;
@@ -1438,7 +1414,7 @@
 	}
 
 	.danger-button:hover {
-		background: #dc2626;
+		background: color-mix(in srgb, var(--color-error, #ef4444) 85%, black);
 		transform: translateY(-1px);
 	}
 
