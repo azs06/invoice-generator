@@ -1,6 +1,6 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import { drizzle } from 'drizzle-orm/d1';
-import { eq, and, desc, asc, count, sql } from 'drizzle-orm';
+import { eq, and, desc, asc, count, sql, inArray } from 'drizzle-orm';
 import { invoices, sharedLinks, linkViews, userSettings } from './schema';
 import type { InvoiceData, SavedInvoiceRecord } from '$lib/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,6 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 const INVOICE_LIMIT = 12;
 const SHARE_LINK_DEFAULT_DAYS = 30;
 const SHARE_LINK_MAX_DAYS = 90;
+const SHARE_LINK_TOKEN_BYTES = 32;
+const SHARE_LINK_TOKEN_RETRIES = 5;
 
 export async function getInvoice(
 	db: D1Database,
@@ -36,41 +38,55 @@ export async function saveInvoice(
 	id: string,
 	invoiceData: InvoiceData,
 	userId: string
-): Promise<void> {
+): Promise<boolean> {
 	const d1 = drizzle(db);
 	const data = JSON.stringify(invoiceData);
 	const now = new Date();
 
 	// Check if invoice exists
 	const existing = await d1
-		.select({ id: invoices.id })
+		.select({ id: invoices.id, userId: invoices.userId })
 		.from(invoices)
 		.where(eq(invoices.id, id))
 		.get();
 
-	if (!existing) {
-		// Check limit
-		const countResult = await d1
-			.select({ count: count() })
+	if (existing) {
+		if (existing.userId !== userId) {
+			return false;
+		}
+
+		await d1
+			.update(invoices)
+			.set({
+				data,
+				updatedAt: now
+			})
+			.where(and(eq(invoices.id, id), eq(invoices.userId, userId)));
+
+		return true;
+	}
+
+	// Check limit
+	const countResult = await d1
+		.select({ count: count() })
+		.from(invoices)
+		.where(eq(invoices.userId, userId))
+		.get();
+	const currentCount = countResult?.count ?? 0;
+
+	if (currentCount >= INVOICE_LIMIT) {
+		// Find oldest invoice
+		const oldest = await d1
+			.select()
 			.from(invoices)
 			.where(eq(invoices.userId, userId))
+			.orderBy(asc(invoices.updatedAt))
+			.limit(1)
 			.get();
-		const currentCount = countResult?.count ?? 0;
 
-		if (currentCount >= INVOICE_LIMIT) {
-			// Find oldest invoice
-			const oldest = await d1
-				.select()
-				.from(invoices)
-				.where(eq(invoices.userId, userId))
-				.orderBy(asc(invoices.updatedAt))
-				.limit(1)
-				.get();
-
-			if (oldest) {
-				// Delete oldest invoice and its PDF
-				await deleteInvoice(db, bucket, oldest.id, userId);
-			}
+		if (oldest) {
+			// Delete oldest invoice and its PDF
+			await deleteInvoice(db, bucket, oldest.id, userId);
 		}
 	}
 
@@ -82,14 +98,9 @@ export async function saveInvoice(
 			userId,
 			createdAt: now,
 			updatedAt: now
-		})
-		.onConflictDoUpdate({
-			target: invoices.id,
-			set: {
-				data,
-				updatedAt: now
-			}
 		});
+
+	return true;
 }
 
 export async function deleteInvoice(
@@ -100,14 +111,19 @@ export async function deleteInvoice(
 ): Promise<void> {
 	const d1 = drizzle(db);
 
-	// Get invoice to check for PDF key
+	// Get invoice to check for PDF key and verify ownership
 	const invoice = await d1
 		.select()
 		.from(invoices)
 		.where(and(eq(invoices.id, id), eq(invoices.userId, userId)))
 		.get();
 
-	if (invoice && invoice.pdfKey && bucket) {
+	if (!invoice) {
+		return;
+	}
+
+	// Delete PDF from R2 if it exists (outside transaction - R2 ops can't be rolled back anyway)
+	if (invoice.pdfKey && bucket) {
 		try {
 			await bucket.delete(invoice.pdfKey);
 		} catch (e) {
@@ -115,7 +131,29 @@ export async function deleteInvoice(
 		}
 	}
 
-	await d1.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, userId)));
+	// Get all shared links for this invoice to delete their views
+	const links = await d1
+		.select({ id: sharedLinks.id })
+		.from(sharedLinks)
+		.where(eq(sharedLinks.invoiceId, id));
+
+	const linkIds = links.map((l) => l.id);
+
+	// Execute all deletes as a single atomic batch (if any fails, all roll back)
+	if (linkIds.length > 0) {
+		// Has link views to delete
+		await d1.batch([
+			d1.delete(linkViews).where(inArray(linkViews.linkId, linkIds)),
+			d1.delete(sharedLinks).where(eq(sharedLinks.invoiceId, id)),
+			d1.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, userId)))
+		]);
+	} else {
+		// No link views, just delete shared links and invoice
+		await d1.batch([
+			d1.delete(sharedLinks).where(eq(sharedLinks.invoiceId, id)),
+			d1.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, userId)))
+		]);
+	}
 }
 
 export async function getAllInvoices(
@@ -145,6 +183,11 @@ export async function clearAllInvoices(
 	// Get all invoices to delete PDFs
 	const allInvoices = await d1.select().from(invoices).where(eq(invoices.userId, userId)).all();
 
+	if (allInvoices.length === 0) {
+		return;
+	}
+
+	// Delete PDFs from R2 (outside transaction - R2 ops can't be rolled back anyway)
 	if (bucket) {
 		const keys = allInvoices.map((i) => i.pdfKey).filter((k) => k !== null) as string[];
 		if (keys.length > 0) {
@@ -156,7 +199,30 @@ export async function clearAllInvoices(
 		}
 	}
 
-	await d1.delete(invoices).where(eq(invoices.userId, userId));
+	// Get all shared links for user's invoices
+	const invoiceIds = allInvoices.map((i) => i.id);
+	const links = await d1
+		.select({ id: sharedLinks.id })
+		.from(sharedLinks)
+		.where(inArray(sharedLinks.invoiceId, invoiceIds));
+
+	const linkIds = links.map((l) => l.id);
+
+	// Execute all deletes as a single atomic batch (if any fails, all roll back)
+	if (linkIds.length > 0) {
+		// Has link views to delete
+		await d1.batch([
+			d1.delete(linkViews).where(inArray(linkViews.linkId, linkIds)),
+			d1.delete(sharedLinks).where(inArray(sharedLinks.invoiceId, invoiceIds)),
+			d1.delete(invoices).where(eq(invoices.userId, userId))
+		]);
+	} else {
+		// No link views, just delete shared links and invoices
+		await d1.batch([
+			d1.delete(sharedLinks).where(inArray(sharedLinks.invoiceId, invoiceIds)),
+			d1.delete(invoices).where(eq(invoices.userId, userId))
+		]);
+	}
 }
 
 export async function getInvoiceCount(db: D1Database, userId: string): Promise<number> {
@@ -222,13 +288,20 @@ function calculateExpirationDate(dueDate: string | null): Date {
  * Generate a secure random token for share links
  */
 function generateShareToken(): string {
-	// Use a URL-safe base64-like format
-	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	let token = '';
-	for (let i = 0; i < 32; i++) {
-		token += chars.charAt(Math.floor(Math.random() * chars.length));
+	const cryptoObj = globalThis.crypto;
+	if (!cryptoObj?.getRandomValues) {
+		throw new Error('Crypto API not available for token generation');
 	}
-	return token;
+
+	const bytes = new Uint8Array(SHARE_LINK_TOKEN_BYTES);
+	cryptoObj.getRandomValues(bytes);
+	return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+	if (!error || typeof error !== 'object' || !('message' in error)) return false;
+	const message = (error as { message?: unknown }).message;
+	return typeof message === 'string' && message.toLowerCase().includes('unique constraint');
 }
 
 /**
@@ -254,30 +327,40 @@ export async function createShareLink(
 	}
 
 	const id = uuidv4();
-	const token = generateShareToken();
 	const now = new Date();
 	const expiresAt = calculateExpirationDate(dueDate);
 
-	await d1.insert(sharedLinks).values({
-		id,
-		invoiceId,
-		token,
-		createdAt: now,
-		expiresAt,
-		revoked: false,
-		viewCount: 0,
-		lastViewedAt: null
-	});
+	for (let attempt = 0; attempt < SHARE_LINK_TOKEN_RETRIES; attempt++) {
+		const token = generateShareToken();
+		try {
+			await d1.insert(sharedLinks).values({
+				id,
+				invoiceId,
+				token,
+				createdAt: now,
+				expiresAt,
+				revoked: false,
+				viewCount: 0,
+				lastViewedAt: null
+			});
 
-	return {
-		id,
-		token,
-		createdAt: now,
-		expiresAt,
-		revoked: false,
-		viewCount: 0,
-		lastViewedAt: null
-	};
+			return {
+				id,
+				token,
+				createdAt: now,
+				expiresAt,
+				revoked: false,
+				viewCount: 0,
+				lastViewedAt: null
+			};
+		} catch (err) {
+			if (!isUniqueConstraintError(err)) {
+				throw err;
+			}
+		}
+	}
+
+	return null;
 }
 
 /**

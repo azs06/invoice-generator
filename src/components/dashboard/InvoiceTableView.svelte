@@ -13,11 +13,15 @@
 		onArchive: (id: string) => void;
 		onShare: (id: string) => void;
 		onSendEmail: (id: string) => void;
+		onExport: (id: string) => void;
 		deletingId: string | null;
 		downloadingId: string | null;
+		selectionMode?: boolean;
+		selectedInvoices?: Set<string>;
+		onToggleSelection?: (id: string) => void;
 	}
 
-	let { invoices, onView, onEdit, onDelete, onDownloadPdf, onArchive, onShare, onSendEmail, deletingId, downloadingId }: Props = $props();
+	let { invoices, onView, onEdit, onDelete, onDownloadPdf, onArchive, onShare, onSendEmail, onExport, deletingId, downloadingId, selectionMode = false, selectedInvoices = new Set(), onToggleSelection }: Props = $props();
 
 	const formatDate = (dateStr: string): string => {
 		if (!dateStr || dateStr === 'N/A') return 'N/A';
@@ -37,6 +41,9 @@
 	<table class="invoices-table">
 		<thead>
 			<tr>
+				{#if selectionMode}
+					<th class="checkbox-col"></th>
+				{/if}
 				<th>{$_('dashboard.invoice_number') || 'Invoice #'}</th>
 				<th>{$_('dashboard.client') || 'Client'}</th>
 				<th>{$_('dashboard.date') || 'Date'}</th>
@@ -47,7 +54,19 @@
 		</thead>
 		<tbody>
 			{#each invoices as invoice (invoice.id)}
-				<tr class:deleting={deletingId === invoice.id}>
+				<tr class:deleting={deletingId === invoice.id} class:selected={selectionMode && selectedInvoices.has(invoice.id)}>
+					{#if selectionMode}
+						<td class="checkbox-col">
+							<label class="checkbox-wrapper">
+								<input
+									type="checkbox"
+									checked={selectedInvoices.has(invoice.id)}
+									onchange={() => onToggleSelection?.(invoice.id)}
+								/>
+								<span class="checkbox-custom"></span>
+							</label>
+						</td>
+					{/if}
 					<td class="invoice-number">{invoice.invoiceNumber}</td>
 					<td class="client-name">{invoice.invoiceTo}</td>
 					<td class="date">{formatDate(invoice.date)}</td>
@@ -70,9 +89,10 @@
 							<button
 								class="action-btn view"
 								title={$_('dashboard.view') || 'View Invoice'}
+								aria-label={$_('dashboard.view') || 'View Invoice'}
 								onclick={() => onView(invoice.id)}
 							>
-								<svg viewBox="0 0 20 20" fill="currentColor">
+								<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 									<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
 									<path
 										fill-rule="evenodd"
@@ -84,9 +104,10 @@
 							<button
 								class="action-btn edit"
 								title={$_('dashboard.edit') || 'Edit Invoice'}
+								aria-label={$_('dashboard.edit') || 'Edit Invoice'}
 								onclick={() => onEdit(invoice.id)}
 							>
-								<svg viewBox="0 0 20 20" fill="currentColor">
+								<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 									<path
 										d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z"
 									/>
@@ -103,6 +124,7 @@
 								{onDownloadPdf}
 								{onShare}
 								{onSendEmail}
+								{onExport}
 								{onArchive}
 								{onDelete}
 								isDownloading={downloadingId === invoice.id}
@@ -155,6 +177,65 @@
 
 	.invoices-table tbody tr.deleting {
 		opacity: 0.5;
+	}
+
+	.invoices-table tbody tr.selected {
+		background: rgba(59, 130, 246, 0.08);
+	}
+
+	.invoices-table tbody tr.selected:hover {
+		background: rgba(59, 130, 246, 0.12);
+	}
+
+	.checkbox-col {
+		width: 3rem;
+		text-align: center;
+	}
+
+	.checkbox-wrapper {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		position: relative;
+	}
+
+	.checkbox-wrapper input[type="checkbox"] {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.checkbox-custom {
+		width: 1.25rem;
+		height: 1.25rem;
+		border: 2px solid var(--color-border-primary);
+		border-radius: 0.25rem;
+		background: var(--color-bg-primary);
+		transition: all 0.15s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.checkbox-wrapper:hover .checkbox-custom {
+		border-color: var(--color-accent-blue);
+	}
+
+	.checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom {
+		background: var(--color-accent-blue);
+		border-color: var(--color-accent-blue);
+	}
+
+	.checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom::after {
+		content: '';
+		width: 0.375rem;
+		height: 0.625rem;
+		border: solid white;
+		border-width: 0 2px 2px 0;
+		transform: rotate(45deg);
+		margin-bottom: 2px;
 	}
 
 	.invoice-number {
@@ -261,55 +342,6 @@
 		height: 1rem;
 	}
 
-	.action-btn.download:hover {
-		border-color: #3b82f6;
-		color: #3b82f6;
-	}
-
-	.action-btn.download.generate {
-		border-color: #10b981;
-		color: #10b981;
-	}
-
-	.action-btn.download.generate:hover {
-		border-color: #059669;
-		color: #059669;
-		background: #ecfdf5;
-	}
-
-	.action-btn.download.stale {
-		position: relative;
-		border-color: #f59e0b;
-		color: #f59e0b;
-	}
-
-	.action-btn.download.stale:hover {
-		border-color: #d97706;
-		color: #d97706;
-	}
-
-	.stale-indicator {
-		position: absolute;
-		top: -4px;
-		right: -4px;
-		width: 12px;
-		height: 12px;
-		background: #f59e0b;
-		color: white;
-		border-radius: 50%;
-		font-size: 9px;
-		font-weight: 700;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 1;
-	}
-
-	.action-btn.share:hover {
-		border-color: #10b981;
-		color: #10b981;
-	}
-
 	.action-btn.view:hover {
 		border-color: #8b5cf6;
 		color: #8b5cf6;
@@ -318,29 +350,6 @@
 	.action-btn.edit:hover {
 		border-color: #f59e0b;
 		color: #f59e0b;
-	}
-
-	.action-btn.archive:hover {
-		border-color: #6b7280;
-		color: #6b7280;
-	}
-
-	.action-btn.delete:hover {
-		border-color: #ef4444;
-		color: #ef4444;
-	}
-
-	.spin {
-		animation: spin 0.9s linear infinite;
-	}
-
-	@keyframes spin {
-		from {
-			transform: rotate(0deg);
-		}
-		to {
-			transform: rotate(360deg);
-		}
 	}
 
 	@media (max-width: 768px) {

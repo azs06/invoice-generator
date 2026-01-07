@@ -9,7 +9,7 @@ export const load: LayoutServerLoad = async (event) => {
 	const session = event.locals.session;
 
 	if (!session) {
-		redirect(302, '/?login=required');
+		throw redirect(302, '/?login=required');
 	}
 
 	const db = requireDB(event);
@@ -18,7 +18,7 @@ export const load: LayoutServerLoad = async (event) => {
 	const isAdmin = await isUserAdmin(db, session.user.id, env);
 
 	if (!isAdmin) {
-		redirect(302, '/dashboard');
+		throw redirect(302, '/dashboard');
 	}
 
 	return {

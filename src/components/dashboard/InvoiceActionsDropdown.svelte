@@ -10,6 +10,7 @@
 		onDownloadPdf: (id: string) => void;
 		onShare: (id: string) => void;
 		onSendEmail: (id: string) => void;
+		onExport: (id: string) => void;
 		onArchive: (id: string) => void;
 		onDelete: (id: string) => void;
 		isDownloading?: boolean;
@@ -24,6 +25,7 @@
 		onDownloadPdf,
 		onShare,
 		onSendEmail,
+		onExport,
 		onArchive,
 		onDelete,
 		isDownloading = false,
@@ -71,8 +73,8 @@
 		const handler = () => {
 			if (isOpen) updateMenuPosition();
 		};
-		const dashboardScroll = document.querySelector('.dashboard-main');
-		const tableScroll = triggerEl?.closest('.table-wrapper');
+		const dashboardScroll = document.querySelector('.dashboard-main') as HTMLElement | null;
+		const tableScroll = triggerEl?.closest('.table-wrapper') as HTMLElement | null;
 		scrollTargets = [window];
 		if (dashboardScroll) scrollTargets.push(dashboardScroll);
 		if (tableScroll) scrollTargets.push(tableScroll);
@@ -154,12 +156,15 @@
 	</button>
 
 	{#if isOpen}
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<div
 			bind:this={menuEl}
 			class="dropdown-menu"
 			style={menuStyle}
 			onclick={(e) => e.stopPropagation()}
 			role="menu"
+			tabindex="0"
 		>
 			<button
 				class="dropdown-item"
@@ -221,6 +226,18 @@
 					<path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z" />
 				</svg>
 				<span>Send</span>
+			</button>
+
+			<button
+				class="dropdown-item"
+				onclick={() => handleAction(() => onExport(invoiceId))}
+				role="menuitem"
+			>
+				<svg viewBox="0 0 20 20" fill="currentColor">
+					<path d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z" />
+					<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+				</svg>
+				<span>{$_('export_import.export') || 'Export'}</span>
 			</button>
 
 			<div class="dropdown-divider"></div>

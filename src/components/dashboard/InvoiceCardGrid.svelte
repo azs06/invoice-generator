@@ -12,11 +12,15 @@
 		onDownloadPdf: (id: string) => void;
 		onShare: (id: string) => void;
 		onSendEmail: (id: string) => void;
+		onExport: (id: string) => void;
 		deletingId: string | null;
 		downloadingId: string | null;
+		selectionMode?: boolean;
+		selectedInvoices?: Set<string>;
+		onToggleSelection?: (id: string) => void;
 	}
 
-	let { invoices, onView, onEdit, onDelete, onArchive, onDownloadPdf, onShare, onSendEmail, deletingId, downloadingId }: Props = $props();
+	let { invoices, onView, onEdit, onDelete, onArchive, onDownloadPdf, onShare, onSendEmail, onExport, deletingId, downloadingId, selectionMode = false, selectedInvoices = new Set(), onToggleSelection }: Props = $props();
 
 	const formatDate = (dateStr: string): string => {
 		if (!dateStr || dateStr === 'N/A') return $_('saved_invoices.date_not_set') || 'Not set';
@@ -42,7 +46,17 @@
 
 <div class="card-grid">
 	{#each invoices as invoice (invoice.id)}
-		<div class="invoice-card" class:deleting={deletingId === invoice.id}>
+		<div class="invoice-card" class:deleting={deletingId === invoice.id} class:selected={selectionMode && selectedInvoices.has(invoice.id)}>
+			{#if selectionMode}
+				<label class="card-checkbox">
+					<input
+						type="checkbox"
+						checked={selectedInvoices.has(invoice.id)}
+						onchange={() => onToggleSelection?.(invoice.id)}
+					/>
+					<span class="checkbox-custom"></span>
+				</label>
+			{/if}
 			<div class="card-header">
 				<div class="card-title-section">
 					<h3 class="card-title">{invoiceTitle(invoice)}</h3>
@@ -189,6 +203,17 @@
 						</svg>
 					</button>
 					<button
+						class="secondary-btn export"
+						onclick={() => onExport(invoice.id)}
+						title={$_('export_import.export') || 'Export'}
+						aria-label={$_('export_import.export') || 'Export'}
+					>
+						<svg viewBox="0 0 20 20" fill="currentColor">
+							<path d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z" />
+							<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+						</svg>
+					</button>
+					<button
 						class="secondary-btn archive"
 						onclick={() => onArchive(invoice.id)}
 						title={invoice.archived ? $_('dashboard.unarchive') || 'Unarchive' : $_('dashboard.archive') || 'Archive'}
@@ -255,6 +280,61 @@
 
 	.invoice-card.deleting {
 		opacity: 0.5;
+	}
+
+	.invoice-card.selected {
+		border-color: var(--color-accent-blue);
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2), 0 6px 18px rgba(15, 23, 42, 0.16);
+	}
+
+	.card-checkbox {
+		position: absolute;
+		top: 0.75rem;
+		left: 0.75rem;
+		z-index: 10;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.card-checkbox input[type="checkbox"] {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.card-checkbox .checkbox-custom {
+		width: 1.5rem;
+		height: 1.5rem;
+		border: 2px solid var(--color-border-primary);
+		border-radius: 0.375rem;
+		background: var(--color-bg-primary);
+		transition: all 0.15s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.card-checkbox:hover .checkbox-custom {
+		border-color: var(--color-accent-blue);
+	}
+
+	.card-checkbox input[type="checkbox"]:checked + .checkbox-custom {
+		background: var(--color-accent-blue);
+		border-color: var(--color-accent-blue);
+	}
+
+	.card-checkbox input[type="checkbox"]:checked + .checkbox-custom::after {
+		content: '';
+		width: 0.5rem;
+		height: 0.75rem;
+		border: solid white;
+		border-width: 0 2.5px 2.5px 0;
+		transform: rotate(45deg);
+		margin-bottom: 3px;
 	}
 
 	.card-header {
@@ -539,6 +619,11 @@
 	.secondary-btn.share:hover {
 		border-color: #10b981;
 		color: #10b981;
+	}
+
+	.secondary-btn.export:hover {
+		border-color: #6366f1;
+		color: #6366f1;
 	}
 
 	.secondary-btn.archive:hover {

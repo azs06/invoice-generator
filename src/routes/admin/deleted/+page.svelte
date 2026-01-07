@@ -183,7 +183,11 @@
 
 <!-- Confirmation Modal -->
 {#if confirmModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal-overlay" onclick={() => (confirmModal = null)}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="modal" onclick={(e) => e.stopPropagation()}>
 			<h3>
 				{#if confirmModal.action === 'restore'}
@@ -192,20 +196,20 @@
 					<span class="danger-text">⚠️ Permanently Delete User</span>
 				{/if}
 			</h3>
-			<p>
+			<div class="modal-body">
 				{#if confirmModal.action === 'restore'}
-					Are you sure you want to restore <strong>{confirmModal.userName}</strong>? They will be
-					able to log in again.
+					<p>Are you sure you want to restore <strong>{confirmModal.userName}</strong>? They will be
+					able to log in again.</p>
 				{:else}
-					<strong class="danger-text">This action cannot be undone!</strong><br /><br />
-					Permanently deleting <strong>{confirmModal.userName}</strong> will remove:
+					<p><strong class="danger-text">This action cannot be undone!</strong></p>
+					<p>Permanently deleting <strong>{confirmModal.userName}</strong> will remove:</p>
 					<ul>
 						<li>User account and all sessions</li>
 						<li>All saved invoices</li>
 						<li>All PDF files stored in cloud</li>
 					</ul>
 				{/if}
-			</p>
+			</div>
 			<div class="modal-actions">
 				<button class="btn secondary" onclick={() => (confirmModal = null)}>Cancel</button>
 				<button

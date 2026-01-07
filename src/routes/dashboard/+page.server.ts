@@ -28,7 +28,7 @@ export const load: PageServerLoad = async (event) => {
 	const session = event.locals.session;
 
 	if (!session) {
-		redirect(302, '/');
+		throw redirect(302, '/');
 	}
 
 	const db = requireDB(event);

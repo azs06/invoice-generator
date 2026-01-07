@@ -228,5 +228,21 @@
 		"sending": "পাঠানো হচ্ছে...",
 		"cancel": "বাতিল",
 		"not_implemented": "ইমেইল পাঠানোর সুবিধা ভবিষ্যতে আপডেটে পাওয়া যাবে।"
+	},
+	"export_import": {
+		"import": "ইমপোর্ট",
+		"importing": "ইমপোর্ট হচ্ছে...",
+		"export": "এক্সপোর্ট",
+		"export_all": "সব এক্সপোর্ট",
+		"export_selected": "নির্বাচিত এক্সপোর্ট",
+		"select": "নির্বাচন",
+		"cancel": "বাতিল",
+		"selected": "নির্বাচিত",
+		"select_all": "সব নির্বাচন",
+		"deselect_all": "সব বাদ দিন",
+		"import_result": "ইমপোর্ট ফলাফল",
+		"invoices_imported": "টি ইনভয়েস সফলভাবে ইমপোর্ট হয়েছে",
+		"invoices_skipped": "টি ইনভয়েস বাদ দেওয়া হয়েছে",
+		"done": "সম্পন্ন"
 	}
 }

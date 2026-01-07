@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { isValidInvoiceId } from '$lib/invoiceValidation';
 import { getAllInvoices, saveInvoice, clearAllInvoices, getInvoiceCount } from '$lib/server/db';
 import { requireDB, getBucket } from '$lib/server/session';
 import type { RequestHandler } from './$types';
@@ -28,8 +29,14 @@ export const POST: RequestHandler = async (event) => {
 
 	const invoice = (await event.request.json()) as InvoiceData;
 	if (!invoice.id) return json({ error: 'Invoice ID is required' }, { status: 400 });
+	if (!isValidInvoiceId(invoice.id)) {
+		return json({ error: 'Invalid invoice ID' }, { status: 400 });
+	}
 
-	await saveInvoice(db, bucket, invoice.id, invoice, session.user.id);
+	const saved = await saveInvoice(db, bucket, invoice.id, invoice, session.user.id);
+	if (!saved) {
+		return json({ error: 'Invoice not found' }, { status: 404 });
+	}
 	return json({ success: true });
 };
 
