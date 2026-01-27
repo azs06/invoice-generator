@@ -244,5 +244,15 @@
 		"invoices_imported": "invoice(s) imported successfully",
 		"invoices_skipped": "invoice(s) skipped",
 		"done": "Done"
+	},
+	"ocr": {
+		"upload_title": "Scan Invoice with AI",
+		"upload_subtitle": "Upload an image or PDF to auto-fill the form",
+		"processing": "Analyzing invoice...",
+		"success": "Invoice data extracted successfully",
+		"error": "Failed to extract invoice data",
+		"invalid_file": "Please upload an image (JPEG, PNG, WebP, GIF) or PDF file",
+		"file_too_large": "File size must be less than 10MB",
+		"no_data": "No invoice data could be extracted from this file"
 	}
 }

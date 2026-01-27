@@ -31,6 +31,8 @@ declare global {
 		BUCKET: R2Bucket;
 		// Browser Rendering for PDF generation
 		BROWSER: Fetcher;
+		// Workers AI for OCR
+		AI: Ai;
 		// Environment variables (set in wrangler.toml [vars])
 		SUPER_ADMIN_EMAILS: string;
 		// Auth secrets (set via wrangler secret put)

@@ -28,6 +28,7 @@
 		downloadBlob,
 		type PageSettings
 	} from '$lib/pdfGenerator';
+	import { applyOcrDataToInvoice, type OcrInvoiceData } from '$lib/ocrParser';
 
 	type PDFAction = 'download' | 'print' | null;
 	type TabName = 'edit' | 'preview';
@@ -190,7 +191,10 @@
 					}
 				} catch (serverError) {
 					// Fall back to client-side generation if server-side fails
-					console.warn('Server-side PDF generation failed, using client-side fallback:', serverError);
+					console.warn(
+						'Server-side PDF generation failed, using client-side fallback:',
+						serverError
+					);
 					await generatePdfClientSide(previewRef, currentInvoice, currentPageSettings);
 				}
 			} else {
@@ -235,7 +239,9 @@
 
 			// Apply same fixes as generatePdfClientSide for print
 			const indicator = previewRef.querySelector('.page-size-indicator') as HTMLElement | null;
-			const templateWrapper = previewRef.querySelector('.template-wrapper.page') as HTMLElement | null;
+			const templateWrapper = previewRef.querySelector(
+				'.template-wrapper.page'
+			) as HTMLElement | null;
 			const scaleWrapper = previewRef.querySelector('.scale-wrapper') as HTMLElement | null;
 
 			const originalStyles = {
@@ -592,6 +598,28 @@
 		current.invoiceLabel = target.value;
 	};
 
+	const onOcrDataExtracted = (ocrData: OcrInvoiceData): void => {
+		const current = ensureInvoice();
+		const updates = applyOcrDataToInvoice(ocrData, current);
+
+		// Apply all updates to the invoice
+		if (updates.invoiceNumber !== undefined) current.invoiceNumber = updates.invoiceNumber;
+		if (updates.invoiceFrom !== undefined) current.invoiceFrom = updates.invoiceFrom;
+		if (updates.invoiceTo !== undefined) current.invoiceTo = updates.invoiceTo;
+		if (updates.date !== undefined) current.date = updates.date;
+		if (updates.dueDate !== undefined) {
+			current.dueDate = updates.dueDate;
+			userEditedDueDate = true; // Prevent auto-calculation
+		}
+		if (updates.terms !== undefined) current.terms = updates.terms;
+		if (updates.notes !== undefined) current.notes = updates.notes;
+		if (updates.items !== undefined) current.items = updates.items;
+		if (updates.tax !== undefined) current.tax = updates.tax;
+		if (updates.discount !== undefined) current.discount = updates.discount;
+		if (updates.shipping !== undefined) current.shipping = updates.shipping;
+		if (updates.amountPaid !== undefined) current.amountPaid = updates.amountPaid;
+	};
+
 	const openSaveDraftModal = (): void => {
 		// Pre-fill with invoice label + number
 		if (invoice) {
@@ -778,6 +806,7 @@
 				{onInvoiceFromInput}
 				{onInvoiceNumberInput}
 				{onInvoiceLabelInput}
+				{onOcrDataExtracted}
 			/>
 		</div>
 
