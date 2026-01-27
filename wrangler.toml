@@ -20,6 +20,10 @@ preview_bucket_name = "invoice-bucket-preview"
 [browser]
 binding = "BROWSER"
 
+# Workers AI for OCR and document parsing
+[ai]
+binding = "AI"
+
 [vars]
 SUPER_ADMIN_EMAILS = "atik.aiub@gmail.com"
 

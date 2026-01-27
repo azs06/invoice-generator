@@ -4,8 +4,10 @@
 	import TermsAndNotesComponent from './TermsAndNotesComponent.svelte';
 	import AmountPaidComponent from './AmountPaidComponent.svelte';
 	import TotalComponent from './TotalComponent.svelte';
+	import OcrUploadComponent from './OcrUploadComponent.svelte';
 	import { DEFAULT_LOGO_PATH, defaultInvoice } from '$lib';
 	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
+	import type { OcrInvoiceData } from '$lib/ocrParser';
 
 	interface Props {
 		invoice?: InvoiceData;
@@ -25,6 +27,7 @@
 		onInvoiceFromInput?: (event: Event) => void;
 		onInvoiceNumberInput?: (event: Event) => void;
 		onInvoiceLabelInput?: (event: Event) => void;
+		onOcrDataExtracted?: (data: OcrInvoiceData) => void;
 	}
 
 	let {
@@ -44,7 +47,8 @@
 		onInvoiceToInput = () => {},
 		onInvoiceFromInput = () => {},
 		onInvoiceNumberInput = () => {},
-		onInvoiceLabelInput = () => {}
+		onInvoiceLabelInput = () => {},
+		onOcrDataExtracted = () => {}
 	}: Props = $props();
 
 	const handleFileChange = (event: Event): void => {
@@ -91,6 +95,11 @@
 </script>
 
 <form class="invoice-form" onsubmit={(e) => e.preventDefault()}>
+	<!-- OCR Upload Section -->
+	<section class="ocr-section">
+		<OcrUploadComponent onDataExtracted={onOcrDataExtracted} />
+	</section>
+
 	<!-- Header: Logo + Invoice Title -->
 	<header class="form-header">
 		<div class="logo-section">
@@ -246,6 +255,12 @@
 		border-radius: var(--radius-lg);
 		max-width: 1024px;
 		margin: 0 auto;
+	}
+
+	/* OCR Section */
+	.ocr-section {
+		padding-bottom: 1.5rem;
+		border-bottom: 1px solid var(--color-border-primary);
 	}
 
 	/* Header Section */
