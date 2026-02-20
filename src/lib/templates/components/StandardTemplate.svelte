@@ -145,10 +145,12 @@
 				<span class="value">-{$toUSCurrency(discountDisplayValue())}</span>
 			</div>
 		{/if}
-		<div class="summary-row">
-			<span class="label">Tax ({taxRate()}):</span>
-			<span class="value">{$toUSCurrency(taxDisplayValue())}</span>
-		</div>
+		{#if taxDisplayValue() > 0}
+			<div class="summary-row">
+				<span class="label">Tax ({taxRate()}):</span>
+				<span class="value">{$toUSCurrency(taxDisplayValue())}</span>
+			</div>
+		{/if}
 		{#if shippingDisplayValue() > 0}
 			<div class="summary-row">
 				<span class="label">Shipping:</span>

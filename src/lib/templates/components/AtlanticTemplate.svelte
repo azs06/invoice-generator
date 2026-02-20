@@ -166,21 +166,29 @@
 			<div class="row">
 				<span>{$_('summary.subtotal')}</span><span>{$toUSCurrency(subTotal())}</span>
 			</div>
-			<div class="row">
-				<span>{$_('summary.discount')}</span><span>-{$toUSCurrency(discountDisplayValue())}</span>
-			</div>
-			<div class="row">
-				<span>{$_('summary.tax')}</span><span>+{$toUSCurrency(taxDisplayValue())}</span>
-			</div>
-			<div class="row">
-				<span>{$_('summary.shipping')}</span><span>+{$toUSCurrency(shippingDisplayValue())}</span>
-			</div>
+			{#if discountDisplayValue() > 0}
+				<div class="row">
+					<span>{$_('summary.discount')}</span><span>-{$toUSCurrency(discountDisplayValue())}</span>
+				</div>
+			{/if}
+			{#if taxDisplayValue() > 0}
+				<div class="row">
+					<span>{$_('summary.tax')}</span><span>+{$toUSCurrency(taxDisplayValue())}</span>
+				</div>
+			{/if}
+			{#if shippingDisplayValue() > 0}
+				<div class="row">
+					<span>{$_('summary.shipping')}</span><span>+{$toUSCurrency(shippingDisplayValue())}</span>
+				</div>
+			{/if}
 			<div class="row total">
 				<span>{$_('summary.total')}</span><span>{$toUSCurrency(totalAmount())}</span>
 			</div>
-			<div class="row">
-				<span>{$_('summary.amount_paid')}</span><span>{$toUSCurrency(amountPaid())}</span>
-			</div>
+			{#if amountPaid() > 0}
+				<div class="row">
+					<span>{$_('summary.amount_paid')}</span><span>{$toUSCurrency(amountPaid())}</span>
+				</div>
+			{/if}
 			<div class={`row grand-total ${balanceDue() < 0 ? 'credit' : ''}`}>
 				<span>{balanceLabel()}</span>
 				<span>{$toUSCurrency(Math.abs(balanceDue()))}</span>

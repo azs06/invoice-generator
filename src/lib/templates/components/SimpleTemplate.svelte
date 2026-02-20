@@ -102,7 +102,9 @@
 							</td>
 							<td class="qty-col">{item.quantity ?? 0}</td>
 							<td class="rate-col">{$toUSCurrency(item.price || 0)}</td>
-							<td class="amount-col">{$toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td>
+							<td class="amount-col"
+								>{$toUSCurrency(item.amount || (item.price || 0) * (item.quantity || 0))}</td
+							>
 						</tr>
 					{/each}
 				{:else}
@@ -125,10 +127,12 @@
 				<span class="value">-{$toUSCurrency(discountDisplayValue())}</span>
 			</div>
 		{/if}
-		<div class="summary-row">
-			<span class="label">Tax ({taxRate()})</span>
-			<span class="value">{$toUSCurrency(taxDisplayValue())}</span>
-		</div>
+		{#if taxDisplayValue() > 0}
+			<div class="summary-row">
+				<span class="label">Tax ({taxRate()})</span>
+				<span class="value">{$toUSCurrency(taxDisplayValue())}</span>
+			</div>
+		{/if}
 		{#if shippingDisplayValue() > 0}
 			<div class="summary-row">
 				<span class="label">Shipping</span>
