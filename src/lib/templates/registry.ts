@@ -22,7 +22,7 @@ export interface TemplateOption {
 	premium: boolean;
 }
 
-export type TemplateId = 'modern' | 'simple' | 'standard' | 'classic' | 'minimal' | 'atlantic';
+export type TemplateId = 'modern' | 'simple' | 'standard' | 'classic' | 'minimal' | 'atlantic' | 'compact' | 'executive';
 
 export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 	modern: {
@@ -78,6 +78,24 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		tags: ['serif', 'editorial', 'warm'],
 		premium: true,
 		preview: '/templates/atlantic-preview.png'
+	},
+	compact: {
+		id: 'compact',
+		name: 'Compact',
+		description: 'Space-efficient layout with condensed two-column summary',
+		component: () => import('./components/CompactTemplate.svelte'),
+		tags: ['compact', 'dense', 'efficient'],
+		premium: false,
+		preview: '/templates/compact-preview.png'
+	},
+	executive: {
+		id: 'executive',
+		name: 'Executive',
+		description: 'Bold corporate design with navy accent and serif headings',
+		component: () => import('./components/ExecutiveTemplate.svelte'),
+		tags: ['corporate', 'bold', 'professional'],
+		premium: false,
+		preview: '/templates/executive-preview.png'
 	}
 };
 
