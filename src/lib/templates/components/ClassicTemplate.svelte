@@ -222,7 +222,7 @@
 					<p>{invoice.notes}</p>
 				</div>
 			{/if}
-			{#if invoice.terms && !invoice.notes}
+			{#if invoice.terms}
 				<div class="notes-block">
 					<h3>{$_('fields.terms')}:</h3>
 					<p>{invoice.terms}</p>
