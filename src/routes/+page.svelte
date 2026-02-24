@@ -959,7 +959,7 @@
 		gap: 0.75rem;
 		padding: 0.875rem 1.5rem 1.25rem;
 		position: relative;
-		max-width: 1080px;
+		max-width: 1280px;
 		margin: 0 auto;
 	}
 
