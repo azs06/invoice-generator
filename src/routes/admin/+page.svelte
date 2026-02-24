@@ -531,7 +531,7 @@
 		width: 40px;
 		height: 40px;
 		border-radius: 50%;
-		background: linear-gradient(135deg, #6366f1, #8b5cf6);
+		background: #6366f1;
 		color: white;
 		display: flex;
 		align-items: center;
@@ -559,14 +559,14 @@
 	.badge {
 		display: inline-block;
 		padding: 0.25rem 0.6rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.7rem;
 		font-weight: 600;
 		text-transform: uppercase;
 	}
 
 	.badge.super-admin {
-		background: linear-gradient(135deg, #f59e0b, #d97706);
+		background: #f59e0b;
 		color: white;
 	}
 

@@ -260,7 +260,7 @@
 	}
 
 	.invoice-card {
-		background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-lg);
 		padding: 1.5rem;
@@ -268,14 +268,11 @@
 		flex-direction: column;
 		gap: 1rem;
 		position: relative;
-		transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-		box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 10px 24px rgba(15, 23, 42, 0.08);
+		transition: border-color 0.2s;
 	}
 
 	.invoice-card:hover {
-		box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16), 0 16px 32px rgba(15, 23, 42, 0.12);
-		border-color: rgba(59, 130, 246, 0.25);
-		transform: translateY(-2px);
+		border-color: var(--color-accent-blue);
 	}
 
 	.invoice-card.deleting {
@@ -284,7 +281,7 @@
 
 	.invoice-card.selected {
 		border-color: var(--color-accent-blue);
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2), 0 6px 18px rgba(15, 23, 42, 0.16);
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 	}
 
 	.card-checkbox {
@@ -309,13 +306,12 @@
 		width: 1.5rem;
 		height: 1.5rem;
 		border: 2px solid var(--color-border-primary);
-		border-radius: 0.375rem;
+		border-radius: var(--radius-sm);
 		background: var(--color-bg-primary);
 		transition: all 0.15s;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 
 	.card-checkbox:hover .checkbox-custom {
@@ -367,7 +363,7 @@
 
 	.badge {
 		padding: 0.25rem 0.625rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.75rem;
 		font-weight: 600;
 	}
@@ -449,7 +445,7 @@
 	.status-badge {
 		display: inline-flex;
 		padding: 0.375rem 0.75rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.8125rem;
 		font-weight: 600;
 		border: 1px solid transparent;
@@ -476,7 +472,7 @@
 		font-weight: 500;
 		padding: 0.25rem 0.5rem;
 		background: #ecfdf5;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		border: 1px solid #a7f3d0;
 	}
 
@@ -504,22 +500,16 @@
 		font-size: 0.9375rem;
 		font-weight: 500;
 		cursor: pointer;
-		box-shadow: 0 8px 18px rgba(59, 130, 246, 0.25);
-		transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+		transition: background 0.2s;
 	}
 
 	.primary-btn:hover {
 		background: #2563eb;
-		box-shadow: 0 10px 22px rgba(37, 99, 235, 0.3);
 	}
 
 	.primary-btn svg {
 		width: 1.125rem;
 		height: 1.125rem;
-	}
-
-	.primary-btn:active {
-		transform: translateY(1px);
 	}
 
 	.primary-btn:focus-visible {
@@ -549,7 +539,6 @@
 	.secondary-btn:hover {
 		background: var(--color-bg-secondary);
 		color: var(--color-text-primary);
-		transform: translateY(-1px);
 	}
 
 	.secondary-btn:disabled {

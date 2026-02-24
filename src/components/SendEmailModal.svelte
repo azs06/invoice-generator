@@ -183,7 +183,6 @@
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 		animation: slideUp 0.2s ease;
 	}
 
@@ -283,7 +282,6 @@
 	.form-textarea:focus {
 		outline: none;
 		border-color: var(--color-accent-blue);
-		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 	}
 
 	.form-input.error {

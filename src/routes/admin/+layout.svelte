@@ -80,14 +80,14 @@
 	}
 
 	.admin-badge {
-		background: linear-gradient(135deg, #6366f1, #8b5cf6);
+		background: #6366f1;
 		color: white;
 		font-size: 0.65rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		padding: 0.2rem 0.5rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 	}
 
 	.sidebar-nav {

@@ -69,11 +69,6 @@
 	.page-shell {
 		min-height: 100vh;
 		background-color: var(--surface-page-background);
-		background-image: radial-gradient(
-			circle at top,
-			color-mix(in srgb, var(--surface-page-background) 92%, white 8%),
-			transparent 65%
-		);
 	}
 
 	.page-shell.dashboard-shell {

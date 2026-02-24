@@ -1298,8 +1298,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(15, 23, 42, 0.35);
-		backdrop-filter: blur(2px);
+		background: rgba(0, 0, 0, 0.5);
 		z-index: 100;
 		padding: 1.5rem;
 	}

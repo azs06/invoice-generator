@@ -373,13 +373,13 @@
 
 	.modal-content {
 		background: var(--color-bg-primary, #fff);
-		border-radius: 0.75rem;
+		border-radius: var(--radius-lg, 0.5rem);
 		width: 100%;
 		max-width: 560px;
 		max-height: 85vh;
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+		border: 1px solid var(--color-border-primary, #e5e7eb);
 	}
 
 	.modal-header {

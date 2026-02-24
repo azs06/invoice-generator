@@ -228,7 +228,7 @@
 		gap: 0.5rem;
 		padding: 0.5rem 1rem;
 		background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.05));
-		border-radius: 9999px;
+		border-radius: var(--radius-md);
 		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--color-text-secondary);

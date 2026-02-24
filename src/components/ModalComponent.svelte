@@ -58,7 +58,6 @@
 		width: 90%;
 		max-width: 600px;
 		overflow: hidden;
-		box-shadow: var(--shadow-medium);
 		display: flex;
 		flex-direction: column;
 		border: 1px solid var(--color-border-primary);

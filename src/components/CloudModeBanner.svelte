@@ -57,9 +57,9 @@
 
 <style>
 	.cloud-banner {
-		background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+		background: #dbeafe;
 		border: 1px solid #93c5fd;
-		border-radius: var(--radius-lg, 0.75rem);
+		border-radius: var(--radius-lg, 0.5rem);
 		padding: 1rem 1.25rem;
 		margin-bottom: 1.5rem;
 	}
@@ -73,8 +73,8 @@
 	.banner-icon {
 		width: 2.75rem;
 		height: 2.75rem;
-		background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-		border-radius: 50%;
+		background: #3b82f6;
+		border-radius: var(--radius-md, 0.375rem);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -115,29 +115,24 @@
 
 	.signup-btn {
 		padding: 0.5rem 1.25rem;
-		background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+		background: #3b82f6;
 		color: white;
 		border: none;
-		border-radius: var(--radius-pill, 9999px);
+		border-radius: var(--radius-md, 0.375rem);
 		font-weight: 600;
 		font-size: 0.875rem;
 		cursor: pointer;
-		transition:
-			transform 0.2s,
-			box-shadow 0.2s;
+		transition: background 0.2s;
 		white-space: nowrap;
 	}
 
 	.signup-btn:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+		background: #2563eb;
 	}
 
 	.signup-btn:focus-visible {
 		outline: none;
-		box-shadow:
-			0 0 0 3px rgba(59, 130, 246, 0.3),
-			0 4px 12px rgba(59, 130, 246, 0.4);
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
 	}
 
 	.dismiss-btn {
@@ -159,7 +154,7 @@
 
 	.dismiss-btn:focus-visible {
 		outline: none;
-		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+		box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
 	}
 
 	.dismiss-btn svg {

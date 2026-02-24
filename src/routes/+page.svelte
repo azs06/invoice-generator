@@ -959,7 +959,7 @@
 		gap: 0.75rem;
 		padding: 0.875rem 1.5rem 1.25rem;
 		position: relative;
-		max-width: 1280px;
+		max-width: 1080px;
 		margin: 0 auto;
 	}
 
@@ -1018,7 +1018,7 @@
 	.tab-button.active {
 		color: var(--color-text-primary);
 		background: var(--color-bg-primary);
-		box-shadow: var(--shadow-soft);
+		border: 1px solid var(--color-border-primary);
 	}
 
 	.tab-icon {
@@ -1058,7 +1058,6 @@
 		border: 1px solid transparent;
 		background-color: var(--color-accent, #2563eb);
 		color: var(--color-accent-contrast, #ffffff);
-		box-shadow: var(--shadow-soft);
 		cursor: pointer;
 		transition:
 			background-color 0.2s ease,
@@ -1069,7 +1068,6 @@
 	.icon-button:disabled {
 		cursor: not-allowed;
 		opacity: 0.7;
-		box-shadow: none;
 	}
 
 	.icon-button:not(:disabled):hover {
@@ -1131,11 +1129,10 @@
 		justify-content: center;
 		gap: 0.375rem;
 		padding: 0.5rem 1rem;
-		border-radius: var(--radius-pill);
+		border-radius: var(--radius-md);
 		border: 1px solid transparent;
 		font-weight: 500;
 		font-size: 0.875rem;
-		box-shadow: var(--shadow-soft);
 		cursor: pointer;
 		transition: all 0.2s ease;
 		white-space: nowrap;
@@ -1250,7 +1247,6 @@
 		align-items: center;
 		justify-content: center;
 		z-index: 50;
-		backdrop-filter: blur(2px);
 	}
 
 	.modal {
@@ -1260,9 +1256,6 @@
 		max-width: 450px;
 		width: 90%;
 		border: 1px solid var(--color-border-primary);
-		box-shadow:
-			0 20px 25px -5px rgba(0, 0, 0, 0.1),
-			0 10px 10px -5px rgba(0, 0, 0, 0.04);
 	}
 
 	.modal-title {
@@ -1293,7 +1286,6 @@
 	.modal-input:focus {
 		outline: none;
 		border-color: var(--color-accent, #3b82f6);
-		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 	}
 
 	.modal-actions {
@@ -1334,8 +1326,8 @@
 
 	.save-button:focus-visible,
 	.cancel-button:focus-visible {
-		outline: none;
-		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+		outline: 2px solid rgba(59, 130, 246, 0.3);
+		outline-offset: 1px;
 	}
 
 	@media (max-width: 768px) {

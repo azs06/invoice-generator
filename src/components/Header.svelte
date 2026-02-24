@@ -245,7 +245,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1.5rem;
-		max-width: 1280px;
+		max-width: 1080px;
 		margin: 0 auto;
 		padding: 0 1.5rem;
 	}
@@ -287,7 +287,7 @@
 		color: var(--color-text-secondary);
 		text-decoration: none;
 		padding: 0.4rem 0.65rem;
-		border-radius: var(--radius-pill);
+		border-radius: var(--radius-md);
 		transition:
 			color 0.2s ease,
 			background 0.2s ease;
@@ -350,7 +350,6 @@
 		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-lg);
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 		z-index: 50;
 		overflow: hidden;
 		animation: fadeIn 0.15s ease;
@@ -490,7 +489,6 @@
 		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-lg);
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 		z-index: 50;
 		overflow: hidden;
 	}
@@ -557,14 +555,14 @@
 
 	.admin-badge {
 		margin-left: auto;
-		background: linear-gradient(135deg, #6366f1, #8b5cf6);
+		background: #6366f1;
 		color: white;
 		font-size: 0.6rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		padding: 0.15rem 0.4rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 	}
 
 	.dropdown-icon {
@@ -575,7 +573,7 @@
 
 	.auth-button {
 		padding: 0.4rem 0.8rem;
-		border-radius: var(--radius-pill);
+		border-radius: var(--radius-md);
 		background: var(--color-accent-blue);
 		color: white;
 		font-weight: 600;

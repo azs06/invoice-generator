@@ -268,7 +268,7 @@
 	.status-badge {
 		display: inline-flex;
 		padding: 0.25rem 0.625rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.75rem;
 		font-weight: 600;
 	}
@@ -286,7 +286,7 @@
 	.draft-badge {
 		display: inline-flex;
 		padding: 0.25rem 0.625rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.75rem;
 		font-weight: 600;
 		background: #fef3c7;
@@ -296,7 +296,7 @@
 	.archived-badge {
 		display: inline-flex;
 		padding: 0.25rem 0.625rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.75rem;
 		font-weight: 600;
 		background: #e5e7eb;

@@ -229,7 +229,7 @@
 		width: 100%;
 		flex: 1;
 		box-sizing: border-box;
-		box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+		/* flat: no shadow */
 	}
 
 	.header {

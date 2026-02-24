@@ -189,7 +189,6 @@
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-lg);
 		padding: 3rem;
-		box-shadow: var(--shadow-soft);
 	}
 
 	.page-title {
@@ -222,7 +221,7 @@
 	}
 
 	.step-card:hover {
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+		border-color: var(--color-accent-blue);
 	}
 
 	.step-header {
@@ -244,7 +243,6 @@
 		font-size: 2rem;
 		font-weight: 700;
 		flex-shrink: 0;
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 	}
 
 	.step-title {
@@ -299,7 +297,7 @@
 	}
 
 	.tip-box {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+		background: var(--color-bg-secondary);
 		border-left: 4px solid var(--color-accent, #3b82f6);
 		padding: 1rem 1.25rem;
 		border-radius: var(--radius-md);
@@ -336,8 +334,7 @@
 	}
 
 	.tip-card:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		border-color: var(--color-accent-blue);
 	}
 
 	.tip-card h3 {
@@ -380,17 +377,14 @@
 		background-color: var(--color-accent, #3b82f6);
 		color: white;
 		text-decoration: none;
-		border-radius: var(--radius-pill);
+		border-radius: var(--radius-md);
 		font-weight: 600;
 		font-size: 1.0625rem;
 		transition: all 0.2s ease;
-		box-shadow: var(--shadow-soft);
 	}
 
 	.cta-button:hover {
 		background-color: #2563eb;
-		transform: translateY(-2px);
-		box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
 	}
 
 	/* Mobile Responsive */

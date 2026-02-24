@@ -319,7 +319,7 @@
 		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-lg);
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+		/* flat: no shadow */
 		z-index: 9999;
 		overflow: hidden;
 		animation: fadeIn 0.15s ease;

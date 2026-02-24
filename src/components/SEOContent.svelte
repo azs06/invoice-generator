@@ -315,7 +315,7 @@
 
 <style>
 	.seo-content {
-		max-width: 1280px;
+		max-width: 1080px;
 		margin: 0 auto;
 		padding: 2rem 1.5rem;
 	}
@@ -393,8 +393,7 @@
 	}
 
 	.feature-card:hover {
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-		transform: translateY(-2px);
+		border-color: var(--color-accent-blue, #3b82f6);
 	}
 
 	.feature-icon {
@@ -447,7 +446,7 @@
 		font-size: 1.75rem;
 		font-weight: 700;
 		margin: 0 auto 1.5rem;
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+		/* flat: no shadow */
 	}
 
 	.step-title {
@@ -487,7 +486,7 @@
 	}
 
 	.faq-item:hover {
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+		border-color: var(--color-accent-blue, #3b82f6);
 	}
 
 	.faq-item[open] {

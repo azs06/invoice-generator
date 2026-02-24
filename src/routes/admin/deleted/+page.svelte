@@ -353,7 +353,7 @@
 		width: 40px;
 		height: 40px;
 		border-radius: 50%;
-		background: linear-gradient(135deg, #9ca3af, #6b7280);
+		background: #9ca3af;
 		color: white;
 		display: flex;
 		align-items: center;
