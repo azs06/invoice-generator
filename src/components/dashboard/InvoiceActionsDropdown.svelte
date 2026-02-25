@@ -151,7 +151,9 @@
 		aria-haspopup="true"
 	>
 		<svg viewBox="0 0 20 20" fill="currentColor">
-			<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+			<path
+				d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"
+			/>
 		</svg>
 	</button>
 
@@ -222,8 +224,12 @@
 				role="menuitem"
 			>
 				<svg viewBox="0 0 20 20" fill="currentColor">
-					<path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z" />
-					<path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z" />
+					<path
+						d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"
+					/>
+					<path
+						d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z"
+					/>
 				</svg>
 				<span>Send</span>
 			</button>
@@ -234,8 +240,12 @@
 				role="menuitem"
 			>
 				<svg viewBox="0 0 20 20" fill="currentColor">
-					<path d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z" />
-					<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+					<path
+						d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z"
+					/>
+					<path
+						d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+					/>
 				</svg>
 				<span>{$_('export_import.export') || 'Export'}</span>
 			</button>
@@ -255,7 +265,11 @@
 						clip-rule="evenodd"
 					/>
 				</svg>
-				<span>{isArchived ? $_('dashboard.unarchive') || 'Unarchive' : $_('dashboard.archive') || 'Archive'}</span>
+				<span
+					>{isArchived
+						? $_('dashboard.unarchive') || 'Unarchive'
+						: $_('dashboard.archive') || 'Archive'}</span
+				>
 			</button>
 
 			<button
@@ -295,16 +309,16 @@
 		justify-content: center;
 		width: 2rem;
 		height: 2rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		color: var(--color-text-secondary);
 		cursor: pointer;
 		transition: all 0.15s;
 	}
 
 	.dropdown-trigger:hover {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		color: var(--color-text-primary);
 	}
 
@@ -316,10 +330,10 @@
 	.dropdown-menu {
 		position: fixed;
 		min-width: 180px;
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+		/* flat: no shadow */
 		z-index: 9999;
 		overflow: hidden;
 		animation: fadeIn 0.15s ease;
@@ -354,7 +368,7 @@
 	}
 
 	.dropdown-item:hover:not(:disabled) {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 	}
 
 	.dropdown-item:disabled {
@@ -384,7 +398,7 @@
 	.dropdown-divider {
 		height: 1px;
 		margin: 0.25rem 0;
-		background: var(--color-border-primary);
+		background: var(--surface-paper-border);
 	}
 
 	.stale-badge {

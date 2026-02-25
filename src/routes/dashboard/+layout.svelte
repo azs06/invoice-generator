@@ -1,8 +1,25 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { _ } from 'svelte-i18n';
 
 	let { children }: { children: any } = $props();
+
+	const navigate = (event: MouseEvent, href: string): void => {
+		if (
+			event.defaultPrevented ||
+			event.button !== 0 ||
+			event.metaKey ||
+			event.ctrlKey ||
+			event.shiftKey ||
+			event.altKey
+		) {
+			return;
+		}
+
+		event.preventDefault();
+		void goto(href);
+	};
 </script>
 
 <div class="dashboard-layout">
@@ -12,6 +29,7 @@
 				href="/dashboard"
 				class="nav-item"
 				class:active={$page.url.pathname === '/dashboard'}
+				onclick={(event) => navigate(event, '/dashboard')}
 			>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="nav-icon">
 					<path
@@ -26,6 +44,7 @@
 				href="/dashboard/settings"
 				class="nav-item"
 				class:active={$page.url.pathname === '/dashboard/settings'}
+				onclick={(event) => navigate(event, '/dashboard/settings')}
 			>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="nav-icon">
 					<path
@@ -46,20 +65,24 @@
 <style>
 	.dashboard-layout {
 		display: flex;
-		min-height: calc(100vh - 60px);
-		background: var(--color-bg-secondary);
+		width: 100%;
+		max-width: var(--layout-max-width);
+		margin: 0 auto;
+		min-height: 86vh;
+		background: var(--surface-paper);
+		border-inline: 1px solid var(--surface-paper-border);
 	}
 
 	.dashboard-sidebar {
-		width: 220px;
-		background: var(--color-bg-primary);
-		border-right: 1px solid var(--color-border-primary);
+		width: 240px;
+		background: var(--surface-paper-muted);
+		border-right: 1px solid var(--surface-paper-border);
 		padding: 1.5rem 1rem;
 		display: flex;
 		flex-direction: column;
-		position: sticky;
-		top: 60px;
-		height: calc(100vh - 60px);
+		position: relative;
+		min-height: 100%;
+		align-self: stretch;
 	}
 
 	.sidebar-nav {
@@ -82,7 +105,7 @@
 	}
 
 	.nav-item:hover {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper);
 		color: var(--color-text-primary);
 	}
 
@@ -99,13 +122,16 @@
 
 	.dashboard-main {
 		flex: 1;
-		overflow-y: auto;
-		background: var(--color-bg-primary);
+		min-width: 0;
+		background: var(--surface-paper);
 	}
 
 	@media (max-width: 768px) {
 		.dashboard-layout {
 			flex-direction: column;
+			border-inline: none;
+			border: 1px solid var(--surface-paper-border);
+			min-height: 86vh;
 		}
 
 		.dashboard-sidebar {

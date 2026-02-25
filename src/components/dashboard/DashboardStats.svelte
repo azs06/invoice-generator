@@ -39,8 +39,8 @@
 	}
 
 	.stat-card {
-		background: var(--color-bg-secondary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper-muted);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
 		padding: 1rem 1.5rem;
 		display: flex;

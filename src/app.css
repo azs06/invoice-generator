@@ -5,6 +5,9 @@
 	--color-bg-secondary: #f9fafb;
 	--color-bg-tertiary: #f3f4f6;
 	--surface-page-background: #f8fafc;
+	--surface-paper: #ffffff;
+	--surface-paper-muted: #f8fafc;
+	--surface-paper-border: #d1d5db;
 	--color-border-primary: #e5e7eb;
 	--color-border-secondary: #d1d5db;
 	--color-text-primary: #111827;
@@ -12,24 +15,29 @@
 	--color-accent-blue: #3b82f6;
 	--color-success: #10b981;
 	--color-error: #ef4444;
-	--surface-card-gradient-top: rgba(255, 255, 255, 0.96);
-	--surface-card-gradient-bottom: rgba(248, 250, 252, 0.88);
-	--surface-header-gradient-top: rgba(255, 255, 255, 0.92);
-	--surface-header-gradient-bottom: rgba(255, 255, 255, 0);
+	--surface-card-gradient-top: var(--color-bg-primary);
+	--surface-card-gradient-bottom: var(--color-bg-primary);
+	--surface-header-gradient-top: var(--color-bg-primary);
+	--surface-header-gradient-bottom: var(--color-bg-primary);
 	--surface-card-border: rgba(148, 163, 184, 0.35);
-	--surface-glass-overlay-top: rgba(255, 255, 255, 0.9);
-	--surface-glass-overlay-bottom: rgba(255, 255, 255, 0.65);
-	--radius-xs: 0.2rem;
-	--radius-sm: 0.3rem;
-	--radius-md: 0.45rem;
-	--radius-lg: 0.6rem;
-	--radius-pill: 2rem;
+	--surface-glass-overlay-top: var(--color-bg-primary);
+	--surface-glass-overlay-bottom: var(--color-bg-primary);
+	--radius-xs: 0.125rem;
+	--radius-sm: 0.25rem;
+	--radius-md: 0.375rem;
+	--radius-lg: 0.5rem;
+	--radius-pill: 999px;
 	--shadow-none: none;
-	--shadow-soft: 0 1px 4px rgba(15, 23, 42, 0.08);
-	--shadow-medium: 0 6px 16px -10px rgba(15, 23, 42, 0.18);
+	--shadow-soft: none;
+	--shadow-medium: none;
 	--shadow-focus: 0 0 0 2px rgba(59, 130, 246, 0.18);
-	--color-theme-toggle: #9ca3af;  /* gray-400 */
-	--color-theme-toggle-hover: #374151;  /* gray-700 - darker on hover */
+	--layout-max-width: 1280px;
+	--layout-gutter-desktop: 1.5rem;
+	--layout-gutter-tablet: 1rem;
+	--layout-gutter-mobile: 0.75rem;
+	--layout-section-gap: 1rem;
+	--color-theme-toggle: #9ca3af; /* gray-400 */
+	--color-theme-toggle-hover: #374151; /* gray-700 - darker on hover */
 }
 
 .dark {
@@ -44,24 +52,27 @@
 	--color-accent-blue: #3b82f6;
 	--color-success: #10b981;
 	--color-error: #ef4444;
-	--surface-card-gradient-top: rgba(15, 23, 42, 0.92);
-	--surface-card-gradient-bottom: rgba(15, 23, 42, 0.78);
-	--surface-header-gradient-top: rgba(15, 23, 42, 0.94);
-	--surface-header-gradient-bottom: rgba(15, 23, 42, 0);
+	--surface-card-gradient-top: var(--color-bg-primary);
+	--surface-card-gradient-bottom: var(--color-bg-primary);
+	--surface-header-gradient-top: var(--color-bg-primary);
+	--surface-header-gradient-bottom: var(--color-bg-primary);
 	--surface-card-border: rgba(148, 163, 184, 0.2);
-	--surface-glass-overlay-top: rgba(15, 23, 42, 0.9);
-	--surface-glass-overlay-bottom: rgba(15, 23, 42, 0.68);
-	--radius-xs: 0.2rem;
-	--radius-sm: 0.3rem;
-	--radius-md: 0.45rem;
-	--radius-lg: 0.6rem;
-	--radius-pill: 2rem;
+	--surface-glass-overlay-top: var(--color-bg-primary);
+	--surface-glass-overlay-bottom: var(--color-bg-primary);
+	--surface-paper: #0f172a;
+	--surface-paper-muted: #1e293b;
+	--surface-paper-border: #334155;
+	--radius-xs: 0.125rem;
+	--radius-sm: 0.25rem;
+	--radius-md: 0.375rem;
+	--radius-lg: 0.5rem;
+	--radius-pill: 999px;
 	--shadow-none: none;
-	--shadow-soft: 0 1px 4px rgba(2, 6, 23, 0.32);
-	--shadow-medium: 0 6px 16px -10px rgba(2, 6, 23, 0.45);
+	--shadow-soft: none;
+	--shadow-medium: none;
 	--shadow-focus: 0 0 0 2px rgba(96, 165, 250, 0.32);
-	--color-theme-toggle: #6b7280;  /* gray-500 */
-	--color-theme-toggle-hover: #f3f4f6;  /* gray-100 */
+	--color-theme-toggle: #6b7280; /* gray-500 */
+	--color-theme-toggle-hover: #f3f4f6; /* gray-100 */
 }
 
 * {
@@ -74,4 +85,45 @@
 body {
 	background-color: var(--surface-page-background);
 	color: var(--color-text-primary);
+}
+
+.app-container {
+	max-width: var(--layout-max-width);
+	margin: 0 auto;
+	padding-inline: var(--layout-gutter-desktop);
+}
+
+.app-page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--layout-section-gap);
+	padding-block: 1rem 1.5rem;
+}
+
+.paper-surface {
+	background: var(--surface-paper);
+	border: 1px solid var(--surface-paper-border);
+	box-shadow: none;
+}
+
+.paper-muted {
+	background: var(--surface-paper-muted);
+	border: 1px solid var(--surface-paper-border);
+	box-shadow: none;
+}
+
+@media (max-width: 1024px) {
+	.app-container {
+		padding-inline: var(--layout-gutter-tablet);
+	}
+}
+
+@media (max-width: 768px) {
+	.app-container {
+		padding-inline: var(--layout-gutter-mobile);
+	}
+
+	.app-page {
+		padding-block: 0.85rem 1rem;
+	}
 }

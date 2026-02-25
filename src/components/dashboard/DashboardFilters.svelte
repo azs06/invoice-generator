@@ -10,7 +10,14 @@
 		onFilterModeChange: (mode: 'all' | 'draft' | 'finalized') => void;
 	}
 
-	let { searchValue, onSearchInput, showArchived, onToggleArchived, filterMode, onFilterModeChange }: Props = $props();
+	let {
+		searchValue,
+		onSearchInput,
+		showArchived,
+		onToggleArchived,
+		filterMode,
+		onFilterModeChange
+	}: Props = $props();
 </script>
 
 <div class="dashboard-filters">
@@ -37,18 +44,10 @@
 		<div class="filter-group">
 			<span class="filter-label">{$_('dashboard.collection') || 'Collection'}:</span>
 			<div class="chip-group">
-				<button
-					class="chip"
-					class:active={!showArchived}
-					onclick={() => onToggleArchived(false)}
-				>
+				<button class="chip" class:active={!showArchived} onclick={() => onToggleArchived(false)}>
 					{$_('dashboard.active') || 'Active'}
 				</button>
-				<button
-					class="chip"
-					class:active={showArchived}
-					onclick={() => onToggleArchived(true)}
-				>
+				<button class="chip" class:active={showArchived} onclick={() => onToggleArchived(true)}>
 					{$_('dashboard.archived') || 'Archived'}
 				</button>
 			</div>
@@ -114,9 +113,9 @@
 	.search-input {
 		width: 100%;
 		padding: 0.625rem 1rem 0.625rem 2.75rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		color: var(--color-text-primary);
 		font-size: 0.9375rem;
 		transition: border-color 0.2s;
@@ -159,9 +158,9 @@
 
 	.chip {
 		padding: 0.375rem 0.875rem;
-		border: 1px solid var(--color-border-primary);
-		border-radius: 9999px;
-		background: var(--color-bg-primary);
+		border: 1px solid var(--surface-paper-border);
+		border-radius: var(--radius-md);
+		background: var(--surface-paper);
 		color: var(--color-text-secondary);
 		font-size: 0.875rem;
 		font-weight: 500;
@@ -171,7 +170,7 @@
 	}
 
 	.chip:hover {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		border-color: #3b82f6;
 	}
 

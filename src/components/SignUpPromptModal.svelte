@@ -135,7 +135,6 @@
 		align-items: center;
 		justify-content: center;
 		z-index: 100;
-		backdrop-filter: blur(4px);
 	}
 
 	.modal {
@@ -145,9 +144,6 @@
 		max-width: 420px;
 		width: 90%;
 		border: 1px solid var(--color-border-primary);
-		box-shadow:
-			0 20px 25px -5px rgba(0, 0, 0, 0.15),
-			0 10px 10px -5px rgba(0, 0, 0, 0.08);
 		text-align: center;
 	}
 
@@ -155,8 +151,8 @@
 		width: 3.5rem;
 		height: 3.5rem;
 		margin: 0 auto 1rem;
-		background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-		border-radius: 50%;
+		background: #3b82f6;
+		border-radius: var(--radius-md);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -224,12 +220,10 @@
 		color: var(--color-text-primary);
 		cursor: pointer;
 		transition: all 0.2s ease;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 	}
 
 	.signup-button:hover {
 		background: var(--color-bg-secondary);
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	.google-icon {
@@ -264,8 +258,8 @@
 
 	.signup-button:focus-visible,
 	.continue-button:focus-visible {
-		outline: none;
-		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+		outline: 2px solid rgba(59, 130, 246, 0.3);
+		outline-offset: 1px;
 	}
 
 	@media (max-width: 480px) {

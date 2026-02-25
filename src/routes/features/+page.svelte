@@ -290,7 +290,6 @@
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-lg);
 		padding: 3rem;
-		box-shadow: var(--shadow-soft);
 	}
 
 	/* Hero Section */
@@ -345,8 +344,7 @@
 	}
 
 	.feature-card:hover {
-		transform: translateY(-4px);
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+		border-color: var(--color-accent-blue);
 	}
 
 	.feature-icon {
@@ -372,7 +370,7 @@
 	.why-choose-section {
 		margin-bottom: 4rem;
 		padding: 2rem 0;
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.02));
+		background: var(--color-bg-secondary);
 		border-radius: var(--radius-lg);
 	}
 
@@ -493,17 +491,14 @@
 		background-color: var(--color-accent, #3b82f6);
 		color: white;
 		text-decoration: none;
-		border-radius: var(--radius-pill);
+		border-radius: var(--radius-md);
 		font-weight: 600;
 		font-size: 1.0625rem;
 		transition: all 0.2s ease;
-		box-shadow: var(--shadow-soft);
 	}
 
 	.cta-button:hover {
 		background-color: #2563eb;
-		transform: translateY(-2px);
-		box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
 	}
 
 	/* Mobile Responsive */

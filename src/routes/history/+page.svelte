@@ -275,7 +275,7 @@
 	});
 </script>
 
-<section class="history-page">
+<section class="history-page app-container app-page">
 	<div class="page-shell">
 		<CloudModeBanner />
 
@@ -375,12 +375,7 @@
 					bind:this={fileInput}
 					onchange={handleFileSelect}
 				/>
-				<button
-					class="toolbar-btn"
-					type="button"
-					onclick={triggerImport}
-					disabled={isImporting}
-				>
+				<button class="toolbar-btn" type="button" onclick={triggerImport} disabled={isImporting}>
 					<svg class="toolbar-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
 							d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"
@@ -428,7 +423,8 @@
 
 			{#if selectionMode}
 				<div class="selection-controls">
-					<span class="selection-count">{selectedInvoices.size} {$_('export_import.selected')}</span>
+					<span class="selection-count">{selectedInvoices.size} {$_('export_import.selected')}</span
+					>
 					<button class="link-button" type="button" onclick={selectAll}>
 						{$_('export_import.select_all')}
 					</button>
@@ -512,7 +508,11 @@
 								<span>{formatDate(record.invoice.date)}</span>
 							</div>
 							<div class="col-status">
-								<span class="status-badge {record.invoice.draft ? 'status-badge--draft' : 'status-badge--finalized'}">
+								<span
+									class="status-badge {record.invoice.draft
+										? 'status-badge--draft'
+										: 'status-badge--finalized'}"
+								>
 									{record.invoice.draft ? 'Draft' : 'Final'}
 								</span>
 								{#if record.invoice.archived}
@@ -523,34 +523,82 @@
 								<span class="amount-value">{formatAmount(balanceDueAmount(record.invoice))}</span>
 							</div>
 							<div class="col-actions">
-								<button class="action-btn" type="button" onclick={() => openInvoice(record.id)} title="Open" aria-label="Open invoice">
+								<button
+									class="action-btn"
+									type="button"
+									onclick={() => openInvoice(record.id)}
+									title="Open"
+									aria-label="Open invoice"
+								>
 									<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 										<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-										<path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+										<path
+											fill-rule="evenodd"
+											d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+											clip-rule="evenodd"
+										/>
 									</svg>
 								</button>
-								<button class="action-btn" type="button" onclick={() => exportInvoice(record.invoice)} title={$_('export_import.export')} aria-label={$_('export_import.export')}>
+								<button
+									class="action-btn"
+									type="button"
+									onclick={() => exportInvoice(record.invoice)}
+									title={$_('export_import.export')}
+									aria-label={$_('export_import.export')}
+								>
 									<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-										<path d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z" />
-										<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+										<path
+											d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z"
+										/>
+										<path
+											d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+										/>
 									</svg>
 								</button>
 								{#if record.invoice.archived}
-									<button class="action-btn action-btn--success" type="button" onclick={() => unarchiveInvoice(record.id)} title="Unarchive" aria-label="Unarchive invoice">
+									<button
+										class="action-btn action-btn--success"
+										type="button"
+										onclick={() => unarchiveInvoice(record.id)}
+										title="Unarchive"
+										aria-label="Unarchive invoice"
+									>
 										<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-											<path fill-rule="evenodd" d="M10 3a7 7 0 0 0-6.492 4.41.75.75 0 0 0 1.384.558A5.5 5.5 0 1 1 4.5 10H3a.75.75 0 0 0 0 1.5h3.75a.75.75 0 0 0 .75-.75V7a.75.75 0 0 0-1.5 0v1.332A7.001 7.001 0 0 1 17 10a7 7 0 0 0-7-7Z" clip-rule="evenodd" />
+											<path
+												fill-rule="evenodd"
+												d="M10 3a7 7 0 0 0-6.492 4.41.75.75 0 0 0 1.384.558A5.5 5.5 0 1 1 4.5 10H3a.75.75 0 0 0 0 1.5h3.75a.75.75 0 0 0 .75-.75V7a.75.75 0 0 0-1.5 0v1.332A7.001 7.001 0 0 1 17 10a7 7 0 0 0-7-7Z"
+												clip-rule="evenodd"
+											/>
 										</svg>
 									</button>
 								{:else}
-									<button class="action-btn" type="button" onclick={() => archiveInvoice(record.id)} title="Archive" aria-label="Archive invoice">
+									<button
+										class="action-btn"
+										type="button"
+										onclick={() => archiveInvoice(record.id)}
+										title="Archive"
+										aria-label="Archive invoice"
+									>
 										<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-											<path d="M4 3a2 2 0 0 0-2 2v1.5A1.5 1.5 0 0 0 3.5 8H4v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8h.5A1.5 1.5 0 0 0 18 6.5V5a2 2 0 0 0-2-2H4Zm3 6.5A.5.5 0 0 1 7.5 9h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5ZM4 5h12v1.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V5Z" />
+											<path
+												d="M4 3a2 2 0 0 0-2 2v1.5A1.5 1.5 0 0 0 3.5 8H4v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8h.5A1.5 1.5 0 0 0 18 6.5V5a2 2 0 0 0-2-2H4Zm3 6.5A.5.5 0 0 1 7.5 9h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5ZM4 5h12v1.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V5Z"
+											/>
 										</svg>
 									</button>
 								{/if}
-								<button class="action-btn action-btn--danger" type="button" onclick={() => confirmDeleteInvoice(record.id)} title="Delete" aria-label="Delete invoice">
+								<button
+									class="action-btn action-btn--danger"
+									type="button"
+									onclick={() => confirmDeleteInvoice(record.id)}
+									title="Delete"
+									aria-label="Delete invoice"
+								>
 									<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-										<path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd" />
+										<path
+											fill-rule="evenodd"
+											d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+											clip-rule="evenodd"
+										/>
 									</svg>
 								</button>
 							</div>
@@ -591,8 +639,18 @@
 	<!-- Delete Single Invoice Modal -->
 	{#if showInvoiceDeleteModal}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal-backdrop" onclick={cancelDelete} onkeydown={(e) => e.key === 'Escape' && cancelDelete()}>
-			<div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-invoice-title" onpointerdown={(e) => e.stopPropagation()}>
+		<div
+			class="modal-backdrop"
+			onclick={cancelDelete}
+			onkeydown={(e) => e.key === 'Escape' && cancelDelete()}
+		>
+			<div
+				class="modal"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="delete-invoice-title"
+				onpointerdown={(e) => e.stopPropagation()}
+			>
 				<h2 id="delete-invoice-title">Delete this invoice?</h2>
 				<p>
 					This invoice is only stored in your browser. Deleting it cannot be undone and the data
@@ -610,8 +668,18 @@
 	<!-- Delete All Invoices Modal -->
 	{#if showDeleteAllModal}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal-backdrop" onclick={cancelDeleteAll} onkeydown={(e) => e.key === 'Escape' && cancelDeleteAll()}>
-			<div class="modal modal--warning" role="dialog" aria-modal="true" aria-labelledby="delete-all-title" onpointerdown={(e) => e.stopPropagation()}>
+		<div
+			class="modal-backdrop"
+			onclick={cancelDeleteAll}
+			onkeydown={(e) => e.key === 'Escape' && cancelDeleteAll()}
+		>
+			<div
+				class="modal modal--warning"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="delete-all-title"
+				onpointerdown={(e) => e.stopPropagation()}
+			>
 				<div class="modal-icon">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path
@@ -639,9 +707,23 @@
 	<!-- Import Result Modal -->
 	{#if showImportResultModal && importResult}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal-backdrop" onclick={closeImportResultModal} onkeydown={(e) => e.key === 'Escape' && closeImportResultModal()}>
-			<div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-result-title" onpointerdown={(e) => e.stopPropagation()}>
-				<div class="modal-icon" class:success={importResult.imported > 0} class:error={importResult.errors.length > 0 && importResult.imported === 0}>
+		<div
+			class="modal-backdrop"
+			onclick={closeImportResultModal}
+			onkeydown={(e) => e.key === 'Escape' && closeImportResultModal()}
+		>
+			<div
+				class="modal"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="import-result-title"
+				onpointerdown={(e) => e.stopPropagation()}
+			>
+				<div
+					class="modal-icon"
+					class:success={importResult.imported > 0}
+					class:error={importResult.errors.length > 0 && importResult.imported === 0}
+				>
 					{#if importResult.imported > 0}
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path
@@ -664,12 +746,14 @@
 				<div class="import-result-details">
 					{#if importResult.imported > 0}
 						<p class="result-success">
-							{importResult.imported} {$_('export_import.invoices_imported')}
+							{importResult.imported}
+							{$_('export_import.invoices_imported')}
 						</p>
 					{/if}
 					{#if importResult.skipped > 0}
 						<p class="result-warning">
-							{importResult.skipped} {$_('export_import.invoices_skipped')}
+							{importResult.skipped}
+							{$_('export_import.invoices_skipped')}
 						</p>
 					{/if}
 					{#if importResult.errors.length > 0}
@@ -691,16 +775,10 @@
 </section>
 
 <style>
-	.history-page {
-		padding: clamp(1.5rem, 3vw, 2rem) 1rem 2rem;
-	}
-
 	.page-shell {
-		max-width: 1120px;
-		margin: 0 auto;
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--layout-section-gap);
 	}
 
 	.page-header {
@@ -710,12 +788,8 @@
 		gap: 0.75rem;
 		padding: 1.25rem 1.5rem;
 		border-radius: var(--radius-lg);
-		border: 1px solid var(--surface-card-border);
-		background: linear-gradient(
-			135deg,
-			var(--surface-card-gradient-top),
-			var(--surface-card-gradient-bottom)
-		);
+		border: 1px solid var(--surface-paper-border);
+		background: var(--surface-paper);
 		box-shadow: var(--shadow-soft);
 		overflow: hidden;
 	}
@@ -724,7 +798,7 @@
 		align-self: flex-start;
 		padding: 0.2rem 0.6rem;
 		border-radius: var(--radius-pill);
-		background: rgba(59, 130, 246, 0.12);
+		background: var(--surface-paper-muted);
 		color: var(--color-accent-blue);
 		font-size: 0.7rem;
 		font-weight: 600;
@@ -761,8 +835,8 @@
 		align-items: center;
 		flex: 1 1 280px;
 		max-width: 320px;
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
 		padding: 0.3rem 0.75rem 0.3rem 2.25rem;
 		transition:
@@ -848,8 +922,8 @@
 		flex-direction: column;
 		gap: 0.5rem;
 		padding: 0.75rem 1rem;
-		background: var(--color-bg-secondary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper-muted);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
 	}
 
@@ -865,9 +939,9 @@
 		align-items: center;
 		gap: 0.35rem;
 		padding: 0.4rem 0.75rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		color: var(--color-text-primary);
 		font-size: 0.8rem;
 		font-weight: 500;
@@ -934,8 +1008,8 @@
 	.invoice-list {
 		display: flex;
 		flex-direction: column;
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 		overflow: hidden;
 	}
@@ -945,8 +1019,8 @@
 		grid-template-columns: 40px 1.5fr 1fr 100px 100px 100px 120px;
 		gap: 0.5rem;
 		padding: 0.6rem 1rem;
-		background: var(--color-bg-secondary);
-		border-bottom: 1px solid var(--color-border-primary);
+		background: var(--surface-paper-muted);
+		border-bottom: 1px solid var(--surface-paper-border);
 		font-size: 0.7rem;
 		font-weight: 600;
 		text-transform: uppercase;
@@ -960,7 +1034,7 @@
 		gap: 0.5rem;
 		padding: 0.6rem 1rem;
 		align-items: center;
-		border-bottom: 1px solid var(--color-border-primary);
+		border-bottom: 1px solid var(--surface-paper-border);
 		transition: background-color 0.15s;
 	}
 
@@ -969,7 +1043,7 @@
 	}
 
 	.invoice-row:hover {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 	}
 
 	.invoice-row.selected {
@@ -1077,16 +1151,16 @@
 		justify-content: center;
 		width: 1.75rem;
 		height: 1.75rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-sm);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		color: var(--color-text-secondary);
 		cursor: pointer;
 		transition: all 0.15s;
 	}
 
 	.action-btn:hover {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		color: var(--color-accent-blue);
 		border-color: var(--color-accent-blue);
 	}
@@ -1125,8 +1199,8 @@
 		display: block;
 		width: 1rem;
 		height: 1rem;
-		background: var(--color-bg-primary);
-		border: 2px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 2px solid var(--surface-paper-border);
 		border-radius: var(--radius-xs, 3px);
 		transition: all 0.15s;
 	}
@@ -1153,8 +1227,8 @@
 		align-items: center;
 		gap: 0.35rem;
 		border-radius: var(--radius-md);
-		border: 1px solid var(--color-border-primary);
-		background: var(--color-bg-primary);
+		border: 1px solid var(--surface-paper-border);
+		background: var(--surface-paper);
 		color: var(--color-text-primary);
 		padding: 0.4rem 0.75rem;
 		font-size: 0.8rem;
@@ -1217,12 +1291,8 @@
 		gap: 1rem;
 		padding: 2.5rem 2rem;
 		border-radius: var(--radius-lg);
-		border: 1px solid var(--surface-card-border);
-		background: linear-gradient(
-			180deg,
-			var(--surface-glass-overlay-top),
-			var(--surface-glass-overlay-bottom)
-		);
+		border: 1px solid var(--surface-paper-border);
+		background: var(--surface-paper);
 		box-shadow: var(--shadow-soft);
 		text-align: center;
 	}
@@ -1255,8 +1325,8 @@
 		gap: 1.5rem;
 		padding: 1.5rem;
 		border-radius: var(--radius-lg);
-		background: rgba(251, 191, 36, 0.08);
-		border: 1px solid rgba(251, 191, 36, 0.3);
+		background: var(--surface-paper-muted);
+		border: 1px solid var(--surface-paper-border);
 	}
 
 	.footer-warning {
@@ -1298,17 +1368,16 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(15, 23, 42, 0.35);
-		backdrop-filter: blur(2px);
+		background: rgba(0, 0, 0, 0.5);
 		z-index: 100;
 		padding: 1.5rem;
 	}
 
 	.modal {
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		padding: 2rem;
 		border-radius: var(--radius-lg);
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		box-shadow: var(--shadow-medium);
 		max-width: 420px;
 		width: 100%;

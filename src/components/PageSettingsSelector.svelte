@@ -233,9 +233,6 @@
 		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-md);
-		box-shadow:
-			0 10px 15px -3px rgba(0, 0, 0, 0.1),
-			0 4px 6px -2px rgba(0, 0, 0, 0.05);
 		padding: 0.75rem;
 		min-width: 180px;
 	}
@@ -287,7 +284,6 @@
 	.margin-input-group input:focus {
 		outline: none;
 		border-color: var(--color-accent, #3b82f6);
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 	}
 
 	.margin-input-group input::-webkit-inner-spin-button,

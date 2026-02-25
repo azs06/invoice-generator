@@ -1,7 +1,25 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: any } = $props();
+
+	const navigate = (event: MouseEvent, href: string): void => {
+		if (
+			event.defaultPrevented ||
+			event.button !== 0 ||
+			event.metaKey ||
+			event.ctrlKey ||
+			event.shiftKey ||
+			event.altKey
+		) {
+			return;
+		}
+
+		event.preventDefault();
+		void goto(href);
+	};
 </script>
 
 <div class="admin-layout">
@@ -11,7 +29,12 @@
 			<span class="admin-badge">Admin</span>
 		</div>
 		<nav class="sidebar-nav">
-			<a href="/admin" class="nav-item">
+			<a
+				href="/admin"
+				class="nav-item"
+				class:active={$page.url.pathname === '/admin'}
+				onclick={(event) => navigate(event, '/admin')}
+			>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="nav-icon">
 					<path
 						d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"
@@ -19,7 +42,12 @@
 				</svg>
 				Users
 			</a>
-			<a href="/admin/deleted" class="nav-item">
+			<a
+				href="/admin/deleted"
+				class="nav-item"
+				class:active={$page.url.pathname.startsWith('/admin/deleted')}
+				onclick={(event) => navigate(event, '/admin/deleted')}
+			>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="nav-icon">
 					<path
 						fill-rule="evenodd"
@@ -30,7 +58,7 @@
 				Deleted Users
 			</a>
 			<div class="nav-divider"></div>
-			<a href="/dashboard" class="nav-item">
+			<a href="/dashboard" class="nav-item" onclick={(event) => navigate(event, '/dashboard')}>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="nav-icon">
 					<path
 						d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
@@ -48,20 +76,24 @@
 <style>
 	.admin-layout {
 		display: flex;
-		min-height: 100vh;
-		background: var(--color-bg-secondary);
+		width: 100%;
+		max-width: var(--layout-max-width);
+		margin: 0 auto;
+		min-height: 86vh;
+		background: var(--surface-paper);
+		border-inline: 1px solid var(--surface-paper-border);
 	}
 
 	.admin-sidebar {
-		width: 260px;
-		background: var(--color-bg-primary);
-		border-right: 1px solid var(--color-border-primary);
+		width: 240px;
+		background: var(--surface-paper-muted);
+		border-right: 1px solid var(--surface-paper-border);
 		padding: 1.5rem 1rem;
 		display: flex;
 		flex-direction: column;
-		position: sticky;
-		top: 0;
-		height: 100vh;
+		position: relative;
+		min-height: 100%;
+		align-self: stretch;
 	}
 
 	.sidebar-header {
@@ -77,17 +109,18 @@
 		font-weight: 700;
 		color: var(--color-text-primary);
 		margin: 0;
+		white-space: nowrap;
 	}
 
 	.admin-badge {
-		background: linear-gradient(135deg, #6366f1, #8b5cf6);
+		background: #6366f1;
 		color: white;
 		font-size: 0.65rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		padding: 0.2rem 0.5rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 	}
 
 	.sidebar-nav {
@@ -110,11 +143,11 @@
 	}
 
 	.nav-item:hover {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper);
 		color: var(--color-text-primary);
 	}
 
-	.nav-item:global(.active) {
+	.nav-item.active {
 		background: var(--color-accent-blue);
 		color: white;
 	}
@@ -127,19 +160,22 @@
 
 	.nav-divider {
 		height: 1px;
-		background: var(--color-border-primary);
+		background: var(--surface-paper-border);
 		margin: 1rem 0;
 	}
 
 	.admin-main {
 		flex: 1;
 		padding: 2rem;
-		overflow-y: auto;
+		min-width: 0;
 	}
 
 	@media (max-width: 768px) {
 		.admin-layout {
 			flex-direction: column;
+			border-inline: none;
+			border: 1px solid var(--surface-paper-border);
+			min-height: 86vh;
 		}
 
 		.admin-sidebar {

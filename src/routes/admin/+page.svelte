@@ -366,8 +366,7 @@
 
 <style>
 	.admin-page {
-		max-width: 1200px;
-		margin: 0 auto;
+		width: 100%;
 	}
 
 	.page-header {
@@ -395,8 +394,8 @@
 	}
 
 	.stat-card {
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 		padding: 1.25rem;
 		text-align: center;
@@ -452,9 +451,9 @@
 	.search-box input {
 		width: 100%;
 		padding: 0.75rem 1rem 0.75rem 2.5rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		color: var(--color-text-primary);
 		font-size: 0.9rem;
 	}
@@ -466,9 +465,9 @@
 
 	.filter-buttons button {
 		padding: 0.5rem 1rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		color: var(--color-text-secondary);
 		font-size: 0.85rem;
 		cursor: pointer;
@@ -483,8 +482,8 @@
 
 	/* Table */
 	.table-container {
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 		overflow: hidden;
 	}
@@ -498,11 +497,11 @@
 	.users-table td {
 		padding: 1rem;
 		text-align: left;
-		border-bottom: 1px solid var(--color-border-primary);
+		border-bottom: 1px solid var(--surface-paper-border);
 	}
 
 	.users-table th {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		font-size: 0.75rem;
 		font-weight: 600;
 		text-transform: uppercase;
@@ -531,7 +530,7 @@
 		width: 40px;
 		height: 40px;
 		border-radius: 50%;
-		background: linear-gradient(135deg, #6366f1, #8b5cf6);
+		background: #6366f1;
 		color: white;
 		display: flex;
 		align-items: center;
@@ -559,14 +558,14 @@
 	.badge {
 		display: inline-block;
 		padding: 0.25rem 0.6rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.7rem;
 		font-weight: 600;
 		text-transform: uppercase;
 	}
 
 	.badge.super-admin {
-		background: linear-gradient(135deg, #f59e0b, #d97706);
+		background: #f59e0b;
 		color: white;
 	}
 
@@ -606,7 +605,7 @@
 		padding: 0.4rem;
 		border: none;
 		border-radius: var(--radius-sm);
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		cursor: pointer;
 		transition: all 0.15s ease;
 	}
@@ -682,11 +681,12 @@
 	}
 
 	.modal {
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		border-radius: var(--radius-lg);
 		padding: 1.5rem;
 		max-width: 400px;
 		width: 90%;
+		border: 1px solid var(--surface-paper-border);
 	}
 
 	.modal h3 {
@@ -715,7 +715,7 @@
 	}
 
 	.btn.secondary {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		color: var(--color-text-primary);
 	}
 

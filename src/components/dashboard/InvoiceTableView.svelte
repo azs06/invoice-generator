@@ -21,7 +21,22 @@
 		onToggleSelection?: (id: string) => void;
 	}
 
-	let { invoices, onView, onEdit, onDelete, onDownloadPdf, onArchive, onShare, onSendEmail, onExport, deletingId, downloadingId, selectionMode = false, selectedInvoices = new Set(), onToggleSelection }: Props = $props();
+	let {
+		invoices,
+		onView,
+		onEdit,
+		onDelete,
+		onDownloadPdf,
+		onArchive,
+		onShare,
+		onSendEmail,
+		onExport,
+		deletingId,
+		downloadingId,
+		selectionMode = false,
+		selectedInvoices = new Set(),
+		onToggleSelection
+	}: Props = $props();
 
 	const formatDate = (dateStr: string): string => {
 		if (!dateStr || dateStr === 'N/A') return 'N/A';
@@ -54,7 +69,10 @@
 		</thead>
 		<tbody>
 			{#each invoices as invoice (invoice.id)}
-				<tr class:deleting={deletingId === invoice.id} class:selected={selectionMode && selectedInvoices.has(invoice.id)}>
+				<tr
+					class:deleting={deletingId === invoice.id}
+					class:selected={selectionMode && selectedInvoices.has(invoice.id)}
+				>
 					{#if selectionMode}
 						<td class="checkbox-col">
 							<label class="checkbox-wrapper">
@@ -156,15 +174,15 @@
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		color: var(--color-text-secondary);
-		background: var(--color-bg-secondary);
-		border-bottom: 1px solid var(--color-border-primary);
+		background: var(--surface-paper-muted);
+		border-bottom: 1px solid var(--surface-paper-border);
 	}
 
 	.invoices-table td {
 		padding: 1rem;
 		font-size: 0.9375rem;
 		color: var(--color-text-primary);
-		border-bottom: 1px solid var(--color-border-primary);
+		border-bottom: 1px solid var(--surface-paper-border);
 	}
 
 	.invoices-table tbody tr:last-child td {
@@ -172,7 +190,7 @@
 	}
 
 	.invoices-table tbody tr:hover {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 	}
 
 	.invoices-table tbody tr.deleting {
@@ -200,7 +218,7 @@
 		position: relative;
 	}
 
-	.checkbox-wrapper input[type="checkbox"] {
+	.checkbox-wrapper input[type='checkbox'] {
 		position: absolute;
 		opacity: 0;
 		width: 0;
@@ -210,9 +228,9 @@
 	.checkbox-custom {
 		width: 1.25rem;
 		height: 1.25rem;
-		border: 2px solid var(--color-border-primary);
-		border-radius: 0.25rem;
-		background: var(--color-bg-primary);
+		border: 2px solid var(--surface-paper-border);
+		border-radius: var(--radius-sm);
+		background: var(--surface-paper);
 		transition: all 0.15s;
 		display: flex;
 		align-items: center;
@@ -223,12 +241,12 @@
 		border-color: var(--color-accent-blue);
 	}
 
-	.checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom {
+	.checkbox-wrapper input[type='checkbox']:checked + .checkbox-custom {
 		background: var(--color-accent-blue);
 		border-color: var(--color-accent-blue);
 	}
 
-	.checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom::after {
+	.checkbox-wrapper input[type='checkbox']:checked + .checkbox-custom::after {
 		content: '';
 		width: 0.375rem;
 		height: 0.625rem;
@@ -268,7 +286,7 @@
 	.status-badge {
 		display: inline-flex;
 		padding: 0.25rem 0.625rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.75rem;
 		font-weight: 600;
 	}
@@ -286,7 +304,7 @@
 	.draft-badge {
 		display: inline-flex;
 		padding: 0.25rem 0.625rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.75rem;
 		font-weight: 600;
 		background: #fef3c7;
@@ -296,7 +314,7 @@
 	.archived-badge {
 		display: inline-flex;
 		padding: 0.25rem 0.625rem;
-		border-radius: 9999px;
+		border-radius: var(--radius-sm);
 		font-size: 0.75rem;
 		font-weight: 600;
 		background: #e5e7eb;
@@ -319,16 +337,16 @@
 		justify-content: center;
 		width: 2rem;
 		height: 2rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		color: var(--color-text-secondary);
 		cursor: pointer;
 		transition: all 0.15s;
 	}
 
 	.action-btn:hover {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		color: var(--color-text-primary);
 	}
 

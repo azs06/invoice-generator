@@ -1,5 +1,5 @@
 body {
-	background: linear-gradient(to bottom, #eee 0, #eee 71%, #dddddd 100%);
+	background: #eeeeee;
 }
 
 .input::placeholder {
@@ -97,24 +97,6 @@ a.navbar-item {
 	padding: 20px 25px 20px 20px;
 	margin: 13px;
 	border: 1px solid #ccc;
-	-webkit-box-shadow:
-		1px 1px 0 rgba(0, 0, 0, 0.1),
-		3px 3px 0 #fff,
-		4px 4px 0 rgba(0, 0, 0, 0.125),
-		6px 6px 0 #fff,
-		7px 7px 0 rgba(0, 0, 0, 0.15);
-	-moz-box-shadow:
-		1px 1px 0 rgba(0, 0, 0, 0.1),
-		3px 3px 0 #fff,
-		4px 4px 0 rgba(0, 0, 0, 0.125),
-		6px 6px 0 #fff,
-		7px 7px 0 rgba(0, 0, 0, 0.15);
-	box-shadow:
-		1px 1px 0 rgba(0, 0, 0, 0.1),
-		3px 3px 0 #fff,
-		4px 4px 0 rgba(0, 0, 0, 0.125),
-		6px 6px 0 #fff,
-		7px 7px 0 rgba(0, 0, 0, 0.15);
 }
 
 .paper-logopart-button--logo {
@@ -123,7 +105,7 @@ a.navbar-item {
 	width: 200px;
 	height: 130px;
 	border: 1px solid #cccccc;
-	background: linear-gradient(to bottom, #eee 0, #eee 71%, #dddddd 100%);
+	background: #eeeeee;
 	margin-bottom: 10px;
 }
 
@@ -296,7 +278,7 @@ a.navbar-item {
 }
 /*---------------------Balance part start from here -----------------------------*/
 .paper--balancepart {
-	background: linear-gradient(to bottom, #eee 0, #eee 71%, #dddddd 100%);
+	background: #eeeeee;
 	border-radius: 4px;
 	height: 48px;
 	width: 100%;
@@ -406,8 +388,6 @@ a.navbar-item {
 
 @media only screen and (max-width: 768px) {
 	.paper {
-		-webkit-box-shadow: none;
-		box-shadow: none;
 		padding: 20px 36px 10px 10px;
 		border: 0px;
 	}
@@ -616,11 +596,7 @@ a.navbar-item {
 }
 .SideBar .invoice-settings .color-select-option:hover {
 	color: #fff;
-	-webkit-transform: scale(1.05);
-	-ms-transform: scale(1.05);
-	transform: scale(1.05);
-	-webkit-box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.18);
-	box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.18);
+	opacity: 0.85;
 }
 .SideBar .asideStepBlock {
 	margin: 30px 0;

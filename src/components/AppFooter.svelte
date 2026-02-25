@@ -3,7 +3,7 @@
 </script>
 
 <footer class="app-footer">
-	<div class="footer-content">
+	<div class="footer-content app-container">
 		<div class="footer-section">
 			<h3 class="footer-title">Resources</h3>
 			<nav class="footer-links">
@@ -30,16 +30,13 @@
 <style>
 	.app-footer {
 		width: 100%;
-		background: var(--color-bg-secondary);
-		border-top: 1px solid var(--color-border-secondary);
+		background: var(--surface-paper-muted);
+		border-top: 1px solid var(--surface-paper-border);
 		padding: 2rem 0 1rem;
 		margin-top: 3rem;
 	}
 
 	.footer-content {
-		max-width: 1280px;
-		margin: 0 auto;
-		padding: 0 1.5rem;
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 		gap: 2rem;
@@ -100,18 +97,11 @@
 		.footer-content {
 			grid-template-columns: 1fr;
 			gap: 1.5rem;
-			padding-inline: 0.75rem;
 		}
 
 		.footer-copyright {
 			padding-top: 1rem;
 			margin-top: 1rem;
-		}
-	}
-
-	@media (max-width: 1024px) and (min-width: 769px) {
-		.footer-content {
-			padding-inline: 1rem;
 		}
 	}
 </style>

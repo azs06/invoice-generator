@@ -389,6 +389,10 @@
 		border-bottom: 1px solid #f5f5f5;
 	}
 
+	.items-list .item-row:last-child {
+		border-bottom: none;
+	}
+
 	.item-details {
 		display: flex;
 		flex-direction: column;
