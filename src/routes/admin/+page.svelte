@@ -367,6 +367,9 @@
 <style>
 	.admin-page {
 		width: 100%;
+		min-height: 70vh;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.page-header {
@@ -486,6 +489,7 @@
 		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 		overflow: hidden;
+		min-height: 20rem;
 	}
 
 	.users-table {
@@ -731,6 +735,10 @@
 
 	/* Responsive */
 	@media (max-width: 768px) {
+		.admin-page {
+			min-height: auto;
+		}
+
 		.stats-grid {
 			grid-template-columns: repeat(2, 1fr);
 		}
