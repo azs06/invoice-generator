@@ -294,6 +294,8 @@
 		min-height: var(--page-height, 297mm);
 		background: white;
 		border: 1px solid var(--color-border-primary, #e5e7eb);
+		border-radius: var(--radius-sm, 0.25rem);
+		overflow: hidden;
 		transform: scale(var(--scale, 1));
 		transform-origin: top left;
 		padding: var(--margin-top, 10mm) var(--margin-right, 10mm) var(--margin-bottom, 10mm)
