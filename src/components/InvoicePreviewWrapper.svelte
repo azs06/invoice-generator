@@ -206,9 +206,10 @@
 			>
 				<div
 					class="template-wrapper page"
-					style="--scale: {scale}; --page-width: {$currentPageDimensions.width}; --page-height: {$currentPageDimensions.height}; --margin-top: {$pageSettings.margins.top}mm; --margin-right: {$pageSettings.margins
-						.right}mm; --margin-bottom: {$pageSettings.margins.bottom}mm; --margin-left: {$pageSettings
-						.margins.left}mm;"
+					style="--scale: {scale}; --page-width: {$currentPageDimensions.width}; --page-height: {$currentPageDimensions.height}; --margin-top: {$pageSettings
+						.margins.top}mm; --margin-right: {$pageSettings.margins
+						.right}mm; --margin-bottom: {$pageSettings.margins
+						.bottom}mm; --margin-left: {$pageSettings.margins.left}mm;"
 				>
 					<TemplateComponent {invoice} {totals} />
 				</div>
@@ -245,22 +246,24 @@
 		width: 100%;
 		max-width: 100%;
 		overflow-x: hidden;
+		padding: 1rem 0.5rem 0.8rem;
 	}
 
 	.page-size-indicator {
 		position: absolute;
-		top: 0.5rem;
+		top: 0.2rem;
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 10;
-		padding: 0.25rem 0.625rem;
-		background: rgba(0, 0, 0, 0.7);
-		color: white;
-		font-size: 0.6875rem;
+		padding: 0.2rem 0.52rem;
+		background: var(--color-bg-primary);
+		border: 1px solid var(--color-border-primary);
+		color: var(--color-text-secondary);
+		font-size: 0.62rem;
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		border-radius: var(--radius-sm);
+		border-radius: var(--radius-pill);
 		pointer-events: none;
 	}
 
@@ -280,8 +283,9 @@
 		flex-direction: column;
 		width: 100%;
 		background: white;
-		border: 1px solid var(--color-border-primary, #e5e7eb);
-		border-radius: var(--radius-md, 0.375rem);
+		border: 1px solid var(--color-border-primary, #dfe1e5);
+		border-radius: var(--radius-md, 0.75rem);
+		box-shadow: var(--shadow-soft);
 		box-sizing: border-box;
 	}
 
@@ -293,9 +297,10 @@
 		width: var(--page-width, 210mm);
 		min-height: var(--page-height, 297mm);
 		background: white;
-		border: 1px solid var(--color-border-primary, #e5e7eb);
-		border-radius: var(--radius-sm, 0.25rem);
+		border: 1px solid var(--color-border-primary, #dfe1e5);
+		border-radius: var(--radius-sm, 0.5rem);
 		overflow: hidden;
+		box-shadow: 0 6px 22px rgba(60, 64, 67, 0.16);
 		transform: scale(var(--scale, 1));
 		transform-origin: top left;
 		padding: var(--margin-top, 10mm) var(--margin-right, 10mm) var(--margin-bottom, 10mm)
@@ -344,5 +349,15 @@
 		justify-content: center;
 		height: 200px;
 		color: var(--color-text-secondary);
+	}
+
+	@media (max-width: 768px) {
+		.preview-container.page-mode {
+			padding-top: 0.75rem;
+		}
+
+		.page-size-indicator {
+			top: 0;
+		}
 	}
 </style>

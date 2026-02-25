@@ -44,27 +44,28 @@
 	.amount-paid-summary {
 		display: flex;
 		flex-direction: column;
-		gap: 0.65rem;
+		gap: 0.45rem;
 	}
 
 	.summary-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 0.5rem 0;
-		font-size: 0.95rem;
+		padding: 0.4rem 0;
+		font-size: 0.84rem;
 		gap: 1rem;
 	}
 
 	.summary-label {
 		color: var(--color-text-secondary);
-		font-weight: 500;
+		font-weight: 600;
 	}
 
 	.summary-value {
 		color: var(--color-text-primary);
 		font-weight: 600;
 		white-space: nowrap;
+		font-family: var(--font-mono-ui);
 	}
 
 	.input-with-value {
@@ -76,17 +77,18 @@
 	}
 
 	.summary-input {
-		width: 80px;
-		padding: 0.35rem 0.5rem;
-		font-size: 0.875rem;
-		border: 1px solid var(--color-border-secondary);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-secondary);
+		width: 82px;
+		padding: 0.32rem 0.5rem;
+		font-size: 0.8rem;
+		border: 1px solid var(--color-border-primary);
+		border-radius: 0.36rem;
+		background: var(--color-bg-primary);
 		color: var(--color-text-primary);
 		text-align: right;
+		font-family: var(--font-mono-ui);
 		transition:
-			border-color 0.2s ease,
-			box-shadow 0.2s ease;
+			border-color var(--motion-fast) var(--motion-ease),
+			box-shadow var(--motion-fast) var(--motion-ease);
 	}
 
 	.summary-input:focus {
@@ -96,10 +98,10 @@
 	}
 
 	.due-row {
-		padding-top: 0.75rem;
-		margin-top: 0.5rem;
+		padding-top: 0.68rem;
+		margin-top: 0.3rem;
 		border-top: 1px solid var(--color-border-primary);
-		font-size: 1.05rem;
+		font-size: 0.92rem;
 	}
 
 	.due-row .summary-label,

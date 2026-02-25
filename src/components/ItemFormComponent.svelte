@@ -92,11 +92,11 @@
 	.item-row {
 		display: grid;
 		grid-template-columns: 2fr 1fr 1fr 1fr;
-		gap: 1rem;
-		padding: 0.75rem 1rem;
+		gap: 0.6rem;
+		padding: 0.62rem 0.8rem;
 		border-bottom: 1px solid var(--color-border-primary);
 		background: var(--color-bg-primary);
-		transition: background-color 0.15s ease;
+		transition: background-color var(--motion-fast) var(--motion-ease);
 	}
 
 	.item-row:hover {
@@ -131,15 +131,15 @@
 
 	.item-input {
 		width: 100%;
-		padding: 0.5rem 0.65rem;
-		border-radius: var(--radius-sm);
-		border: 1px solid var(--color-border-secondary);
-		background: var(--color-bg-secondary);
+		padding: 0.46rem 0.6rem;
+		border-radius: 0.36rem;
+		border: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
 		color: var(--color-text-primary);
-		font-size: 0.9rem;
+		font-size: 0.84rem;
 		transition:
-			border-color 0.2s ease,
-			box-shadow 0.2s ease;
+			border-color var(--motion-fast) var(--motion-ease),
+			box-shadow var(--motion-fast) var(--motion-ease);
 	}
 
 	.item-input:focus {
@@ -149,21 +149,21 @@
 	}
 
 	.item-amount {
-		font-size: 0.95rem;
+		font-size: 0.82rem;
 		font-weight: 600;
 		color: var(--color-text-primary);
+		font-family: var(--font-mono-ui);
 	}
 
-	/* Mobile: Stack vertically */
 	@media (max-width: 640px) {
 		.item-row {
 			grid-template-columns: 1fr;
-			gap: 0.75rem;
-			padding: 1rem;
+			gap: 0.55rem;
+			padding: 0.75rem;
 			border-radius: var(--radius-md);
 			background: var(--color-bg-secondary);
 			border: 1px solid var(--color-border-secondary);
-			margin-bottom: 0.75rem;
+			margin-bottom: 0.55rem;
 		}
 
 		.item-row:last-child {
@@ -180,9 +180,9 @@
 		.amount-col {
 			justify-content: space-between;
 			flex-direction: row;
-			padding: 0.5rem 0.75rem;
+			padding: 0.4rem 0.65rem;
 			border-radius: var(--radius-sm);
-			background: rgba(59, 130, 246, 0.1);
+			background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
 		}
 
 		.amount-col::before {

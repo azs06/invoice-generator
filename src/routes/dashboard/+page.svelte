@@ -766,27 +766,28 @@
 	}
 
 	.dashboard {
-		padding: 1.5rem 1.5rem 2.5rem;
+		padding: 1rem 1rem 1.35rem;
+		background: var(--surface-page-background);
 	}
 
 	.dashboard-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		gap: 2rem;
-		margin-bottom: 2rem;
+		gap: 1rem;
+		margin-bottom: 1rem;
 		flex-wrap: wrap;
 	}
 
 	.header-content h1 {
-		font-size: 2rem;
+		font-size: 1.4rem;
 		font-weight: 700;
 		color: var(--color-text-primary);
 		margin: 0 0 0.25rem 0;
 	}
 
 	.welcome-text {
-		font-size: 1rem;
+		font-size: 0.86rem;
 		color: var(--color-text-secondary);
 		margin: 0;
 	}
@@ -794,12 +795,13 @@
 	.controls-section {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
-		margin-bottom: 2rem;
-		padding: 1.5rem;
+		gap: 0.8rem;
+		margin-bottom: 1rem;
+		padding: 0.85rem;
 		background: var(--surface-paper);
 		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-lg);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-soft);
 	}
 
 	.view-controls {
@@ -834,12 +836,12 @@
 		justify-content: space-between;
 		align-items: center;
 		flex-wrap: wrap;
-		gap: 1rem;
-		padding: 1rem;
-		background: var(--surface-paper-muted);
+		gap: 0.75rem;
+		padding: 0.7rem 0.8rem;
+		background: var(--color-bg-secondary);
 		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-md);
-		margin-top: 1rem;
+		border-radius: var(--radius-sm);
+		margin-top: 0.6rem;
 	}
 
 	.selection-info {
@@ -874,13 +876,13 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding: 0.5rem 1rem;
+		padding: 0.42rem 0.72rem;
 		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-md);
+		border-radius: var(--radius-pill);
 		background: var(--surface-paper);
 		color: var(--color-text-secondary);
-		font-size: 0.875rem;
-		font-weight: 500;
+		font-size: 0.8rem;
+		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s;
 	}
@@ -891,9 +893,9 @@
 	}
 
 	.toggle-btn.active {
-		background: var(--color-accent-blue);
-		border-color: var(--color-accent-blue);
-		color: white;
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		border-color: color-mix(in srgb, var(--color-accent-blue) 34%, var(--color-border-primary));
+		color: var(--color-accent-blue);
 	}
 
 	.toggle-btn svg {
@@ -905,13 +907,13 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding: 0.5rem 1rem;
+		padding: 0.45rem 0.78rem;
 		background: var(--color-accent-blue);
 		color: white;
 		border: none;
-		border-radius: var(--radius-md);
-		font-size: 0.875rem;
-		font-weight: 500;
+		border-radius: var(--radius-pill);
+		font-size: 0.8rem;
+		font-weight: 600;
 		text-decoration: none;
 		cursor: pointer;
 		transition:
@@ -929,8 +931,8 @@
 	}
 
 	.create-button.primary {
-		padding: 0.75rem 1.5rem;
-		font-size: 1rem;
+		padding: 0.55rem 1rem;
+		font-size: 0.84rem;
 	}
 
 	.invoices-section {
