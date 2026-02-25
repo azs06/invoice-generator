@@ -190,7 +190,10 @@
 					}
 				} catch (serverError) {
 					// Fall back to client-side generation if server-side fails
-					console.warn('Server-side PDF generation failed, using client-side fallback:', serverError);
+					console.warn(
+						'Server-side PDF generation failed, using client-side fallback:',
+						serverError
+					);
 					await generatePdfClientSide(previewRef, currentInvoice, currentPageSettings);
 				}
 			} else {
@@ -235,7 +238,9 @@
 
 			// Apply same fixes as generatePdfClientSide for print
 			const indicator = previewRef.querySelector('.page-size-indicator') as HTMLElement | null;
-			const templateWrapper = previewRef.querySelector('.template-wrapper.page') as HTMLElement | null;
+			const templateWrapper = previewRef.querySelector(
+				'.template-wrapper.page'
+			) as HTMLElement | null;
 			const scaleWrapper = previewRef.querySelector('.scale-wrapper') as HTMLElement | null;
 
 			const originalStyles = {
@@ -657,7 +662,7 @@
 </svelte:head>
 
 {#if invoice}
-	<div class="page-layout">
+	<div class="page-layout app-container app-page">
 		<!-- Mobile selectors row -->
 		<div class="mobile-selectors-row">
 			<CurrencySelector />
@@ -956,11 +961,8 @@
 	.page-layout {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-		padding: 0.875rem 1.5rem 1.25rem;
+		gap: var(--layout-section-gap);
 		position: relative;
-		max-width: 1280px;
-		margin: 0 auto;
 	}
 
 	/* Mobile selectors - hidden on desktop */
@@ -987,10 +989,10 @@
 	.tab-navigation {
 		display: flex;
 		gap: 0.375rem;
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		padding: 0.25rem;
 		border-radius: var(--radius-lg);
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		width: fit-content;
 	}
 
@@ -999,7 +1001,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.5rem 1rem;
-		border-radius: calc(var(--radius-lg) - 0.25rem);
+		border-radius: var(--radius-lg);
 		font-weight: 500;
 		font-size: 0.9375rem;
 		color: var(--color-text-secondary);
@@ -1017,8 +1019,8 @@
 
 	.tab-button.active {
 		color: var(--color-text-primary);
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 	}
 
 	.tab-icon {
@@ -1036,10 +1038,10 @@
 	.content-section {
 		--section-padding: 0.875rem;
 		--section-radius: var(--radius-lg);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		padding: var(--section-padding);
 		border-radius: var(--radius-lg);
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		overflow: visible;
 		position: relative;
 	}
@@ -1173,10 +1175,6 @@
 
 	/* Tablet */
 	@media (max-width: 1024px) {
-		.page-layout {
-			padding: 1.1rem 1rem;
-		}
-
 		.content-section {
 			--section-padding: 0.9rem;
 		}
@@ -1184,11 +1182,6 @@
 
 	/* Mobile */
 	@media (max-width: 768px) {
-		.page-layout {
-			padding: 0.85rem 0.75rem;
-			gap: 0.75rem;
-		}
-
 		.page-toolbar {
 			flex-direction: column;
 			align-items: stretch;
@@ -1250,12 +1243,12 @@
 	}
 
 	.modal {
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		padding: 2rem;
 		border-radius: var(--radius-lg);
 		max-width: 450px;
 		width: 90%;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 	}
 
 	.modal-title {
@@ -1274,9 +1267,9 @@
 	.modal-input {
 		width: 100%;
 		padding: 0.75rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		color: var(--color-text-primary);
 		font-size: 0.9375rem;
 		margin-bottom: 1.5rem;
@@ -1305,9 +1298,9 @@
 	}
 
 	.cancel-button {
-		background-color: var(--color-bg-secondary);
+		background-color: var(--surface-paper-muted);
 		color: var(--color-text-secondary);
-		border-color: var(--color-border-primary);
+		border-color: var(--surface-paper-border);
 	}
 
 	.cancel-button:hover {

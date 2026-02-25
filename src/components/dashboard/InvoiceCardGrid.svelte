@@ -20,7 +20,22 @@
 		onToggleSelection?: (id: string) => void;
 	}
 
-	let { invoices, onView, onEdit, onDelete, onArchive, onDownloadPdf, onShare, onSendEmail, onExport, deletingId, downloadingId, selectionMode = false, selectedInvoices = new Set(), onToggleSelection }: Props = $props();
+	let {
+		invoices,
+		onView,
+		onEdit,
+		onDelete,
+		onArchive,
+		onDownloadPdf,
+		onShare,
+		onSendEmail,
+		onExport,
+		deletingId,
+		downloadingId,
+		selectionMode = false,
+		selectedInvoices = new Set(),
+		onToggleSelection
+	}: Props = $props();
 
 	const formatDate = (dateStr: string): string => {
 		if (!dateStr || dateStr === 'N/A') return $_('saved_invoices.date_not_set') || 'Not set';
@@ -46,7 +61,11 @@
 
 <div class="card-grid">
 	{#each invoices as invoice (invoice.id)}
-		<div class="invoice-card" class:deleting={deletingId === invoice.id} class:selected={selectionMode && selectedInvoices.has(invoice.id)}>
+		<div
+			class="invoice-card"
+			class:deleting={deletingId === invoice.id}
+			class:selected={selectionMode && selectedInvoices.has(invoice.id)}
+		>
 			{#if selectionMode}
 				<label class="card-checkbox">
 					<input
@@ -84,13 +103,13 @@
 							d="M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 1 .41-1.108C5.145 12.437 7.41 11.5 10 11.5c2.59 0 4.855.937 6.125 1.885.369.275.596.693.41 1.108a32.375 32.375 0 0 1-1.535 3.32c-.195.345-.541.607-.94.607h-8.12a1.125 1.125 0 0 1-.94-.607 32.362 32.362 0 0 1-1.535-3.32Z"
 						/>
 					</svg>
-					<span class="meta-text">{invoice.invoiceTo || $_('dashboard.unknown_client') || 'Unknown'}</span>
+					<span class="meta-text"
+						>{invoice.invoiceTo || $_('dashboard.unknown_client') || 'Unknown'}</span
+					>
 				</div>
 				<div class="meta-item">
 					<svg class="meta-icon" viewBox="0 0 20 20" fill="currentColor">
-						<path
-							d="M10 2a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 2Z"
-						/>
+						<path d="M10 2a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 2Z" />
 						<path
 							fill-rule="evenodd"
 							d="M5.404 4.343a.75.75 0 0 1 0 1.06l-1.06 1.061a.75.75 0 0 1-1.061-1.06l1.06-1.061a.75.75 0 0 1 1.061 0Zm9.193 0a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 1 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.061ZM10 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm-7 3a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 3 10Zm15 0a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5a.75.75 0 0 1 .75.75Zm-2.343 5.657a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 1 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.061Zm-9.193 0a.75.75 0 0 1 0 1.06l-1.06 1.061a.75.75 0 1 1-1.061-1.06l1.06-1.061a.75.75 0 0 1 1.061 0Z"
@@ -165,13 +184,11 @@
 						onclick={() => onDownloadPdf(invoice.id)}
 						disabled={downloadingId === invoice.id}
 						title="PDF"
-						aria-label={
-							invoice.hasPdf
-								? invoice.isPdfStale
-									? 'Regenerate PDF'
-									: 'Download PDF'
-								: 'Generate PDF'
-						}
+						aria-label={invoice.hasPdf
+							? invoice.isPdfStale
+								? 'Regenerate PDF'
+								: 'Download PDF'
+							: 'Generate PDF'}
 					>
 						{#if downloadingId === invoice.id}
 							<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -179,12 +196,20 @@
 							</svg>
 						{:else if !invoice.hasPdf}
 							<svg viewBox="0 0 20 20" fill="currentColor">
-								<path fill-rule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm5.75 6.75a.75.75 0 0 0-1.5 0v1.5h-1.5a.75.75 0 0 0 0 1.5h1.5v1.5a.75.75 0 0 0 1.5 0v-1.5h1.5a.75.75 0 0 0 0-1.5h-1.5v-1.5Z" clip-rule="evenodd" />
+								<path
+									fill-rule="evenodd"
+									d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm5.75 6.75a.75.75 0 0 0-1.5 0v1.5h-1.5a.75.75 0 0 0 0 1.5h1.5v1.5a.75.75 0 0 0 1.5 0v-1.5h1.5a.75.75 0 0 0 0-1.5h-1.5v-1.5Z"
+									clip-rule="evenodd"
+								/>
 							</svg>
 						{:else}
 							<svg viewBox="0 0 20 20" fill="currentColor">
-								<path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
-								<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+								<path
+									d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"
+								/>
+								<path
+									d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+								/>
 							</svg>
 						{/if}
 						{#if invoice.isPdfStale && invoice.hasPdf}
@@ -198,8 +223,12 @@
 						aria-label={$_('dashboard.share') || 'Share'}
 					>
 						<svg viewBox="0 0 20 20" fill="currentColor">
-							<path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
-							<path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
+							<path
+								d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z"
+							/>
+							<path
+								d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z"
+							/>
 						</svg>
 					</button>
 					<button
@@ -209,23 +238,31 @@
 						aria-label={$_('export_import.export') || 'Export'}
 					>
 						<svg viewBox="0 0 20 20" fill="currentColor">
-							<path d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z" />
-							<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+							<path
+								d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z"
+							/>
+							<path
+								d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+							/>
 						</svg>
 					</button>
 					<button
 						class="secondary-btn archive"
 						onclick={() => onArchive(invoice.id)}
-						title={invoice.archived ? $_('dashboard.unarchive') || 'Unarchive' : $_('dashboard.archive') || 'Archive'}
-						aria-label={
-							invoice.archived
-								? $_('dashboard.unarchive') || 'Unarchive'
-								: $_('dashboard.archive') || 'Archive'
-						}
+						title={invoice.archived
+							? $_('dashboard.unarchive') || 'Unarchive'
+							: $_('dashboard.archive') || 'Archive'}
+						aria-label={invoice.archived
+							? $_('dashboard.unarchive') || 'Unarchive'
+							: $_('dashboard.archive') || 'Archive'}
 					>
 						<svg viewBox="0 0 20 20" fill="currentColor">
 							<path d="M2 3a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H2Z" />
-							<path fill-rule="evenodd" d="M2 7.5h16l-.811 7.71a2 2 0 0 1-1.99 1.79H4.802a2 2 0 0 1-1.99-1.79L2 7.5Zm5.22 1.72a.75.75 0 0 1 1.06 0L10 10.94l1.72-1.72a.75.75 0 1 1 1.06 1.06L11.06 12l1.72 1.72a.75.75 0 1 1-1.06 1.06L10 13.06l-1.72 1.72a.75.75 0 0 1-1.06-1.06L8.94 12l-1.72-1.72a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+							<path
+								fill-rule="evenodd"
+								d="M2 7.5h16l-.811 7.71a2 2 0 0 1-1.99 1.79H4.802a2 2 0 0 1-1.99-1.79L2 7.5Zm5.22 1.72a.75.75 0 0 1 1.06 0L10 10.94l1.72-1.72a.75.75 0 1 1 1.06 1.06L11.06 12l1.72 1.72a.75.75 0 1 1-1.06 1.06L10 13.06l-1.72 1.72a.75.75 0 0 1-1.06-1.06L8.94 12l-1.72-1.72a.75.75 0 0 1 0-1.06Z"
+								clip-rule="evenodd"
+							/>
 						</svg>
 					</button>
 					<button
@@ -241,7 +278,11 @@
 							</svg>
 						{:else}
 							<svg viewBox="0 0 20 20" fill="currentColor">
-								<path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd" />
+								<path
+									fill-rule="evenodd"
+									d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+									clip-rule="evenodd"
+								/>
 							</svg>
 						{/if}
 					</button>
@@ -260,8 +301,8 @@
 	}
 
 	.invoice-card {
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 		padding: 1.5rem;
 		display: flex;
@@ -281,7 +322,6 @@
 
 	.invoice-card.selected {
 		border-color: var(--color-accent-blue);
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 	}
 
 	.card-checkbox {
@@ -295,7 +335,7 @@
 		justify-content: center;
 	}
 
-	.card-checkbox input[type="checkbox"] {
+	.card-checkbox input[type='checkbox'] {
 		position: absolute;
 		opacity: 0;
 		width: 0;
@@ -305,9 +345,9 @@
 	.card-checkbox .checkbox-custom {
 		width: 1.5rem;
 		height: 1.5rem;
-		border: 2px solid var(--color-border-primary);
+		border: 2px solid var(--surface-paper-border);
 		border-radius: var(--radius-sm);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		transition: all 0.15s;
 		display: flex;
 		align-items: center;
@@ -318,12 +358,12 @@
 		border-color: var(--color-accent-blue);
 	}
 
-	.card-checkbox input[type="checkbox"]:checked + .checkbox-custom {
+	.card-checkbox input[type='checkbox']:checked + .checkbox-custom {
 		background: var(--color-accent-blue);
 		border-color: var(--color-accent-blue);
 	}
 
-	.card-checkbox input[type="checkbox"]:checked + .checkbox-custom::after {
+	.card-checkbox input[type='checkbox']:checked + .checkbox-custom::after {
 		content: '';
 		width: 0.5rem;
 		height: 0.75rem;
@@ -409,9 +449,9 @@
 		flex-direction: column;
 		gap: 0.625rem;
 		padding: 0.875rem 1rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
-		background: rgba(255, 255, 255, 0.6);
+		background: var(--surface-paper-muted);
 	}
 
 	.meta-item {
@@ -533,7 +573,11 @@
 		background: var(--color-bg-primary);
 		color: var(--color-text-secondary);
 		cursor: pointer;
-		transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s,
+			border-color 0.15s,
+			transform 0.15s;
 	}
 
 	.secondary-btn:hover {

@@ -21,6 +21,8 @@
 	// Check if we're on a shared route (no app chrome)
 	const isSharedRoute = $derived($page.url.pathname.startsWith('/shared'));
 	const isDashboardRoute = $derived($page.url.pathname.startsWith('/dashboard'));
+	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
+	const isConsoleRoute = $derived(isDashboardRoute || isAdminRoute);
 </script>
 
 {#if $isLoading}
@@ -31,7 +33,7 @@
 	<!-- Shared routes get a clean layout without app Header/Footer -->
 	{@render children()}
 {:else}
-	<div class="page-shell" class:dashboard-shell={isDashboardRoute}>
+	<div class="page-shell" class:console-shell={isConsoleRoute}>
 		{#if accountStatus === 'banned'}
 			<div class="account-banner banned">
 				<svg viewBox="0 0 20 20" fill="currentColor" class="banner-icon">
@@ -58,7 +60,7 @@
 			</div>
 		{/if}
 		<Header isAdmin={data.isAdmin} />
-		<main>
+		<main class="page-main">
 			{@render children()}
 		</main>
 		<AppFooter />
@@ -69,14 +71,20 @@
 	.page-shell {
 		min-height: 100vh;
 		background-color: var(--surface-page-background);
+		display: flex;
+		flex-direction: column;
 	}
 
-	.page-shell.dashboard-shell {
+	.page-shell.console-shell {
 		background-color: var(--color-bg-primary);
 		background-image: none;
 	}
 
-	:global(.page-shell.dashboard-shell .app-footer) {
+	.page-main {
+		flex: 1;
+	}
+
+	:global(.page-shell.console-shell .app-footer) {
 		margin-top: 0;
 		background: var(--color-bg-primary);
 		border-top-color: var(--color-border-primary);

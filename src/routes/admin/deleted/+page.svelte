@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -64,6 +65,22 @@
 			destroyUser(confirmModal.userId);
 		}
 	};
+
+	const navigate = (event: MouseEvent, href: string): void => {
+		if (
+			event.defaultPrevented ||
+			event.button !== 0 ||
+			event.metaKey ||
+			event.ctrlKey ||
+			event.shiftKey ||
+			event.altKey
+		) {
+			return;
+		}
+
+		event.preventDefault();
+		void goto(href);
+	};
 </script>
 
 <svelte:head>
@@ -87,7 +104,9 @@
 			</svg>
 			<h3>No Deleted Users</h3>
 			<p>Deleted users will appear here for restoration or permanent deletion.</p>
-			<a href="/admin" class="back-link">← Back to Users</a>
+			<a href="/admin" class="back-link" onclick={(event) => navigate(event, '/admin')}
+				>← Back to Users</a
+			>
 		</div>
 	{:else}
 		<div class="info-banner">
@@ -198,8 +217,10 @@
 			</h3>
 			<div class="modal-body">
 				{#if confirmModal.action === 'restore'}
-					<p>Are you sure you want to restore <strong>{confirmModal.userName}</strong>? They will be
-					able to log in again.</p>
+					<p>
+						Are you sure you want to restore <strong>{confirmModal.userName}</strong>? They will be
+						able to log in again.
+					</p>
 				{:else}
 					<p><strong class="danger-text">This action cannot be undone!</strong></p>
 					<p>Permanently deleting <strong>{confirmModal.userName}</strong> will remove:</p>
@@ -229,8 +250,7 @@
 
 <style>
 	.admin-page {
-		max-width: 1000px;
-		margin: 0 auto;
+		width: 100%;
 	}
 
 	.page-header {
@@ -251,8 +271,8 @@
 
 	/* Empty State */
 	.empty-state-card {
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 		padding: 3rem;
 		text-align: center;
@@ -286,8 +306,8 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 0.75rem;
-		background: #fef3c7;
-		border: 1px solid #f59e0b;
+		background: var(--surface-paper-muted);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
 		padding: 1rem;
 		margin-bottom: 1.5rem;
@@ -303,14 +323,14 @@
 
 	.info-banner p {
 		margin: 0;
-		color: #92400e;
+		color: var(--color-text-secondary);
 		font-size: 0.9rem;
 	}
 
 	/* Table */
 	.table-container {
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 		overflow: hidden;
 	}
@@ -324,11 +344,11 @@
 	.users-table td {
 		padding: 1rem;
 		text-align: left;
-		border-bottom: 1px solid var(--color-border-primary);
+		border-bottom: 1px solid var(--surface-paper-border);
 	}
 
 	.users-table th {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		font-size: 0.75rem;
 		font-weight: 600;
 		text-transform: uppercase;
@@ -378,7 +398,7 @@
 	}
 
 	.invoice-count {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		padding: 0.25rem 0.6rem;
 		border-radius: var(--radius-sm);
 		font-size: 0.85rem;
@@ -458,11 +478,12 @@
 	}
 
 	.modal {
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		border-radius: var(--radius-lg);
 		padding: 1.5rem;
 		max-width: 450px;
 		width: 90%;
+		border: 1px solid var(--surface-paper-border);
 	}
 
 	.modal h3 {
@@ -504,7 +525,7 @@
 	}
 
 	.btn.secondary {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		color: var(--color-text-primary);
 	}
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import LanguageSelector from './LanguageSelector.svelte';
@@ -49,6 +50,24 @@
 		showProfileMenu = false;
 	};
 
+	const navigate = (event: MouseEvent, href: string, onNavigate?: () => void): void => {
+		onNavigate?.();
+
+		if (
+			event.defaultPrevented ||
+			event.button !== 0 ||
+			event.metaKey ||
+			event.ctrlKey ||
+			event.shiftKey ||
+			event.altKey
+		) {
+			return;
+		}
+
+		event.preventDefault();
+		void goto(href);
+	};
+
 	// Get user initials for fallback avatar
 	const getUserInitials = (name: string | undefined): string => {
 		if (!name) return '?';
@@ -68,7 +87,7 @@
 />
 
 <header class="app-header">
-	<div class="header-content">
+	<div class="header-content app-container">
 		<div class="brand-group">
 			<!-- Mobile hamburger menu -->
 			<div class="mobile-menu-container">
@@ -101,7 +120,11 @@
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<nav class="mobile-nav-dropdown" onclick={(e) => e.stopPropagation()}>
 						{#if $session.data}
-							<a href="/dashboard" class="mobile-nav-link" onclick={closeMobileMenu}>
+							<a
+								href="/dashboard"
+								class="mobile-nav-link"
+								onclick={(event) => navigate(event, '/dashboard', closeMobileMenu)}
+							>
 								<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
 									<path
 										d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
@@ -131,7 +154,9 @@
 
 			<nav class="nav-links desktop-nav">
 				{#if $session.data}
-					<a href="/dashboard" class="nav-link">{$_('nav.dashboard')}</a>
+					<a href="/dashboard" class="nav-link" onclick={(event) => navigate(event, '/dashboard')}
+						>{$_('nav.dashboard')}</a
+					>
 				{:else if !$session.isPending}
 					<a href="/history" class="nav-link">{$_('nav.history')}</a>
 				{/if}
@@ -183,7 +208,11 @@
 								<span class="user-email">{$session.data.user.email}</span>
 							</div>
 							<div class="dropdown-divider"></div>
-							<a href="/dashboard" class="dropdown-item" onclick={closeProfileMenu}>
+							<a
+								href="/dashboard"
+								class="dropdown-item"
+								onclick={(event) => navigate(event, '/dashboard', closeProfileMenu)}
+							>
 								<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
 									<path
 										d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
@@ -195,7 +224,7 @@
 								<a
 									href="/admin"
 									class="dropdown-item dropdown-item-admin"
-									onclick={closeProfileMenu}
+									onclick={(event) => navigate(event, '/admin', closeProfileMenu)}
 								>
 									<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
 										<path
@@ -232,8 +261,8 @@
 <style>
 	.app-header {
 		width: 100%;
-		background: var(--color-bg-primary);
-		border-bottom: 1px solid var(--color-border-secondary);
+		background: var(--surface-paper);
+		border-bottom: 1px solid var(--surface-paper-border);
 		padding: 1rem 0;
 		position: sticky;
 		top: 0;
@@ -245,9 +274,6 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1.5rem;
-		max-width: 1280px;
-		margin: 0 auto;
-		padding: 0 1.5rem;
 	}
 
 	.brand-group {
@@ -389,17 +415,9 @@
 		color: var(--color-text-secondary);
 	}
 
-	/* Tablet */
-	@media (max-width: 1024px) {
-		.header-content {
-			padding-inline: 1rem;
-		}
-	}
-
 	/* Mobile - show hamburger, hide desktop nav */
 	@media (max-width: 768px) {
 		.header-content {
-			padding-inline: 0.75rem;
 			gap: 0.75rem;
 		}
 

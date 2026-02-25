@@ -56,7 +56,7 @@
 	<title>{$_('settings.title')} | FreeInvoice</title>
 </svelte:head>
 
-<div class="settings-page">
+<div class="settings-page app-page">
 	<div class="settings-container">
 		<header class="settings-header">
 			<h1>{$_('settings.title')}</h1>
@@ -98,8 +98,17 @@
 				<h2>{$_('settings.billing')}</h2>
 				<p class="section-description">{$_('settings.billing_description')}</p>
 				<div class="coming-soon-badge">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path
+							d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
+						/>
 					</svg>
 					{$_('settings.coming_soon')}
 				</div>
@@ -131,8 +140,8 @@
 
 <style>
 	.settings-page {
-		background: var(--color-bg-primary);
-		padding: 2rem 1rem;
+		background: var(--surface-paper);
+		padding: 1.5rem 1rem;
 	}
 
 	.settings-container {
@@ -164,9 +173,9 @@
 	}
 
 	.settings-section {
-		background: var(--color-bg-secondary);
-		border: 1px solid var(--color-border);
-		border-radius: 12px;
+		background: var(--surface-paper-muted);
+		border: 1px solid var(--surface-paper-border);
+		border-radius: var(--radius-lg);
 		padding: 1.5rem;
 	}
 
@@ -195,11 +204,13 @@
 		width: 100%;
 		padding: 0.75rem 1rem;
 		font-size: 0.9375rem;
-		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		background: var(--color-bg-primary);
+		border: 1px solid var(--surface-paper-border);
+		border-radius: var(--radius-md);
+		background: var(--surface-paper);
 		color: var(--color-text-primary);
-		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
 	}
 
 	.text-input:focus,
@@ -246,7 +257,7 @@
 		padding: 0.75rem 1rem;
 		background: rgba(239, 68, 68, 0.1);
 		border: 1px solid rgba(239, 68, 68, 0.3);
-		border-radius: 8px;
+		border-radius: var(--radius-md);
 		color: var(--color-danger, #ef4444);
 		font-size: 0.875rem;
 	}
@@ -256,7 +267,7 @@
 		padding: 0.75rem 1rem;
 		background: rgba(34, 197, 94, 0.1);
 		border: 1px solid rgba(34, 197, 94, 0.3);
-		border-radius: 8px;
+		border-radius: var(--radius-md);
 		color: var(--color-success, #22c55e);
 		font-size: 0.875rem;
 	}
@@ -272,9 +283,11 @@
 		font-size: 0.9375rem;
 		font-weight: 500;
 		border: none;
-		border-radius: 8px;
+		border-radius: var(--radius-md);
 		cursor: pointer;
-		transition: background 0.15s ease, opacity 0.15s ease;
+		transition:
+			background 0.15s ease,
+			opacity 0.15s ease;
 		min-width: 140px;
 	}
 
@@ -304,7 +317,7 @@
 
 	@media (max-width: 640px) {
 		.settings-page {
-			padding: 1rem;
+			padding: 1rem 0.75rem;
 		}
 
 		.settings-section {

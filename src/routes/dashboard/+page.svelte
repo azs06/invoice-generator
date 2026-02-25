@@ -210,7 +210,9 @@
 				);
 			}
 
-			console.log(`[PDF] Regenerated and ${storageStatus === 'saved' ? 'saved to cloud' : 'downloaded locally'}`);
+			console.log(
+				`[PDF] Regenerated and ${storageStatus === 'saved' ? 'saved to cloud' : 'downloaded locally'}`
+			);
 		} catch (err) {
 			console.error('PDF regeneration failed:', err);
 			alert('Failed to regenerate PDF. Please try again.');
@@ -407,7 +409,7 @@
 	<meta name="description" content="Manage your saved invoices and download PDFs" />
 </svelte:head>
 
-<div class="dashboard">
+<div class="dashboard app-page">
 	<header class="dashboard-header">
 		<div class="header-content">
 			<h1>{$_('dashboard.title') || 'Dashboard'}</h1>
@@ -471,12 +473,7 @@
 					bind:this={fileInput}
 					onchange={handleFileSelect}
 				/>
-				<button
-					class="toggle-btn"
-					type="button"
-					onclick={triggerImport}
-					disabled={isImporting}
-				>
+				<button class="toggle-btn" type="button" onclick={triggerImport} disabled={isImporting}>
 					<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
 							d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"
@@ -485,7 +482,9 @@
 							d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
 						/>
 					</svg>
-					{isImporting ? $_('export_import.importing') || 'Importing...' : $_('export_import.import') || 'Import'}
+					{isImporting
+						? $_('export_import.importing') || 'Importing...'
+						: $_('export_import.import') || 'Import'}
 				</button>
 				{#if allInvoices.length > 0}
 					<button class="toggle-btn" type="button" onclick={toggleSelectionMode}>
@@ -496,7 +495,9 @@
 								clip-rule="evenodd"
 							/>
 						</svg>
-						{selectionMode ? $_('export_import.cancel') || 'Cancel' : $_('export_import.select') || 'Select'}
+						{selectionMode
+							? $_('export_import.cancel') || 'Cancel'
+							: $_('export_import.select') || 'Select'}
 					</button>
 					<button class="toggle-btn" type="button" onclick={exportAllInvoices}>
 						<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -568,7 +569,9 @@
 					</svg>
 				</div>
 				<h3>{$_('dashboard.no_invoices_title') || 'No invoices found'}</h3>
-				<p>{$_('dashboard.no_invoices_description') || 'Create your first invoice to get started'}</p>
+				<p>
+					{$_('dashboard.no_invoices_description') || 'Create your first invoice to get started'}
+				</p>
 				<a href="/" class="create-button primary">
 					{$_('dashboard.create_invoice') || 'Create Invoice'}
 				</a>
@@ -625,7 +628,13 @@
 		onclick={cancelDelete}
 		onkeydown={(e) => e.key === 'Escape' && cancelDelete()}
 	>
-		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title" onpointerdown={(e) => e.stopPropagation()}>
+		<div
+			class="modal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="delete-confirm-title"
+			onpointerdown={(e) => e.stopPropagation()}
+		>
 			<div class="modal-icon danger">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path
@@ -685,8 +694,18 @@
 		onclick={closeImportResultModal}
 		onkeydown={(e) => e.key === 'Escape' && closeImportResultModal()}
 	>
-		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-result-title" onpointerdown={(e) => e.stopPropagation()}>
-			<div class="modal-icon" class:success={importResult.imported > 0} class:error={importResult.errors.length > 0 && importResult.imported === 0}>
+		<div
+			class="modal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="import-result-title"
+			onpointerdown={(e) => e.stopPropagation()}
+		>
+			<div
+				class="modal-icon"
+				class:success={importResult.imported > 0}
+				class:error={importResult.errors.length > 0 && importResult.imported === 0}
+			>
 				{#if importResult.imported > 0}
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path
@@ -709,12 +728,14 @@
 			<div class="import-result-details">
 				{#if importResult.imported > 0}
 					<p class="result-success">
-						{importResult.imported} {$_('export_import.invoices_imported') || 'invoice(s) imported successfully'}
+						{importResult.imported}
+						{$_('export_import.invoices_imported') || 'invoice(s) imported successfully'}
 					</p>
 				{/if}
 				{#if importResult.skipped > 0}
 					<p class="result-warning">
-						{importResult.skipped} {$_('export_import.invoices_skipped') || 'invoice(s) skipped'}
+						{importResult.skipped}
+						{$_('export_import.invoices_skipped') || 'invoice(s) skipped'}
 					</p>
 				{/if}
 				{#if importResult.errors.length > 0}
@@ -745,9 +766,7 @@
 	}
 
 	.dashboard {
-		max-width: 1280px;
-		margin: 0 auto;
-		padding: 2rem 1.5rem 5rem;
+		padding: 1.5rem 1.5rem 2.5rem;
 	}
 
 	.dashboard-header {
@@ -778,8 +797,8 @@
 		gap: 1.5rem;
 		margin-bottom: 2rem;
 		padding: 1.5rem;
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 	}
 
@@ -817,8 +836,8 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 		padding: 1rem;
-		background: color-mix(in srgb, var(--color-accent-blue) 8%, transparent);
-		border: 1px solid color-mix(in srgb, var(--color-accent-blue) 25%, transparent);
+		background: var(--surface-paper-muted);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
 		margin-top: 1rem;
 	}
@@ -856,9 +875,9 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.5rem 1rem;
-		border: 1px solid var(--color-border-primary);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-primary);
+		background: var(--surface-paper);
 		color: var(--color-text-secondary);
 		font-size: 0.875rem;
 		font-weight: 500;
@@ -867,7 +886,7 @@
 	}
 
 	.toggle-btn:hover {
-		background: var(--color-bg-secondary);
+		background: var(--surface-paper-muted);
 		border-color: var(--color-accent-blue);
 	}
 
@@ -895,7 +914,9 @@
 		font-weight: 500;
 		text-decoration: none;
 		cursor: pointer;
-		transition: background 0.2s, opacity 0.2s;
+		transition:
+			background 0.2s,
+			opacity 0.2s;
 	}
 
 	.create-button:hover {
@@ -913,8 +934,8 @@
 	}
 
 	.invoices-section {
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 	}
 
@@ -978,8 +999,8 @@
 	}
 
 	.modal {
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
+		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-lg);
 		padding: 2rem;
 		max-width: 400px;
@@ -1036,8 +1057,8 @@
 	}
 
 	.modal-btn.cancel {
-		background: var(--color-bg-secondary);
-		border: 1px solid var(--color-border-primary);
+		background: var(--surface-paper-muted);
+		border: 1px solid var(--surface-paper-border);
 		color: var(--color-text-primary);
 	}
 
@@ -1096,7 +1117,7 @@
 
 	@media (max-width: 768px) {
 		.dashboard {
-			padding: 1rem;
+			padding: 1rem 1rem 1.5rem;
 		}
 
 		.dashboard-header {
