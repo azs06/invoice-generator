@@ -305,6 +305,10 @@
 		vertical-align: top;
 	}
 
+	.items-table tbody tr:last-child td {
+		border-bottom: none;
+	}
+
 	.qty-col,
 	.rate-col,
 	.amount-col {
