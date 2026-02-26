@@ -208,14 +208,17 @@ export async function getAllLocalInvoices(): Promise<LocalInvoiceRecord[]> {
 		records.push(record);
 	}
 
+	// Filter out malformed records (missing invoice data)
+	const validRecords = records.filter((r) => r.invoice);
+
 	// Sort by date descending (most recent first)
-	records.sort((a, b) => {
-		const dateA = a.invoice.date ? new Date(a.invoice.date).getTime() : 0;
-		const dateB = b.invoice.date ? new Date(b.invoice.date).getTime() : 0;
+	validRecords.sort((a, b) => {
+		const dateA = a.invoice?.date ? new Date(a.invoice.date).getTime() : 0;
+		const dateB = b.invoice?.date ? new Date(b.invoice.date).getTime() : 0;
 		return dateB - dateA;
 	});
 
-	return records;
+	return validRecords;
 }
 
 /**
