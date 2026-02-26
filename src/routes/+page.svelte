@@ -30,7 +30,8 @@
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
-	import { pageSettings, viewMode } from '../stores/pageSettingsStore.js';
+	import { pageSettings, currentPageDimensions, viewMode } from '../stores/pageSettingsStore.js';
+	import { getTemplate } from '$lib/templates/registry';
 	import type {
 		InvoiceData,
 		InvoiceItem,
@@ -85,6 +86,50 @@
 	let isSidebarLoading = $state<boolean>(false);
 	let deleteConfirmId = $state<string | null>(null);
 	let deleteConfirmTitle = $state<string>('');
+
+	// Mode dropdown state
+	let showModeMenu = $state<boolean>(false);
+
+	// Context bar highlight state
+	let contextBarHighlight = $state<boolean>(false);
+	let contextBarInitialized = false;
+
+	// Toolbar scroll-fade state (mobile)
+	let toolbarEl = $state<HTMLElement | null>(null);
+	let toolbarScrollState = $state<'start' | 'middle' | 'end' | 'none'>('none');
+
+	function handleToolbarScroll() {
+		if (!toolbarEl) return;
+		const { scrollLeft, scrollWidth, clientWidth } = toolbarEl;
+		const atStart = scrollLeft <= 2;
+		const atEnd = scrollLeft + clientWidth >= scrollWidth - 2;
+
+		if (scrollWidth <= clientWidth) toolbarScrollState = 'none';
+		else if (atStart) toolbarScrollState = 'start';
+		else if (atEnd) toolbarScrollState = 'end';
+		else toolbarScrollState = 'middle';
+	}
+
+	$effect(() => {
+		if (toolbarEl) {
+			requestAnimationFrame(() => handleToolbarScroll());
+		}
+	});
+
+	// Coachmark state
+	let showCoachmark = $state<boolean>(false);
+
+	// Derived state for context bar
+	let currentTemplateName = $derived(
+		getTemplate($selectedTemplateId)?.name ?? 'Modern'
+	);
+	let marginsSummary = $derived.by(() => {
+		const m = $pageSettings.margins;
+		if (m.top === m.right && m.right === m.bottom && m.bottom === m.left) {
+			return `${m.top}mm`;
+		}
+		return `${m.top}/${m.right}/${m.bottom}/${m.left}mm`;
+	});
 
 	// Derived state for share button availability
 	let isShareable = $derived(isInvoiceComplete(invoice));
@@ -398,9 +443,34 @@
 		showProfileMenu = false;
 	};
 
+	const closeModeMenu = (): void => {
+		showModeMenu = false;
+	};
+
+	const toggleModeMenu = (): void => {
+		showModeMenu = !showModeMenu;
+		if (showModeMenu) {
+			dismissCoachmark();
+		}
+	};
+
+	const selectMode = (mode: TabName): void => {
+		closeModeMenu();
+		setActiveTab(mode);
+	};
+
+	const dismissCoachmark = (): void => {
+		if (!showCoachmark) return;
+		showCoachmark = false;
+		try {
+			localStorage.setItem('ig.coachmark.mode-toggle', '1');
+		} catch {}
+	};
+
 	const closeHeaderMenus = (): void => {
 		closeFileMenu();
 		closeProfileMenu();
+		closeModeMenu();
 	};
 
 	const toggleFileMenu = (): void => {
@@ -431,6 +501,7 @@
 		if (event.key === 'Escape') {
 			closeFileMenu(true);
 			closeProfileMenu();
+			closeModeMenu();
 		}
 	};
 
@@ -789,6 +860,44 @@
 			invoice.total = totalAmounts(invoice, invoice.subTotal);
 			invoice.balanceDue = invoice.total - (invoice.amountPaid || 0);
 		}
+	});
+
+	// Context bar: detect settings changes and flash highlight
+	$effect(() => {
+		// Read these to track them
+		void $selectedTemplateId;
+		void $pageSettings.pageSize;
+		void $pageSettings.margins;
+
+		if (!contextBarInitialized) {
+			contextBarInitialized = true;
+			return;
+		}
+		contextBarHighlight = true;
+		const timer = setTimeout(() => {
+			contextBarHighlight = false;
+		}, 1500);
+		return () => clearTimeout(timer);
+	});
+
+	// Coachmark: show on first visit after a delay
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const seen = localStorage.getItem('ig.coachmark.mode-toggle');
+		if (seen) return;
+
+		const showTimer = setTimeout(() => {
+			showCoachmark = true;
+		}, 1000);
+
+		const autoTimer = setTimeout(() => {
+			dismissCoachmark();
+		}, 9000); // 1s delay + 8s visible
+
+		return () => {
+			clearTimeout(showTimer);
+			clearTimeout(autoTimer);
+		};
 	});
 
 	const updateInvoiceItems = (index: number, updatedItem: InvoiceItem): void => {
@@ -1168,7 +1277,8 @@
 				</div>
 			</div>
 
-			<div class="docs-toolbar-row docs-toolbar">
+			<div class="docs-toolbar-scroll-wrapper{toolbarScrollState === 'start' || toolbarScrollState === 'middle' ? ' show-fade-right' : ''}{toolbarScrollState === 'end' || toolbarScrollState === 'middle' ? ' show-fade-left' : ''}">
+				<div class="docs-toolbar-row docs-toolbar" bind:this={toolbarEl} onscroll={handleToolbarScroll}>
 				<div class="docs-toolbar-group docs-toolbar-group--file-actions">
 					<button
 						type="button"
@@ -1203,18 +1313,6 @@
 					<CurrencySelector />
 					<LanguageSelector />
 				</div>
-				<div class="docs-toolbar-spacer"></div>
-				<div class="docs-toolbar-group">
-					<button
-						type="button"
-						class="docs-tool-button"
-						class:docs-tool-button--toggle-active={activeTab === 'preview'}
-						onclick={() => setActiveTab(activeTab === 'edit' ? 'preview' : 'edit')}
-						data-testid="workspace-toggle"
-					>
-						{activeTab === 'edit' ? 'Preview' : 'Editor'}
-					</button>
-				</div>
 				<span class="docs-toolbar-divider" aria-hidden="true"></span>
 				<div class="docs-toolbar-group docs-toolbar-group--controls">
 					{#if activeTab === 'preview' || $viewMode === 'page'}
@@ -1225,7 +1323,7 @@
 						<ViewModeToggle />
 					{/if}
 				</div>
-				<span class="docs-toolbar-divider" aria-hidden="true"></span>
+				<div class="docs-toolbar-spacer"></div>
 				<div class="docs-toolbar-group">
 					<button
 						type="button"
@@ -1327,7 +1425,110 @@
 						</button>
 					{/if}
 				</div>
+				<span class="docs-toolbar-divider" aria-hidden="true"></span>
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div class="docs-mode-menu-wrap" onpointerdown={(e) => e.stopPropagation()}>
+					<button
+						type="button"
+						class="docs-mode-pill"
+						class:docs-mode-pill--viewing={activeTab === 'preview'}
+						class:docs-mode-pill--open={showModeMenu}
+						onclick={toggleModeMenu}
+						data-testid="workspace-toggle"
+						aria-haspopup="menu"
+						aria-expanded={showModeMenu}
+					>
+						{#if activeTab === 'edit'}
+							<svg class="docs-mode-pill__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+								<path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+							</svg>
+							<span class="docs-mode-pill__label">Editing</span>
+						{:else}
+							<svg class="docs-mode-pill__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+								<path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+							</svg>
+							<span class="docs-mode-pill__label">Viewing</span>
+						{/if}
+						<svg class="docs-mode-pill__caret" class:docs-mode-pill__caret--open={showModeMenu} viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+							<path d="M3.5 4.5 6 7l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+						</svg>
+					</button>
+
+					{#if showModeMenu}
+						<div class="docs-mode-dropdown" role="menu">
+							<button
+								class="docs-mode-option"
+								class:docs-mode-option--active={activeTab === 'edit'}
+								role="menuitem"
+								onclick={() => selectMode('edit')}
+							>
+								<svg class="docs-mode-option__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+									<path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+								</svg>
+								<span class="docs-mode-option__label">Editing</span>
+								{#if activeTab === 'edit'}
+									<svg class="docs-mode-option__check" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+										<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+									</svg>
+								{/if}
+							</button>
+							<button
+								class="docs-mode-option"
+								class:docs-mode-option--active={activeTab === 'preview'}
+								role="menuitem"
+								onclick={() => selectMode('preview')}
+							>
+								<svg class="docs-mode-option__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+									<path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+								</svg>
+								<span class="docs-mode-option__label">Viewing</span>
+								{#if activeTab === 'preview'}
+									<svg class="docs-mode-option__check" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+										<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+									</svg>
+								{/if}
+							</button>
+						</div>
+					{/if}
+
+					{#if showCoachmark}
+						<div class="coachmark" role="tooltip">
+							<div class="coachmark__arrow"></div>
+							<p>Click here to switch between editing and previewing your invoice</p>
+							<button class="coachmark__dismiss" onclick={dismissCoachmark} aria-label="Dismiss tip">✕</button>
+						</div>
+					{/if}
+				</div>
 			</div>
+		</div>
+
+			{#if activeTab === 'edit'}
+				<div class="settings-context-bar" class:settings-context-bar--highlight={contextBarHighlight}>
+					<div class="settings-context-bar__settings">
+						<span class="settings-context-bar__item">
+							<span class="settings-context-bar__label">Template</span>
+							<span class="settings-context-bar__value">{currentTemplateName}</span>
+						</span>
+						<span class="settings-context-bar__sep"></span>
+						<span class="settings-context-bar__item">
+							<span class="settings-context-bar__label">Page</span>
+							<span class="settings-context-bar__value">{$currentPageDimensions.label}</span>
+						</span>
+						<span class="settings-context-bar__sep"></span>
+						<span class="settings-context-bar__item">
+							<span class="settings-context-bar__label">Margins</span>
+							<span class="settings-context-bar__value">{marginsSummary}</span>
+						</span>
+					</div>
+					<button class="settings-context-bar__preview-link" onclick={() => setActiveTab('preview')}>
+						Preview →
+					</button>
+				</div>
+			{/if}
 		</div>
 
 		<div class="workspace-main">
@@ -1839,7 +2040,8 @@
 	}
 
 	.docs-toolbar-spacer {
-		width: 0.5rem;
+		flex: 1 1 auto;
+		min-width: 0.5rem;
 	}
 
 	.docs-tool-button {
@@ -1888,10 +2090,262 @@
 		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
 	}
 
-	.docs-tool-button--toggle-active {
-		background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+	.docs-mode-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		height: 1.75rem;
+		padding: 0 0.55rem 0 0.45rem;
+		border-radius: var(--radius-pill);
+		border: none;
+		background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
 		color: var(--color-text-primary);
-		font-weight: 600;
+		font-size: 0.78rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			background-color var(--motion-fast) var(--motion-ease),
+			color var(--motion-fast) var(--motion-ease);
+		flex-shrink: 0;
+	}
+
+	.docs-mode-pill:hover {
+		background: color-mix(in srgb, var(--color-text-primary) 14%, transparent);
+	}
+
+	.docs-mode-pill--viewing {
+		background: color-mix(in srgb, var(--color-accent-blue) 14%, transparent);
+		color: var(--color-accent-blue);
+	}
+
+	.docs-mode-pill--viewing:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 22%, transparent);
+	}
+
+	.docs-mode-pill__icon {
+		width: 0.85rem;
+		height: 0.85rem;
+	}
+
+	.docs-mode-pill__label {
+		line-height: 1;
+	}
+
+	.docs-mode-pill__caret {
+		width: 0.7rem;
+		height: 0.7rem;
+		opacity: 0.55;
+		margin-left: -0.1rem;
+		transition: transform var(--motion-fast) var(--motion-ease);
+	}
+
+	.docs-mode-pill__caret--open {
+		transform: rotate(180deg);
+	}
+
+	/* Mode menu wrapper */
+	.docs-mode-menu-wrap {
+		position: relative;
+		flex-shrink: 0;
+	}
+
+	/* Mode dropdown */
+	.docs-mode-dropdown {
+		position: absolute;
+		top: calc(100% + 0.32rem);
+		right: 0;
+		min-width: 150px;
+		background: var(--color-bg-primary);
+		border: 1px solid var(--color-border-primary);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-medium);
+		padding: 0.25rem;
+		z-index: 20;
+		animation: dropdown-fade-in 0.12s ease-out;
+	}
+
+	@keyframes dropdown-fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.docs-mode-option {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		width: 100%;
+		padding: 0.4rem 0.55rem;
+		border: none;
+		border-radius: calc(var(--radius-md) - 2px);
+		background: transparent;
+		color: var(--color-text-primary);
+		font-size: 0.8rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color var(--motion-fast) var(--motion-ease);
+	}
+
+	.docs-mode-option:hover {
+		background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+	}
+
+	.docs-mode-option--active {
+		color: var(--color-accent-blue);
+	}
+
+	.docs-mode-option__icon {
+		width: 0.88rem;
+		height: 0.88rem;
+		flex-shrink: 0;
+	}
+
+	.docs-mode-option__label {
+		flex: 1;
+		text-align: left;
+	}
+
+	.docs-mode-option__check {
+		width: 0.82rem;
+		height: 0.82rem;
+		flex-shrink: 0;
+	}
+
+	/* Settings Context Bar */
+	.settings-context-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.22rem 0.65rem;
+		font-size: 0.72rem;
+		border-bottom: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
+		transition: background-color 0.4s ease;
+	}
+
+	.settings-context-bar--highlight {
+		background: color-mix(in srgb, var(--color-accent-blue) 6%, var(--color-bg-primary));
+	}
+
+	.settings-context-bar__settings {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--color-text-secondary);
+	}
+
+	.settings-context-bar__item {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.settings-context-bar__label {
+		color: var(--color-text-tertiary);
+	}
+
+	.settings-context-bar__value {
+		color: var(--color-text-primary);
+		font-weight: 500;
+	}
+
+	.settings-context-bar__sep {
+		width: 1px;
+		height: 0.7rem;
+		background: var(--color-border-primary);
+	}
+
+	.settings-context-bar__preview-link {
+		border: none;
+		background: transparent;
+		color: var(--color-accent-blue);
+		font-size: 0.72rem;
+		font-weight: 500;
+		cursor: pointer;
+		padding: 0.15rem 0.45rem;
+		border-radius: var(--radius-pill);
+		transition: background-color var(--motion-fast) var(--motion-ease);
+	}
+
+	.settings-context-bar__preview-link:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
+	}
+
+	/* Coachmark */
+	.coachmark {
+		position: absolute;
+		top: calc(100% + 0.55rem);
+		right: 0;
+		min-width: 220px;
+		max-width: 280px;
+		background: var(--color-accent-blue);
+		color: #fff;
+		font-size: 0.78rem;
+		line-height: 1.4;
+		padding: 0.6rem 0.75rem;
+		border-radius: var(--radius-md);
+		z-index: 25;
+		animation: coachmark-fade-in 0.3s ease-out;
+	}
+
+	.coachmark p {
+		margin: 0;
+		padding-right: 1rem;
+	}
+
+	.coachmark__arrow {
+		position: absolute;
+		top: -5px;
+		right: 1rem;
+		width: 10px;
+		height: 10px;
+		background: var(--color-accent-blue);
+		transform: rotate(45deg);
+	}
+
+	.coachmark__dismiss {
+		position: absolute;
+		top: 0.35rem;
+		right: 0.35rem;
+		width: 1.2rem;
+		height: 1.2rem;
+		border: none;
+		background: transparent;
+		color: rgba(255, 255, 255, 0.7);
+		font-size: 0.7rem;
+		cursor: pointer;
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+		transition: color var(--motion-fast) var(--motion-ease);
+	}
+
+	.coachmark__dismiss:hover {
+		color: #fff;
+	}
+
+	@keyframes coachmark-fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(-6px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	:global(.dark) .coachmark {
+		background: #1a73e8;
+	}
+
+	:global(.dark) .coachmark__arrow {
+		background: #1a73e8;
 	}
 
 	.docs-tool-icon {
@@ -2147,6 +2601,41 @@
 			display: none;
 		}
 
+		.docs-toolbar-scroll-wrapper {
+			position: relative;
+		}
+
+		.docs-toolbar-scroll-wrapper::before,
+		.docs-toolbar-scroll-wrapper::after {
+			content: '';
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			width: 24px;
+			pointer-events: none;
+			z-index: 2;
+			opacity: 0;
+			transition: opacity 0.2s ease;
+		}
+
+		.docs-toolbar-scroll-wrapper::before {
+			left: 0;
+			background: linear-gradient(to right, var(--color-bg-secondary), transparent);
+		}
+
+		.docs-toolbar-scroll-wrapper::after {
+			right: 0;
+			background: linear-gradient(to left, var(--color-bg-secondary), transparent);
+		}
+
+		.docs-toolbar-scroll-wrapper.show-fade-right::after {
+			opacity: 1;
+		}
+
+		.docs-toolbar-scroll-wrapper.show-fade-left::before {
+			opacity: 1;
+		}
+
 		.docs-toolbar-row {
 			gap: 0.15rem;
 			padding: 0.2rem 0.35rem;
@@ -2175,6 +2664,49 @@
 			display: none;
 		}
 
+		.docs-mode-pill {
+			height: 1.6rem;
+			padding: 0 0.35rem;
+			font-size: 0.74rem;
+		}
+
+		.docs-mode-pill__label,
+		.docs-mode-pill__caret {
+			display: none;
+		}
+
+		.docs-mode-dropdown {
+			position: fixed;
+			top: auto;
+			bottom: 1rem;
+			right: 1rem;
+			z-index: 50;
+			min-width: 160px;
+		}
+
+		.settings-context-bar {
+			padding: 0.18rem 0.4rem;
+			font-size: 0.68rem;
+		}
+
+		.settings-context-bar__label {
+			display: none;
+		}
+
+		.coachmark {
+			position: fixed;
+			top: auto;
+			bottom: 1rem;
+			right: 1rem;
+			left: 1rem;
+			max-width: none;
+			min-width: auto;
+		}
+
+		.coachmark__arrow {
+			display: none;
+		}
+
 		.docs-toolbar-divider {
 			flex-shrink: 0;
 		}
@@ -2185,8 +2717,7 @@
 		}
 
 		.docs-toolbar-group--controls {
-			flex-shrink: 1;
-			min-width: 0;
+			flex-shrink: 0;
 		}
 
 		.docs-toolbar-group--file-actions {
