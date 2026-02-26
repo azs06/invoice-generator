@@ -6,6 +6,7 @@
 	import Header from '$components/Header.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import '../app.css';
 
 	interface Props {
@@ -15,13 +16,17 @@
 
 	let { children, data }: Props = $props();
 
-	const accountStatus = $derived($page.url.searchParams.get('account'));
+	const accountStatus = $derived(browser ? $page.url.searchParams.get('account') : null);
 	const isSharedRoute = $derived($page.url.pathname.startsWith('/shared'));
 	const isEditorRoute = $derived($page.url.pathname === '/');
 	const isDashboardRoute = $derived($page.url.pathname.startsWith('/dashboard'));
 	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
 	const isConsoleRoute = $derived(isDashboardRoute || isAdminRoute);
 </script>
+
+<svelte:head>
+	<link rel="canonical" href="https://freeinvoice.info{$page.url.pathname}" />
+</svelte:head>
 
 {#if $isLoading}
 	<div class="loading-screen">

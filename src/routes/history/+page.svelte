@@ -451,8 +451,17 @@
 </script>
 
 <svelte:head>
-	<title>Your Invoices | FreeInvoice</title>
-	<meta name="description" content="View and manage all your invoices" />
+	<title>Invoice History — FreeInvoice</title>
+	<meta
+		name="description"
+		content="View, manage, and export your saved invoices. Filter by status, search, and sync across devices."
+	/>
+	<meta property="og:title" content="Invoice History — FreeInvoice" />
+	<meta
+		property="og:description"
+		content="View, manage, and export your saved invoices. Filter by status, search, and sync across devices."
+	/>
+	<meta property="og:url" content="https://freeinvoice.info/history" />
 </svelte:head>
 
 <section class="history-page app-container app-page">

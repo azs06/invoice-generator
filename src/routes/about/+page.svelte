@@ -3,11 +3,17 @@
 </script>
 
 <svelte:head>
-	<title>About - Free Invoice Generator | FreeInvoice.info</title>
+	<title>About — FreeInvoice</title>
 	<meta
 		name="description"
-		content="Learn about FreeInvoice.info - a free, privacy-focused invoice generator for freelancers and small businesses. No signup required, completely open source."
+		content="Learn about FreeInvoice, the free online invoice generator built for freelancers and small businesses."
 	/>
+	<meta property="og:title" content="About — FreeInvoice" />
+	<meta
+		property="og:description"
+		content="Learn about FreeInvoice, the free online invoice generator built for freelancers and small businesses."
+	/>
+	<meta property="og:url" content="https://freeinvoice.info/about" />
 </svelte:head>
 
 <div class="about-page">
