@@ -153,6 +153,7 @@
 					<a
 						href="/history"
 						class="header-nav-link"
+						aria-current={$page.url.pathname.startsWith('/history') ? 'page' : undefined}
 						onclick={(event) => navigate(event, '/history')}>{$_('nav.history')}</a
 					>
 				{/if}
@@ -205,6 +206,7 @@
 								<a
 									href="/history"
 									class="dropdown-item"
+									aria-current={$page.url.pathname.startsWith('/history') ? 'page' : undefined}
 									onclick={(event) => navigate(event, '/history', closeProfileMenu)}
 								>
 									{$_('nav.history')}
@@ -240,6 +242,7 @@
 					<a
 						href="/history"
 						class="mobile-nav-link"
+						aria-current={$page.url.pathname.startsWith('/history') ? 'page' : undefined}
 						onclick={(event) => navigate(event, '/history', closeMobileMenu)}>{$_('nav.history')}</a
 					>
 				{/if}
@@ -337,6 +340,11 @@
 	.header-nav-link:hover {
 		color: var(--color-text-primary);
 		background: var(--color-bg-secondary);
+	}
+
+	.header-nav-link[aria-current='page'] {
+		color: var(--color-accent-blue);
+		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
 	}
 
 	.header-right {
@@ -511,6 +519,12 @@
 
 	.mobile-nav-link:hover {
 		background: var(--color-bg-secondary);
+	}
+
+	.mobile-nav-link[aria-current='page'] {
+		color: var(--color-accent-blue);
+		border-color: color-mix(in srgb, var(--color-accent-blue) 40%, transparent);
+		background: color-mix(in srgb, var(--color-accent-blue) 8%, transparent);
 	}
 
 	@keyframes spin {

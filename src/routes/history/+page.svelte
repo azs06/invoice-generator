@@ -456,252 +456,146 @@
 </svelte:head>
 
 <section class="history-page app-container app-page">
-	<div class="page-shell">
-		<header class="page-header">
-			<span class="page-badge">Your Invoices</span>
-			<h1 class="page-title">Invoice History</h1>
-			<p class="page-subtitle">
-				{#if isLoggedIn}
-					All invoices stored locally. Synced invoices accessible from any device.
-				{:else}
-					Your invoices are stored locally in this browser.
-				{/if}
-			</p>
-
-			<div class="search-filter-row">
-				<label class="search-field">
-					<span class="sr-only">Search invoices</span>
-					<svg
-						class="search-icon"
-						viewBox="0 0 20 20"
-						fill="none"
-						stroke="currentColor"
-						aria-hidden="true"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="1.6"
-							d="m17.5 17.5-3.6-3.6m1.1-4.4a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0Z"
-						/>
+	<div class="history-shell">
+		<!-- Title Row -->
+		<div class="history-title-row">
+			<div class="history-title-cluster">
+				<div class="history-file-badge">
+					<svg class="history-file-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" />
 					</svg>
-					<input
-						type="search"
-						placeholder="Search..."
-						bind:value={search}
-						oninput={onSearchInput}
-					/>
-				</label>
-				<div class="filter-groups">
-					<div class="filter-group">
-						<span class="filter-label">Collection</span>
-						<div class="chip-group">
-							<button
-								type="button"
-								class:active={!showArchived}
-								onclick={() => setArchivedView(false)}
-								aria-pressed={!showArchived}
-							>
-								Active
-							</button>
-							<button
-								type="button"
-								class:active={showArchived}
-								onclick={() => setArchivedView(true)}
-								aria-pressed={showArchived}
-							>
-								Archived
-							</button>
-						</div>
+				</div>
+				<div class="history-title-stack">
+					<h1 class="history-document-title">Invoice History</h1>
+					<div class="history-menu-bar">
+						<a href="/" class="history-menu-trigger" onclick={(e) => { e.preventDefault(); goto('/'); }}>Editor</a>
+						<span class="history-subtitle">
+							{#if isLoggedIn}
+								Stored locally &middot; Synced to cloud
+							{:else}
+								Stored locally in this browser
+							{/if}
+						</span>
 					</div>
-
-					<div class="filter-group">
-						<span class="filter-label">Status</span>
-						<div class="chip-group">
-							<button
-								type="button"
-								class:active={filterMode === 'all'}
-								onclick={() => setFilterMode('all')}
-								aria-pressed={filterMode === 'all'}
-							>
-								All
-							</button>
-							<button
-								type="button"
-								class:active={filterMode === 'draft'}
-								onclick={() => setFilterMode('draft')}
-								aria-pressed={filterMode === 'draft'}
-							>
-								Drafts
-							</button>
-							<button
-								type="button"
-								class:active={filterMode === 'finalized'}
-								onclick={() => setFilterMode('finalized')}
-								aria-pressed={filterMode === 'finalized'}
-							>
-								Finalized
-							</button>
-						</div>
-					</div>
-
-					{#if isLoggedIn}
-						<div class="filter-group">
-							<span class="filter-label">Source</span>
-							<div class="chip-group">
-								<button
-									type="button"
-									class:active={sourceFilter === 'all'}
-									onclick={() => setSourceFilter('all')}
-									aria-pressed={sourceFilter === 'all'}
-								>
-									All
-								</button>
-								<button
-									type="button"
-									class:active={sourceFilter === 'cloud'}
-									onclick={() => setSourceFilter('cloud')}
-									aria-pressed={sourceFilter === 'cloud'}
-								>
-									Synced
-								</button>
-								<button
-									type="button"
-									class:active={sourceFilter === 'local'}
-									onclick={() => setSourceFilter('local')}
-									aria-pressed={sourceFilter === 'local'}
-								>
-									Local Only
-								</button>
-							</div>
-						</div>
-					{/if}
 				</div>
 			</div>
-		</header>
+		</div>
 
-		<!-- Cloud Sync Info Bar (logged-in only) -->
-		{#if isLoggedIn}
-			<div class="cloud-info-bar">
-				<div class="cloud-info-icon">
-					<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							d="M1 12.5A4.5 4.5 0 0 1 5.5 8H6a5.5 5.5 0 0 1 10.906 1.182A3.5 3.5 0 0 1 16.5 16h-11A4.5 4.5 0 0 1 1 12.5Z"
-						/>
+		<!-- Toolbar Row -->
+		<div class="history-toolbar-row">
+			<label class="history-search-field">
+				<span class="sr-only">Search invoices</span>
+				<svg class="history-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="m17.5 17.5-3.6-3.6m1.1-4.4a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0Z" />
+				</svg>
+				<input type="search" placeholder="Search..." bind:value={search} oninput={onSearchInput} />
+			</label>
+
+			<div class="history-toolbar-divider"></div>
+
+			<div class="history-toolbar-group">
+				<button type="button" class="history-chip" class:active={!showArchived} onclick={() => setArchivedView(false)} aria-pressed={!showArchived}>Active</button>
+				<button type="button" class="history-chip" class:active={showArchived} onclick={() => setArchivedView(true)} aria-pressed={showArchived}>Archived</button>
+			</div>
+
+			<div class="history-toolbar-divider"></div>
+
+			<div class="history-toolbar-group">
+				<button type="button" class="history-chip" class:active={filterMode === 'all'} onclick={() => setFilterMode('all')} aria-pressed={filterMode === 'all'}>All</button>
+				<button type="button" class="history-chip" class:active={filterMode === 'draft'} onclick={() => setFilterMode('draft')} aria-pressed={filterMode === 'draft'}>Drafts</button>
+				<button type="button" class="history-chip" class:active={filterMode === 'finalized'} onclick={() => setFilterMode('finalized')} aria-pressed={filterMode === 'finalized'}>Finalized</button>
+			</div>
+
+			{#if isLoggedIn}
+				<div class="history-toolbar-divider"></div>
+				<div class="history-toolbar-group">
+					<button type="button" class="history-chip" class:active={sourceFilter === 'all'} onclick={() => setSourceFilter('all')} aria-pressed={sourceFilter === 'all'}>All</button>
+					<button type="button" class="history-chip" class:active={sourceFilter === 'cloud'} onclick={() => setSourceFilter('cloud')} aria-pressed={sourceFilter === 'cloud'}>Synced</button>
+					<button type="button" class="history-chip" class:active={sourceFilter === 'local'} onclick={() => setSourceFilter('local')} aria-pressed={sourceFilter === 'local'}>Local</button>
+				</div>
+			{/if}
+
+			<div class="history-toolbar-spacer"></div>
+
+			<input type="file" accept=".json" class="sr-only" bind:this={fileInput} onchange={handleFileSelect} />
+
+			<button class="history-tool-button" type="button" onclick={triggerImport} disabled={isImporting}>
+				<svg class="history-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z" />
+					<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+				</svg>
+				<span class="history-tool-label">{isImporting ? $_('export_import.importing') : $_('export_import.import')}</span>
+			</button>
+
+			{#if allInvoices.length > 0}
+				<button class="history-tool-button" type="button" onclick={toggleSelectionMode}>
+					<svg class="history-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
 					</svg>
-				</div>
-				<div class="cloud-info-text">
-					<strong>Cloud sync: {cloudSyncedCount}/{CLOUD_LIMIT} used</strong>
-					<span>Synced invoices are accessible from any device and can be shared.</span>
-				</div>
+					<span class="history-tool-label">{selectionMode ? $_('export_import.cancel') : $_('export_import.select')}</span>
+				</button>
+				<button class="history-tool-button" type="button" onclick={exportAllInvoices}>
+					<svg class="history-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z" />
+						<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+					</svg>
+					<span class="history-tool-label">{$_('export_import.export_all')}</span>
+				</button>
+			{/if}
+
+			<button class="history-tool-button history-tool-button--primary" type="button" onclick={() => goto('/')}>
+				<svg class="history-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path fill-rule="evenodd" d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 0 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z" clip-rule="evenodd" />
+				</svg>
+				<span class="history-tool-label">New</span>
+			</button>
+		</div>
+
+		<!-- Cloud Info Bar (logged-in only) -->
+		{#if isLoggedIn}
+			<div class="history-cloud-bar">
+				<svg class="history-cloud-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path d="M1 12.5A4.5 4.5 0 0 1 5.5 8H6a5.5 5.5 0 0 1 10.906 1.182A3.5 3.5 0 0 1 16.5 16h-11A4.5 4.5 0 0 1 1 12.5Z" />
+				</svg>
+				<span>Cloud sync: <strong>{cloudSyncedCount}/{CLOUD_LIMIT}</strong> used</span>
 				{#if syncError}
-					<div class="cloud-error">{syncError}</div>
+					<span class="history-cloud-error">{syncError}</span>
 				{/if}
 			</div>
 		{/if}
 
-		<!-- Action Toolbar -->
-		<div class="action-toolbar">
-			<div class="toolbar-actions">
-				<input
-					type="file"
-					accept=".json"
-					class="sr-only"
-					bind:this={fileInput}
-					onchange={handleFileSelect}
-				/>
-				<button class="toolbar-btn" type="button" onclick={triggerImport} disabled={isImporting}>
-					<svg class="toolbar-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"
-						/>
-						<path
-							d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
-						/>
+		<!-- Selection Bar -->
+		{#if selectionMode}
+			<div class="history-selection-bar">
+				<span class="history-selection-count">{selectedInvoices.size} {$_('export_import.selected')}</span>
+				<span class="history-selection-sep">&middot;</span>
+				<button class="history-link-button" type="button" onclick={selectAll}>{$_('export_import.select_all')}</button>
+				<span class="history-selection-sep">&middot;</span>
+				<button class="history-link-button" type="button" onclick={deselectAll}>{$_('export_import.deselect_all')}</button>
+				<span class="history-selection-sep">&middot;</span>
+				<button class="history-tool-button history-tool-button--primary" type="button" onclick={exportSelectedInvoices} disabled={selectedInvoices.size === 0}>
+					<svg class="history-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z" />
+						<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
 					</svg>
-					<span>{isImporting ? $_('export_import.importing') : $_('export_import.import')}</span>
-				</button>
-				{#if allInvoices.length > 0}
-					<button class="toolbar-btn" type="button" onclick={toggleSelectionMode}>
-						<svg class="toolbar-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-							<path
-								fill-rule="evenodd"
-								d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-						<span>{selectionMode ? $_('export_import.cancel') : $_('export_import.select')}</span>
-					</button>
-					<button class="toolbar-btn" type="button" onclick={exportAllInvoices}>
-						<svg class="toolbar-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-							<path
-								d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z"
-							/>
-							<path
-								d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
-							/>
-						</svg>
-						<span>{$_('export_import.export_all')}</span>
-					</button>
-				{/if}
-				<button class="toolbar-btn toolbar-btn--primary" type="button" onclick={() => goto('/')}>
-					<svg class="toolbar-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							fill-rule="evenodd"
-							d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 0 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					<span>New Invoice</span>
+					<span class="history-tool-label">{$_('export_import.export_selected')}</span>
 				</button>
 			</div>
+		{/if}
 
-			{#if selectionMode}
-				<div class="selection-controls">
-					<span class="selection-count">{selectedInvoices.size} {$_('export_import.selected')}</span
-					>
-					<button class="link-button" type="button" onclick={selectAll}>
-						{$_('export_import.select_all')}
-					</button>
-					<button class="link-button" type="button" onclick={deselectAll}>
-						{$_('export_import.deselect_all')}
-					</button>
-					<button
-						class="toolbar-btn toolbar-btn--primary"
-						type="button"
-						onclick={exportSelectedInvoices}
-						disabled={selectedInvoices.size === 0}
-					>
-						<svg class="toolbar-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-							<path
-								d="M10.75 6.75a.75.75 0 0 0-1.5 0v6.614l-2.955-3.129a.75.75 0 0 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 1 0-1.09-1.03l-2.955 3.129V6.75Z"
-							/>
-							<path
-								d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
-							/>
-						</svg>
-						<span>{$_('export_import.export_selected')}</span>
-					</button>
-				</div>
-			{/if}
-		</div>
-
+		<!-- Invoice List -->
 		{#if isLoading}
-			<div class="state-card">
-				<div class="state-spinner" aria-hidden="true"></div>
+			<div class="history-state-card">
+				<div class="history-spinner" aria-hidden="true"></div>
 				<p>Loading your invoices...</p>
 			</div>
 		{:else if filteredInvoices.length === 0}
-			<div class="state-card">
+			<div class="history-state-card">
 				<h2>No invoices yet</h2>
 				<p>Start creating an invoice and it will automatically save here.</p>
-				<button class="primary-button" type="button" onclick={() => goto('/')}>
-					<svg class="button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							fill-rule="evenodd"
-							d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 0 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
-							clip-rule="evenodd"
-						/>
+				<button class="history-primary-button" type="button" onclick={() => goto('/')}>
+					<svg class="history-button-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path fill-rule="evenodd" d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 0 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z" clip-rule="evenodd" />
 					</svg>
 					<span>Create Invoice</span>
 				</button>
@@ -907,45 +801,34 @@
 			</div>
 		{/if}
 
-		<footer class="page-footer">
+		<!-- Footer -->
+		<footer class="history-footer">
 			{#if !isLoggedIn}
-				<div class="signin-cta">
-					<svg class="cta-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							d="M1 12.5A4.5 4.5 0 0 1 5.5 8H6a5.5 5.5 0 0 1 10.906 1.182A3.5 3.5 0 0 1 16.5 16h-11A4.5 4.5 0 0 1 1 12.5Z"
-						/>
+				<div class="history-signin-bar">
+					<svg class="history-signin-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path d="M1 12.5A4.5 4.5 0 0 1 5.5 8H6a5.5 5.5 0 0 1 10.906 1.182A3.5 3.5 0 0 1 16.5 16h-11A4.5 4.5 0 0 1 1 12.5Z" />
 					</svg>
-					<div class="cta-text">
-						<strong>Sign in to sync invoices to the cloud</strong>
-						<span>Access your invoices from any device and share them with clients.</span>
-					</div>
-					<a href="/api/auth/signin/google" class="cta-button">Sign In</a>
+					<span>Sign in to sync invoices to the cloud.</span>
+					<a href="/api/auth/signin/google" class="history-signin-link">Sign In</a>
 				</div>
 			{/if}
 
-			<div class="footer-info">
-				<svg class="info-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-					<path
-						fill-rule="evenodd"
-						d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-				<p>Invoices stored locally in your browser.</p>
-			</div>
-
-			{#if allInvoices.length > 0}
-				<button class="ghost-button ghost-button--danger" type="button" onclick={confirmDeleteAll}>
-					<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							fill-rule="evenodd"
-							d="M8.75 3a1.75 1.75 0 0 0-1.744 1.61l-.067.676H4a.75.75 0 0 0 0 1.5h.577l.641 9.137A2.25 2.25 0 0 0 7.463 18h5.074a2.25 2.25 0 0 0 2.245-2.077l.641-9.137H16a.75.75 0 0 0 0-1.5h-2.94l-.067-.676A1.75 1.75 0 0 0 11.25 3h-2.5Zm3.146 3.286-.036-.36A.25.25 0 0 0 11.25 5.5h-2.5a.25.25 0 0 0-.249.226l-.036.36h3.432Zm-3.146 3.964a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5Zm4 0a.75.75 0 0 0-1.5 0v3.5a.75.75 0 0 0 1.5 0v-3.5Z"
-							clip-rule="evenodd"
-						/>
+			<div class="history-footer-row">
+				<div class="history-footer-info">
+					<svg class="history-info-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
 					</svg>
-					<span>Delete All Invoices</span>
-				</button>
-			{/if}
+					<span>Invoices stored locally in your browser.</span>
+				</div>
+				{#if allInvoices.length > 0}
+					<button class="history-delete-all-btn" type="button" onclick={confirmDeleteAll}>
+						<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path fill-rule="evenodd" d="M8.75 3a1.75 1.75 0 0 0-1.744 1.61l-.067.676H4a.75.75 0 0 0 0 1.5h.577l.641 9.137A2.25 2.25 0 0 0 7.463 18h5.074a2.25 2.25 0 0 0 2.245-2.077l.641-9.137H16a.75.75 0 0 0 0-1.5h-2.94l-.067-.676A1.75 1.75 0 0 0 11.25 3h-2.5Zm3.146 3.286-.036-.36A.25.25 0 0 0 11.25 5.5h-2.5a.25.25 0 0 0-.249.226l-.036.36h3.432Zm-3.146 3.964a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5Zm4 0a.75.75 0 0 0-1.5 0v3.5a.75.75 0 0 0 1.5 0v-3.5Z" clip-rule="evenodd" />
+						</svg>
+						<span>Delete All</span>
+					</button>
+				{/if}
+			</div>
 		</footer>
 	</div>
 
@@ -1110,300 +993,365 @@
 </section>
 
 <style>
-	.page-shell {
+	/* ── Shell ──────────────────────────────────── */
+	.history-shell {
 		display: flex;
 		flex-direction: column;
-		gap: var(--layout-section-gap);
 	}
 
-	.page-header {
-		position: relative;
+	/* ── Title Row (mirrors .docs-title-row) ───── */
+	.history-title-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding: 0.52rem 0.8rem;
+		width: 100%;
+	}
+
+	.history-title-cluster {
+		display: flex;
+		align-items: center;
+		gap: 0.62rem;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.history-file-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.8rem;
+		height: 1.8rem;
+		border-radius: 0.45rem;
+		background: color-mix(in srgb, var(--color-accent-blue) 14%, var(--color-bg-primary));
+		color: var(--color-accent-blue);
+		flex-shrink: 0;
+	}
+
+	.history-file-icon {
+		width: 1.06rem;
+		height: 1.06rem;
+	}
+
+	.history-title-stack {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-		padding: 1.25rem 1.5rem;
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--surface-paper-border);
-		background: var(--surface-paper);
-		box-shadow: var(--shadow-soft);
+		gap: 0.2rem;
+		min-width: 0;
+	}
+
+	.history-document-title {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 600;
+		line-height: 1.25;
+		color: var(--color-text-primary);
+		white-space: nowrap;
+		text-overflow: ellipsis;
 		overflow: hidden;
 	}
 
-	.page-badge {
-		align-self: flex-start;
-		padding: 0.2rem 0.6rem;
-		border-radius: var(--radius-pill);
-		background: var(--surface-paper-muted);
-		color: var(--color-accent-blue);
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
+	.history-menu-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.2rem;
 	}
 
-	.page-title {
-		margin: 0;
-		font-size: clamp(1.25rem, 2.5vw, 1.5rem);
-		font-weight: 700;
+	.history-menu-trigger {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.22rem;
+		padding: 0.24rem 0.44rem;
+		border-radius: 0.4rem;
+		border: 1px solid transparent;
+		background: transparent;
 		color: var(--color-text-primary);
-	}
-
-	.page-subtitle {
-		margin: 0;
-		font-size: 0.875rem;
-		color: var(--color-text-secondary);
-	}
-
-	/* Search + Filter Row */
-	.search-filter-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 1rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid rgba(148, 163, 184, 0.15);
-	}
-
-	.search-field {
-		position: relative;
-		display: flex;
-		align-items: center;
-		flex: 1 1 280px;
-		max-width: 320px;
-		background: var(--surface-paper);
-		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-md);
-		padding: 0.3rem 0.75rem 0.3rem 2.25rem;
+		font-size: 0.8rem;
+		font-weight: 500;
+		line-height: 1.15;
+		cursor: pointer;
+		text-decoration: none;
 		transition:
-			border-color 0.2s ease,
-			box-shadow 0.2s ease;
+			background-color var(--motion-fast) var(--motion-ease),
+			border-color var(--motion-fast) var(--motion-ease);
 	}
 
-	.search-field:focus-within {
+	.history-menu-trigger:hover {
+		background: var(--color-bg-secondary);
+		border-color: var(--color-border-primary);
+	}
+
+	.history-subtitle {
+		font-size: 0.74rem;
+		color: var(--color-text-muted);
+		padding: 0.24rem 0.2rem;
+	}
+
+	/* ── Toolbar Row (mirrors .docs-toolbar-row) ─ */
+	.history-toolbar-row {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.2rem;
+		padding: 0.25rem 0.5rem;
+		border-top: 0;
+		border-bottom: 1px solid var(--color-border-primary);
+		background: var(--color-bg-secondary);
+		width: 100%;
+	}
+
+	.history-toolbar-group {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.1rem;
+		flex-wrap: wrap;
+	}
+
+	.history-toolbar-divider {
+		width: 1px;
+		height: 1.2rem;
+		background: var(--color-border-primary);
+		margin: 0 0.15rem;
+		opacity: 0.6;
+	}
+
+	.history-toolbar-spacer {
+		flex: 1 1 auto;
+		min-width: 0.5rem;
+	}
+
+	/* ── Search (compact) ────────────────────────── */
+	.history-search-field {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		max-width: 200px;
+		background: transparent;
+		border: 1px solid var(--color-border-primary);
+		border-radius: 0.25rem;
+		padding: 0 0.5rem 0 1.7rem;
+		height: 1.75rem;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+
+	.history-search-field:focus-within {
 		border-color: var(--color-accent-blue);
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
 	}
 
-	.search-field input {
+	.history-search-field input {
 		width: 100%;
 		border: none;
 		outline: none;
 		background: transparent;
 		color: var(--color-text-primary);
-		font-size: 0.875rem;
-		padding: 0.25rem 0;
-	}
-
-	.search-icon {
-		position: absolute;
-		left: 0.75rem;
-		width: 0.9rem;
-		height: 0.9rem;
-		color: var(--color-text-secondary);
-	}
-
-	.filter-groups {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1rem;
-		align-items: center;
-	}
-
-	.filter-group {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.filter-label {
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		color: var(--color-text-secondary);
-		letter-spacing: 0.06em;
-	}
-
-	.chip-group {
-		display: flex;
-		gap: 0.25rem;
-	}
-
-	.chip-group button {
-		padding: 0.25rem 0.6rem;
-		border-radius: var(--radius-md);
-		border: 1px solid var(--color-border-secondary);
-		background: var(--color-bg-primary);
-		color: var(--color-text-secondary);
-		font-size: 0.8rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.chip-group button:hover {
-		border-color: var(--color-accent-blue);
-	}
-
-	.chip-group button.active {
-		background: rgba(59, 130, 246, 0.12);
-		border-color: rgba(59, 130, 246, 0.4);
-		color: var(--color-accent-blue);
-	}
-
-	/* Cloud Info Bar */
-	.cloud-info-bar {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem 1rem;
-		border-radius: var(--radius-md);
-		border: 1px solid rgba(59, 130, 246, 0.25);
-		background: rgba(59, 130, 246, 0.06);
-	}
-
-	.cloud-info-icon {
-		flex-shrink: 0;
-		width: 1.5rem;
-		height: 1.5rem;
-		color: var(--color-accent-blue);
-	}
-
-	.cloud-info-icon svg {
-		width: 100%;
+		font-size: 0.78rem;
+		padding: 0;
 		height: 100%;
 	}
 
-	.cloud-info-text {
-		flex: 1;
-		font-size: 0.8rem;
+	.history-search-icon {
+		position: absolute;
+		left: 0.45rem;
+		width: 0.82rem;
+		height: 0.82rem;
 		color: var(--color-text-secondary);
-		line-height: 1.4;
 	}
 
-	.cloud-info-text strong {
-		display: block;
-		color: var(--color-text-primary);
-		font-size: 0.85rem;
-		margin-bottom: 0.1rem;
-	}
-
-	.cloud-error {
-		flex-shrink: 0;
-		padding: 0.25rem 0.6rem;
-		border-radius: var(--radius-sm);
-		background: rgba(239, 68, 68, 0.1);
-		color: var(--color-error, #ef4444);
-		font-size: 0.75rem;
-		font-weight: 500;
-	}
-
-	/* Action Toolbar */
-	.action-toolbar {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		padding: 0.75rem 1rem;
-		background: var(--surface-paper-muted);
-		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-md);
-	}
-
-	.toolbar-actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		align-items: center;
-	}
-
-	.toolbar-btn {
+	/* ── Chip buttons (compact toolbar filters) ─── */
+	.history-chip {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
-		padding: 0.4rem 0.75rem;
-		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-md);
-		background: var(--surface-paper);
-		color: var(--color-text-primary);
-		font-size: 0.8rem;
+		height: 1.5rem;
+		padding: 0 0.44rem;
+		border-radius: 0.25rem;
+		border: none;
+		background: transparent;
+		color: var(--color-text-secondary);
+		font-size: 0.72rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: all 0.15s;
+		transition:
+			background-color var(--motion-fast) var(--motion-ease),
+			color var(--motion-fast) var(--motion-ease);
 	}
 
-	.toolbar-btn:hover {
-		background: var(--color-bg-secondary);
-		border-color: var(--color-accent-blue);
+	.history-chip:hover {
+		background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
 	}
 
-	.toolbar-btn:disabled {
-		opacity: 0.5;
+	.history-chip.active {
+		background: color-mix(in srgb, var(--color-accent-blue) 14%, transparent);
+		color: var(--color-accent-blue);
+		font-weight: 600;
+	}
+
+	/* ── Tool buttons (mirrors .docs-tool-button) ─ */
+	.history-tool-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		height: 1.75rem;
+		padding: 0 0.5rem;
+		border-radius: 0.25rem;
+		border: none;
+		background: transparent;
+		color: var(--color-text-primary);
+		font-size: 0.78rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color var(--motion-fast) var(--motion-ease);
+	}
+
+	.history-tool-button:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+	}
+
+	.history-tool-button:active:not(:disabled) {
+		background: color-mix(in srgb, var(--color-text-primary) 14%, transparent);
+	}
+
+	.history-tool-button:disabled {
+		opacity: 0.4;
 		cursor: not-allowed;
 	}
 
-	.toolbar-btn--primary {
-		background: var(--color-accent-blue);
-		border-color: var(--color-accent-blue);
-		color: #ffffff;
+	.history-tool-button--primary {
+		color: var(--color-accent-blue);
+		font-weight: 600;
 	}
 
-	.toolbar-btn--primary:hover {
-		background: color-mix(in srgb, var(--color-accent-blue) 85%, black);
+	.history-tool-button--primary:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
 	}
 
-	.toolbar-icon {
-		width: 0.9rem;
-		height: 0.9rem;
+	.history-tool-icon {
+		width: 0.88rem;
+		height: 0.88rem;
+		flex-shrink: 0;
 	}
 
-	.selection-controls {
+	/* ── Cloud Info Bar (single line) ─────────────── */
+	.history-cloud-bar {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 0.75rem;
 		align-items: center;
-		padding-top: 0.5rem;
-		border-top: 1px solid var(--color-border-primary);
+		gap: 0.5rem;
+		padding: 0.35rem 0.8rem;
+		font-size: 0.76rem;
+		color: var(--color-text-secondary);
+		border-bottom: 1px solid var(--color-border-primary);
+		background: color-mix(in srgb, var(--color-accent-blue) 4%, var(--color-bg-primary));
 	}
 
-	.selection-count {
-		font-size: 0.875rem;
-		font-weight: 500;
+	.history-cloud-icon {
+		width: 0.88rem;
+		height: 0.88rem;
+		color: var(--color-accent-blue);
+		flex-shrink: 0;
+	}
+
+	.history-cloud-bar strong {
 		color: var(--color-text-primary);
 	}
 
-	.link-button {
+	.history-cloud-error {
+		margin-left: auto;
+		padding: 0.15rem 0.45rem;
+		border-radius: var(--radius-sm);
+		background: rgba(239, 68, 68, 0.1);
+		color: var(--color-error, #ef4444);
+		font-size: 0.72rem;
+		font-weight: 500;
+	}
+
+	/* ── Selection Bar ────────────────────────────── */
+	.history-selection-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.35rem 0.8rem;
+		font-size: 0.78rem;
+		border-bottom: 1px solid var(--color-border-primary);
+		background: color-mix(in srgb, var(--color-accent-blue) 6%, var(--color-bg-primary));
+	}
+
+	.history-selection-count {
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.history-selection-sep {
+		color: var(--color-text-muted);
+	}
+
+	.history-link-button {
 		background: none;
 		border: none;
 		color: var(--color-accent-blue);
-		font-size: 0.8rem;
+		font-size: 0.76rem;
 		font-weight: 500;
 		cursor: pointer;
 		padding: 0;
 		text-decoration: underline;
 	}
 
-	.link-button:hover {
+	.history-link-button:hover {
 		opacity: 0.8;
 	}
 
-	/* Invoice List */
+	/* ── Sign-in Bar (compact) ────────────────────── */
+	.history-signin-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.4rem 0.8rem;
+		font-size: 0.78rem;
+		color: var(--color-text-secondary);
+		border-bottom: 1px solid color-mix(in srgb, var(--color-accent-blue) 20%, transparent);
+		background: color-mix(in srgb, var(--color-accent-blue) 4%, var(--color-bg-primary));
+	}
+
+	.history-signin-icon {
+		width: 0.88rem;
+		height: 0.88rem;
+		color: var(--color-accent-blue);
+		flex-shrink: 0;
+	}
+
+	.history-signin-link {
+		margin-left: auto;
+		padding: 0.2rem 0.6rem;
+		border-radius: var(--radius-sm);
+		background: var(--color-accent-blue);
+		color: #ffffff;
+		font-size: 0.72rem;
+		font-weight: 600;
+		text-decoration: none;
+		transition: background 0.15s;
+	}
+
+	.history-signin-link:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 85%, black);
+	}
+
+	/* ── Invoice List (no card wrapper) ───────────── */
 	.invoice-list {
 		display: flex;
 		flex-direction: column;
-		background: var(--surface-paper);
-		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-lg);
-		overflow: hidden;
+		border-bottom: 1px solid var(--surface-paper-border);
 	}
 
 	.invoice-list__header {
 		display: grid;
 		grid-template-columns: 40px 1.5fr 1fr 100px 140px 100px 140px;
 		gap: 0.5rem;
-		padding: 0.6rem 1rem;
+		padding: 0.5rem 0.8rem;
 		background: var(--surface-paper-muted);
 		border-bottom: 1px solid var(--surface-paper-border);
-		font-size: 0.7rem;
+		font-size: 0.68rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -1414,7 +1362,7 @@
 		display: grid;
 		grid-template-columns: 40px 1.5fr 1fr 100px 140px 100px 140px;
 		gap: 0.5rem;
-		padding: 0.6rem 1rem;
+		padding: 0.5rem 0.8rem;
 		align-items: center;
 		border-bottom: 1px solid var(--surface-paper-border);
 		transition: background-color 0.15s;
@@ -1446,7 +1394,7 @@
 	}
 
 	.invoice-title {
-		font-size: 0.875rem;
+		font-size: 0.84rem;
 		font-weight: 600;
 		color: var(--color-text-primary);
 		white-space: nowrap;
@@ -1455,7 +1403,7 @@
 	}
 
 	.invoice-number {
-		font-size: 0.75rem;
+		font-size: 0.72rem;
 		color: var(--color-text-secondary);
 		font-family: monospace;
 	}
@@ -1465,7 +1413,7 @@
 	}
 
 	.client-name {
-		font-size: 0.875rem;
+		font-size: 0.84rem;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -1473,7 +1421,7 @@
 	}
 
 	.col-date {
-		font-size: 0.8rem;
+		font-size: 0.78rem;
 		color: var(--color-text-secondary);
 	}
 
@@ -1486,9 +1434,9 @@
 	.status-badge {
 		display: inline-flex;
 		align-items: center;
-		padding: 0.15rem 0.4rem;
+		padding: 0.12rem 0.38rem;
 		border-radius: var(--radius-sm);
-		font-size: 0.65rem;
+		font-size: 0.62rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
@@ -1520,7 +1468,7 @@
 	}
 
 	.col-amount {
-		font-size: 0.875rem;
+		font-size: 0.84rem;
 		font-weight: 600;
 		font-family: monospace;
 		color: var(--color-text-primary);
@@ -1533,7 +1481,7 @@
 
 	.col-actions {
 		display: flex;
-		gap: 0.25rem;
+		gap: 0.2rem;
 		justify-content: flex-end;
 	}
 
@@ -1541,8 +1489,8 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 1.75rem;
-		height: 1.75rem;
+		width: 1.65rem;
+		height: 1.65rem;
 		border: 1px solid var(--surface-paper-border);
 		border-radius: var(--radius-sm);
 		background: var(--surface-paper);
@@ -1563,8 +1511,8 @@
 	}
 
 	.action-btn svg {
-		width: 0.875rem;
-		height: 0.875rem;
+		width: 0.82rem;
+		height: 0.82rem;
 	}
 
 	.action-btn--danger:hover {
@@ -1599,15 +1547,15 @@
 
 	.action-spinner {
 		display: block;
-		width: 0.75rem;
-		height: 0.75rem;
+		width: 0.72rem;
+		height: 0.72rem;
 		border: 2px solid var(--surface-paper-border);
 		border-top-color: var(--color-accent-blue);
 		border-radius: 999px;
 		animation: spin 0.75s linear infinite;
 	}
 
-	/* Row Checkbox */
+	/* ── Row Checkbox ──────────────────────────────── */
 	.row-checkbox {
 		cursor: pointer;
 		display: flex;
@@ -1622,8 +1570,8 @@
 
 	.row-checkbox .checkbox-custom {
 		display: block;
-		width: 1rem;
-		height: 1rem;
+		width: 0.92rem;
+		height: 0.92rem;
 		background: var(--surface-paper);
 		border: 2px solid var(--surface-paper-border);
 		border-radius: var(--radius-xs, 3px);
@@ -1638,171 +1586,75 @@
 	.row-checkbox input:checked + .checkbox-custom::after {
 		content: '';
 		display: block;
-		width: 0.25rem;
-		height: 0.45rem;
+		width: 0.22rem;
+		height: 0.4rem;
 		border: solid white;
 		border-width: 0 2px 2px 0;
 		transform: rotate(45deg);
-		margin: 0.1rem auto;
+		margin: 0.08rem auto;
 	}
 
-	/* Sign-in CTA */
-	.signin-cta {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 1rem 1.25rem;
-		border-radius: var(--radius-md);
-		border: 1px solid rgba(59, 130, 246, 0.25);
-		background: rgba(59, 130, 246, 0.06);
-	}
-
-	.cta-icon {
-		flex-shrink: 0;
-		width: 1.5rem;
-		height: 1.5rem;
-		color: var(--color-accent-blue);
-	}
-
-	.cta-text {
-		flex: 1;
-		font-size: 0.85rem;
-		color: var(--color-text-secondary);
-		line-height: 1.4;
-	}
-
-	.cta-text strong {
-		display: block;
-		color: var(--color-text-primary);
-		margin-bottom: 0.1rem;
-	}
-
-	.cta-button {
-		flex-shrink: 0;
-		padding: 0.45rem 1rem;
-		border-radius: var(--radius-md);
-		background: var(--color-accent-blue);
-		color: #ffffff;
-		font-size: 0.82rem;
-		font-weight: 600;
-		text-decoration: none;
-		transition: background 0.15s;
-	}
-
-	.cta-button:hover {
-		background: color-mix(in srgb, var(--color-accent-blue) 85%, black);
-	}
-
-	/* Footer */
-	.page-footer {
+	/* ── Footer ────────────────────────────────────── */
+	.history-footer {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-		align-items: flex-start;
 	}
 
-	.footer-info {
+	.history-footer-row {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 0.5rem;
-		font-size: 0.8rem;
-		color: var(--color-text-secondary);
+		padding: 0.5rem 0.8rem;
 	}
 
-	.footer-info p {
+	.history-footer-info {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-size: 0.74rem;
+		color: var(--color-text-muted);
+	}
+
+	.history-footer-info span {
 		margin: 0;
 	}
 
-	.info-icon {
+	.history-info-icon {
 		flex-shrink: 0;
-		width: 1rem;
-		height: 1rem;
-		color: var(--color-text-secondary);
+		width: 0.82rem;
+		height: 0.82rem;
+		color: var(--color-text-muted);
 	}
 
-	/* Ghost button for footer */
-	.ghost-button {
+	.history-delete-all-btn {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
-		border-radius: var(--radius-md);
-		border: 1px solid var(--surface-paper-border);
-		background: var(--surface-paper);
-		color: var(--color-text-primary);
-		padding: 0.4rem 0.75rem;
-		font-size: 0.8rem;
+		gap: 0.3rem;
+		height: 1.75rem;
+		padding: 0 0.5rem;
+		border-radius: 0.25rem;
+		border: none;
+		background: transparent;
+		color: color-mix(in srgb, var(--color-error, #ef4444) 80%, black);
+		font-size: 0.76rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: background-color var(--motion-fast) var(--motion-ease);
 	}
 
-	.ghost-button:hover {
-		border-color: var(--color-accent-blue);
-		color: var(--color-accent-blue);
-	}
-
-	.ghost-button svg {
-		width: 0.875rem;
-		height: 0.875rem;
-	}
-
-	.ghost-button--danger {
-		border-color: color-mix(in srgb, var(--color-error, #ef4444) 55%, transparent);
-		color: color-mix(in srgb, var(--color-error, #ef4444) 80%, black);
-	}
-
-	.ghost-button--danger:hover {
+	.history-delete-all-btn:hover {
 		background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent);
-		border-color: var(--color-error, #ef4444);
 		color: var(--color-error, #ef4444);
 	}
 
-	/* Primary button for empty state */
-	.primary-button {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		border-radius: var(--radius-md);
-		border: none;
-		background: var(--color-accent-blue);
-		color: #ffffff;
-		padding: 0.5rem 1rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.15s;
+	.history-delete-all-btn svg {
+		width: 0.82rem;
+		height: 0.82rem;
 	}
 
-	.primary-button:hover {
-		background: color-mix(in srgb, var(--color-accent-blue) 85%, black);
-	}
-
-	.button-icon {
-		width: 1rem;
-		height: 1rem;
-	}
-
-	.danger-button {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		border-radius: var(--radius-md);
-		border: none;
-		background: var(--color-error, #ef4444);
-		color: #ffffff;
-		padding: 0.5rem 1rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.danger-button:hover {
-		background: color-mix(in srgb, var(--color-error, #ef4444) 85%, black);
-	}
-
-	/* State cards */
-	.state-card {
+	/* ── State cards ───────────────────────────────── */
+	.history-state-card {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -1810,34 +1662,57 @@
 		gap: 0.75rem;
 		padding: 3rem;
 		text-align: center;
-		border: 1px dashed var(--surface-paper-border);
-		border-radius: var(--radius-lg);
-		background: var(--surface-paper);
+		border-bottom: 1px solid var(--surface-paper-border);
 	}
 
-	.state-card h2 {
+	.history-state-card h2 {
 		margin: 0;
-		font-size: 1.125rem;
+		font-size: 1rem;
 		font-weight: 600;
 		color: var(--color-text-primary);
 	}
 
-	.state-card p {
+	.history-state-card p {
 		margin: 0;
-		font-size: 0.875rem;
+		font-size: 0.84rem;
 		color: var(--color-text-secondary);
 	}
 
-	.state-spinner {
-		width: 2rem;
-		height: 2rem;
+	.history-spinner {
+		width: 1.75rem;
+		height: 1.75rem;
 		border: 3px solid var(--surface-paper-border);
 		border-top-color: var(--color-accent-blue);
 		border-radius: 999px;
 		animation: spin 0.75s linear infinite;
 	}
 
-	/* Modals */
+	.history-primary-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		height: 1.75rem;
+		padding: 0 0.65rem;
+		border-radius: 0.25rem;
+		border: none;
+		background: var(--color-accent-blue);
+		color: #ffffff;
+		font-size: 0.78rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.15s;
+	}
+
+	.history-primary-button:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 85%, black);
+	}
+
+	.history-button-icon {
+		width: 0.88rem;
+		height: 0.88rem;
+	}
+
+	/* ── Modals (unchanged) ────────────────────────── */
 	.modal-backdrop {
 		position: fixed;
 		inset: 0;
@@ -1930,14 +1805,80 @@
 		margin: 0 0 0.15rem;
 	}
 
+	.danger-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		border-radius: var(--radius-md);
+		border: none;
+		background: var(--color-error, #ef4444);
+		color: #ffffff;
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+
+	.danger-button:hover {
+		background: color-mix(in srgb, var(--color-error, #ef4444) 85%, black);
+	}
+
+	.ghost-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--surface-paper-border);
+		background: var(--surface-paper);
+		color: var(--color-text-primary);
+		padding: 0.4rem 0.75rem;
+		font-size: 0.8rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+
+	.ghost-button:hover {
+		border-color: var(--color-accent-blue);
+		color: var(--color-accent-blue);
+	}
+
 	@keyframes spin {
 		to {
 			transform: rotate(360deg);
 		}
 	}
 
-	/* Mobile */
+	/* ── Mobile: 900px ─────────────────────────────── */
 	@media (max-width: 900px) {
+		.history-toolbar-row {
+			overflow-x: auto;
+			flex-wrap: nowrap;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.history-toolbar-group {
+			flex-wrap: nowrap;
+			flex-shrink: 0;
+		}
+
+		.history-search-field {
+			flex-shrink: 0;
+		}
+
+		.history-toolbar-divider {
+			flex-shrink: 0;
+		}
+
+		.history-tool-button {
+			flex-shrink: 0;
+		}
+
+		.history-tool-label {
+			display: none;
+		}
+
 		.invoice-list__header {
 			display: none;
 		}
@@ -1946,7 +1887,7 @@
 			display: flex;
 			flex-wrap: wrap;
 			gap: 0.5rem;
-			padding: 0.75rem 1rem;
+			padding: 0.65rem 0.8rem;
 		}
 
 		.col-checkbox {
@@ -1964,7 +1905,7 @@
 
 		.col-date,
 		.col-amount {
-			font-size: 0.75rem;
+			font-size: 0.72rem;
 		}
 
 		.col-status {
@@ -1976,32 +1917,33 @@
 			justify-content: flex-start;
 		}
 
-		.cloud-info-bar {
+		.history-signin-bar {
 			flex-wrap: wrap;
 		}
 
-		.signin-cta {
+		.history-selection-bar {
 			flex-wrap: wrap;
-		}
-
-		.cta-button {
-			width: 100%;
-			text-align: center;
 		}
 	}
 
+	/* ── Mobile: 480px ─────────────────────────────── */
 	@media (max-width: 480px) {
-		.page-header {
-			padding: 1rem;
+		.history-search-field {
+			max-width: 100%;
+			flex: 1 1 100%;
 		}
 
-		.filter-groups {
+		.history-toolbar-row {
+			flex-wrap: wrap;
+		}
+
+		.history-toolbar-group {
+			flex-wrap: wrap;
+		}
+
+		.history-footer-row {
 			flex-direction: column;
 			align-items: flex-start;
-		}
-
-		.search-field {
-			max-width: 100%;
 		}
 	}
 </style>

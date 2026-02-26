@@ -1255,20 +1255,10 @@
 										>
 											Share
 										</button>
-										{#if $session.data}
-											<span class="docs-menu-divider" aria-hidden="true"></span>
-											<button
-												type="button"
-												class="docs-menu-option"
-												role="menuitem"
-												onclick={() => void runFileMenuAction(() => navigateToDashboard())}
-											>
-												Dashboard
-											</button>
-										{/if}
 									</div>
 								{/if}
 							</div>
+							<a href="/history" class="docs-menu-trigger docs-menu-link">History</a>
 						</nav>
 					</div>
 				</div>
@@ -2572,6 +2562,11 @@
 	.invoice-sidebar__delete:hover {
 		background: color-mix(in srgb, var(--color-error) 14%, var(--color-bg-primary));
 		color: var(--color-error);
+	}
+
+	.docs-menu-link {
+		text-decoration: none;
+		color: inherit;
 	}
 
 	.delete-button {

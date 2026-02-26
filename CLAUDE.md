@@ -210,3 +210,7 @@ The PDF generation in `src/routes/+page.svelte`:
 - Static prerendering enabled (`export const prerender = true` in routes)
 - Client-side only - no server-side rendering or API routes
 - Multiple adapter options available: auto, static, node, cloudflare
+
+## Playwright Testing Cleanup
+
+When using Playwright MCP to take screenshots during testing, always delete any `.png` files created in the project root and `.playwright-mcp/` directory before finishing. These are ephemeral test artifacts and should not be committed.
