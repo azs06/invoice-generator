@@ -3,11 +3,17 @@
 </script>
 
 <svelte:head>
-	<title>How It Works - Free Invoice Generator | FreeInvoice.info</title>
+	<title>How It Works — FreeInvoice</title>
 	<meta
 		name="description"
-		content="Learn how to create professional invoices in 3 simple steps with FreeInvoice.info. Free invoice generator with no signup required. Step-by-step guide for freelancers and businesses."
+		content="Create, customize, and send professional invoices in minutes with FreeInvoice. No sign-up required."
 	/>
+	<meta property="og:title" content="How It Works — FreeInvoice" />
+	<meta
+		property="og:description"
+		content="Create, customize, and send professional invoices in minutes with FreeInvoice. No sign-up required."
+	/>
+	<meta property="og:url" content="https://freeinvoice.info/how-it-works" />
 </svelte:head>
 
 <div class="how-it-works-page">
@@ -171,7 +177,7 @@
 		<section class="cta-section">
 			<h2>Ready to Create Your Invoice?</h2>
 			<p>Start generating professional invoices now - it's free and takes just minutes!</p>
-			<a href="/app" class="cta-button">Create Invoice Now</a>
+			<a href="/" class="cta-button">Create Invoice Now</a>
 		</section>
 	</div>
 </div>

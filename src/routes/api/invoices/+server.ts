@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
-import { getAllInvoices, saveInvoice, clearAllInvoices, getInvoiceCount } from '$lib/server/db';
-import { requireDB, getBucket } from '$lib/server/session';
-import type { RequestHandler } from './$types';
+import { clearAllInvoices, getAllInvoices, getInvoiceCount, saveInvoice } from '$lib/server/db';
+import { getBucket, requireDB } from '$lib/server/session';
 import type { InvoiceData } from '$lib/types';
+import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async (event) => {
 	const session = event.locals.session;
@@ -15,7 +15,7 @@ export const GET: RequestHandler = async (event) => {
 	const invoices = await getAllInvoices(db, session.user.id);
 	const count = await getInvoiceCount(db, session.user.id);
 
-	return json({ invoices, count, limit: 12 });
+	return json({ invoices, count, limit: 10 });
 };
 
 export const POST: RequestHandler = async (event) => {
@@ -35,7 +35,10 @@ export const POST: RequestHandler = async (event) => {
 
 	const saved = await saveInvoice(db, bucket, invoice.id, invoice, session.user.id);
 	if (!saved) {
-		return json({ error: 'Invoice not found' }, { status: 404 });
+		return json(
+			{ error: 'Cloud sync limit reached. Remove a synced invoice to free a slot.' },
+			{ status: 409 }
+		);
 	}
 	return json({ success: true });
 };

@@ -52,8 +52,8 @@
 <style>
 	.terms-notes {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 1rem;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 0.75rem;
 	}
 
 	.field {
@@ -65,20 +65,22 @@
 	label {
 		font-weight: 600;
 		color: var(--color-text-secondary);
-		font-size: 0.8125rem;
+		font-size: 0.72rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 	}
 
 	textarea {
-		padding: 0.55rem 0.75rem;
-		border-radius: var(--radius-sm);
-		border: 1px solid var(--color-border-secondary);
-		background: var(--color-bg-secondary);
+		padding: 0.58rem 0.72rem;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
 		color: var(--color-text-primary);
-		min-height: 100px;
-		font-size: 0.875rem;
+		min-height: 108px;
+		font-size: 0.84rem;
 		transition:
-			border-color 0.2s ease,
-			box-shadow 0.2s ease;
+			border-color var(--motion-fast) var(--motion-ease),
+			box-shadow var(--motion-fast) var(--motion-ease);
 		resize: vertical;
 	}
 

@@ -1,5 +1,5 @@
-import type { LayoutServerLoad } from './$types';
 import { isUserAdmin, requirePlatform } from '$lib/server/session';
+import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async (event) => {
 	const session = event.locals.session;

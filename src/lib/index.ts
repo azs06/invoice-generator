@@ -1,6 +1,7 @@
 // place files you want to import through the `$lib` alias in this folder.
-import { base } from '$app/paths';
+
 import { v4 as uuidv4 } from 'uuid';
+import { base } from '$app/paths';
 import type { InvoiceData } from '$lib/types';
 
 export const DEFAULT_LOGO_PATH = `${base}/logo.png`;

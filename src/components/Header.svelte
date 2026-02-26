@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { _ } from 'svelte-i18n';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import LanguageSelector from './LanguageSelector.svelte';
@@ -17,8 +18,27 @@
 	let showProfileMenu = $state(false);
 	let showMobileMenu = $state(false);
 
+	const routeTitle = $derived(
+		$page.url.pathname === '/'
+			? 'Invoice Workspace'
+			: $page.url.pathname.startsWith('/dashboard/settings')
+				? 'Workspace Settings'
+				: $page.url.pathname.startsWith('/dashboard')
+					? 'Invoice Dashboard'
+					: $page.url.pathname.startsWith('/admin/deleted')
+						? 'Deleted Users'
+						: $page.url.pathname.startsWith('/admin')
+							? 'Admin Console'
+							: $page.url.pathname.startsWith('/history')
+								? 'Invoice History'
+								: 'FreeInvoice'
+	);
+
 	const toggleMobileMenu = () => {
 		showMobileMenu = !showMobileMenu;
+		if (showMobileMenu) {
+			showProfileMenu = false;
+		}
 	};
 
 	const closeMobileMenu = () => {
@@ -34,7 +54,6 @@
 	const signOut = async () => {
 		showProfileMenu = false;
 		await authClient.signOut();
-		// Redirect to home page after signing out
 		window.location.href = '/';
 	};
 
@@ -44,6 +63,9 @@
 
 	const toggleProfileMenu = () => {
 		showProfileMenu = !showProfileMenu;
+		if (showProfileMenu) {
+			showMobileMenu = false;
+		}
 	};
 
 	const closeProfileMenu = () => {
@@ -68,7 +90,17 @@
 		void goto(href);
 	};
 
-	// Get user initials for fallback avatar
+	const closeMenus = () => {
+		closeProfileMenu();
+		closeMobileMenu();
+	};
+
+	const handleGlobalKeydown = (event: KeyboardEvent): void => {
+		if (event.key === 'Escape') {
+			closeMenus();
+		}
+	};
+
 	const getUserInitials = (name: string | undefined): string => {
 		if (!name) return '?';
 		const parts = name.split(' ').filter(Boolean);
@@ -79,109 +111,76 @@
 	};
 </script>
 
-<svelte:window
-	onclick={() => {
-		closeProfileMenu();
-		closeMobileMenu();
-	}}
-/>
+<svelte:window onpointerdown={closeMenus} onkeydown={handleGlobalKeydown} />
 
 <header class="app-header">
-	<div class="header-content app-container">
-		<div class="brand-group">
-			<!-- Mobile hamburger menu -->
-			<div class="mobile-menu-container">
-				<button
-					class="hamburger-button"
-					onclick={(e) => {
-						e.stopPropagation();
-						toggleMobileMenu();
-					}}
-					aria-label="Navigation menu"
-					aria-expanded={showMobileMenu}
-				>
-					<svg
-						class="hamburger-icon"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						{#if showMobileMenu}
-							<path d="M6 18L18 6M6 6l12 12" />
-						{:else}
-							<path d="M4 6h16M4 12h16M4 18h16" />
-						{/if}
-					</svg>
-				</button>
-
-				{#if showMobileMenu}
-					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<nav class="mobile-nav-dropdown" onclick={(e) => e.stopPropagation()}>
-						{#if $session.data}
-							<a
-								href="/dashboard"
-								class="mobile-nav-link"
-								onclick={(event) => navigate(event, '/dashboard', closeMobileMenu)}
-							>
-								<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-									<path
-										d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
-									/>
-								</svg>
-								{$_('nav.dashboard')}
-							</a>
-						{:else if !$session.isPending}
-							<a href="/history" class="mobile-nav-link" onclick={closeMobileMenu}>
-								<svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-									<path
-										fill-rule="evenodd"
-										d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-								{$_('nav.history')}
-							</a>
-						{/if}
-					</nav>
-				{/if}
-			</div>
+	<div class="header-inner app-container" onpointerdown={(event) => event.stopPropagation()}>
+		<div class="header-left">
+			<button
+				type="button"
+				class="mobile-menu-button"
+				onclick={(event) => {
+					event.stopPropagation();
+					toggleMobileMenu();
+				}}
+				aria-label="Open navigation"
+				aria-expanded={showMobileMenu}
+			>
+				<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					{#if showMobileMenu}
+						<path
+							fill-rule="evenodd"
+							d="M4.22 4.22a.75.75 0 0 1 1.06 0L10 8.94l4.72-4.72a.75.75 0 0 1 1.06 1.06L11.06 10l4.72 4.72a.75.75 0 1 1-1.06 1.06L10 11.06l-4.72 4.72a.75.75 0 0 1-1.06-1.06L8.94 10 4.22 5.28a.75.75 0 0 1 0-1.06Z"
+							clip-rule="evenodd"
+						/>
+					{:else}
+						<path
+							fill-rule="evenodd"
+							d="M3.5 5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25A.75.75 0 0 1 3.5 5Zm0 5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25A.75.75 0 0 1 3.5 10Zm0 5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25A.75.75 0 0 1 3.5 15Z"
+							clip-rule="evenodd"
+						/>
+					{/if}
+				</svg>
+			</button>
 
 			<a href="/" class="brand-link">
-				<span class="brand-text">{$_('app.title')}</span>
+				<span class="brand-main">{$_('app.title')}</span>
+				<span class="brand-sub">{routeTitle}</span>
 			</a>
 
-			<nav class="nav-links desktop-nav">
-				{#if $session.data}
-					<a href="/dashboard" class="nav-link" onclick={(event) => navigate(event, '/dashboard')}
-						>{$_('nav.dashboard')}</a
+			<nav class="desktop-nav" aria-label="Primary">
+				{#if !$session.isPending}
+					<a
+						href="/history"
+						class="header-nav-link"
+						aria-current={$page.url.pathname.startsWith('/history') ? 'page' : undefined}
+						onclick={(event) => navigate(event, '/history')}>{$_('nav.history')}</a
 					>
-				{:else if !$session.isPending}
-					<a href="/history" class="nav-link">{$_('nav.history')}</a>
 				{/if}
 			</nav>
 		</div>
 
-		<div class="controls">
-			<div class="desktop-only-selectors">
+		<div class="header-right">
+			<div class="desktop-selectors">
 				<CurrencySelector />
 				<LanguageSelector />
 			</div>
 			<ThemeToggle />
+
 			{#if $session.isPending}
-				<div class="auth-loading">
+				<div class="auth-loading" aria-label="Loading session">
 					<div class="loading-spinner"></div>
 				</div>
 			{:else if $session.data}
-				<div class="user-menu-container">
+				<div class="user-menu-wrap">
 					<button
+						type="button"
 						class="avatar-button"
-						onclick={(e) => {
-							e.stopPropagation();
+						onclick={(event) => {
+							event.stopPropagation();
 							toggleProfileMenu();
 						}}
-						aria-label="User menu"
+						aria-label="Open user menu"
 						aria-expanded={showProfileMenu}
 					>
 						{#if $session.data.user.image && !imageError}
@@ -193,446 +192,367 @@
 								referrerpolicy="no-referrer"
 							/>
 						{:else}
-							<div class="user-avatar-fallback">
-								{getUserInitials($session.data.user.name)}
-							</div>
+							<span class="user-avatar-fallback">{getUserInitials($session.data.user.name)}</span>
 						{/if}
 					</button>
 
 					{#if showProfileMenu}
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
-						<div class="profile-dropdown" onclick={(e) => e.stopPropagation()}>
+						<div class="profile-dropdown" onpointerdown={(event) => event.stopPropagation()}>
 							<div class="dropdown-header">
 								<span class="user-name">{$session.data.user.name || 'User'}</span>
 								<span class="user-email">{$session.data.user.email}</span>
 							</div>
-							<div class="dropdown-divider"></div>
-							<a
-								href="/dashboard"
-								class="dropdown-item"
-								onclick={(event) => navigate(event, '/dashboard', closeProfileMenu)}
-							>
-								<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
-									<path
-										d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
-									/>
-								</svg>
-								{$_('nav.dashboard')}
-							</a>
-							{#if isAdmin}
+							<div class="dropdown-section">
 								<a
-									href="/admin"
-									class="dropdown-item dropdown-item-admin"
-									onclick={(event) => navigate(event, '/admin', closeProfileMenu)}
+									href="/history"
+									class="dropdown-item"
+									aria-current={$page.url.pathname.startsWith('/history') ? 'page' : undefined}
+									onclick={(event) => navigate(event, '/history', closeProfileMenu)}
 								>
-									<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
-										<path
-											fill-rule="evenodd"
-											d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-											clip-rule="evenodd"
-										/>
-									</svg>
-									Admin Panel
-									<span class="admin-badge">Admin</span>
+									{$_('nav.history')}
 								</a>
-							{/if}
-							<div class="dropdown-divider"></div>
-							<button class="dropdown-item dropdown-item-danger" onclick={signOut}>
-								<svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
-									<path
-										fill-rule="evenodd"
-										d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-								Sign Out
-							</button>
+								{#if isAdmin}
+									<a
+										href="/admin"
+										class="dropdown-item"
+										onclick={(event) => navigate(event, '/admin', closeProfileMenu)}
+									>
+										Admin Panel
+									</a>
+								{/if}
+							</div>
+							<button class="dropdown-item danger" type="button" onclick={signOut}>Sign Out</button>
 						</div>
 					{/if}
 				</div>
 			{:else}
-				<button onclick={signIn} class="auth-button">Sign In</button>
+				<button type="button" onclick={signIn} class="auth-button">Sign In</button>
 			{/if}
 		</div>
 	</div>
+
+	{#if showMobileMenu}
+		<div class="mobile-nav-panel" onpointerdown={(event) => event.stopPropagation()}>
+			<div class="mobile-selectors">
+				<CurrencySelector />
+				<LanguageSelector />
+			</div>
+			<nav class="mobile-nav-links" aria-label="Mobile navigation">
+				{#if !$session.isPending}
+					<a
+						href="/history"
+						class="mobile-nav-link"
+						aria-current={$page.url.pathname.startsWith('/history') ? 'page' : undefined}
+						onclick={(event) => navigate(event, '/history', closeMobileMenu)}>{$_('nav.history')}</a
+					>
+				{/if}
+			</nav>
+		</div>
+	{/if}
 </header>
 
 <style>
 	.app-header {
-		width: 100%;
-		background: var(--surface-paper);
-		border-bottom: 1px solid var(--surface-paper-border);
-		padding: 1rem 0;
 		position: sticky;
 		top: 0;
-		z-index: 20;
+		z-index: 40;
+		background: color-mix(in srgb, var(--surface-paper) 92%, transparent);
+		backdrop-filter: blur(12px);
+		border-bottom: 1px solid var(--surface-paper-border);
 	}
 
-	.header-content {
+	.header-inner {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1.5rem;
+		gap: 0.9rem;
+		padding-block: 0.55rem;
 	}
 
-	.brand-group {
+	.header-left {
 		display: flex;
 		align-items: center;
-		gap: 1.5rem;
+		gap: 0.75rem;
+		min-width: 0;
+	}
+
+	.mobile-menu-button {
+		display: none;
+		align-items: center;
+		justify-content: center;
+		width: 2.2rem;
+		height: 2.2rem;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
+		color: var(--color-text-secondary);
+		cursor: pointer;
+	}
+
+	.mobile-menu-button svg {
+		width: 1.2rem;
+		height: 1.2rem;
 	}
 
 	.brand-link {
 		display: inline-flex;
-		align-items: center;
-		gap: 0.65rem;
+		flex-direction: column;
+		gap: 0.06rem;
 		text-decoration: none;
-		transition: opacity 0.2s ease;
+		min-width: 0;
 	}
 
-	.brand-link:hover {
-		opacity: 0.85;
-	}
-
-	.brand-text {
-		font-size: 1.5rem;
+	.brand-main {
+		font-size: 0.95rem;
 		font-weight: 700;
+		line-height: 1.1;
 		color: var(--color-text-primary);
-		letter-spacing: -0.02em;
 	}
 
-	.nav-links {
+	.brand-sub {
+		font-size: 0.73rem;
+		line-height: 1;
+		color: var(--color-text-muted);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.desktop-nav {
 		display: inline-flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.4rem;
+		padding-left: 0.35rem;
 	}
 
-	.nav-link {
-		font-size: 0.95rem;
-		font-weight: 500;
-		color: var(--color-text-secondary);
+	.header-nav-link {
+		padding: 0.45rem 0.72rem;
+		border-radius: var(--radius-pill);
+		font-size: 0.82rem;
+		font-weight: 600;
 		text-decoration: none;
-		padding: 0.4rem 0.65rem;
-		border-radius: var(--radius-md);
+		color: var(--color-text-secondary);
 		transition:
-			color 0.2s ease,
-			background 0.2s ease;
+			color var(--motion-fast) var(--motion-ease),
+			background-color var(--motion-fast) var(--motion-ease);
 	}
 
-	.nav-link:hover,
-	.nav-link:focus-visible {
-		background: rgba(59, 130, 246, 0.12);
+	.header-nav-link:hover {
+		color: var(--color-text-primary);
+		background: var(--color-bg-secondary);
+	}
+
+	.header-nav-link[aria-current='page'] {
 		color: var(--color-accent-blue);
+		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
 	}
 
-	.controls {
+	.header-right {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.45rem;
 	}
 
-	.desktop-only-selectors {
-		display: flex;
+	.desktop-selectors {
+		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.35rem;
 	}
 
-	/* Mobile menu - hidden by default on desktop */
-	.mobile-menu-container {
-		display: none;
+	.auth-button {
+		padding: 0.5rem 0.9rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid transparent;
+		background: var(--color-accent-blue);
+		color: #fff;
+		font-size: 0.82rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.auth-button:hover {
+		background: var(--color-accent-hover);
+	}
+
+	.auth-loading {
+		display: grid;
+		place-items: center;
+		width: 2.2rem;
+		height: 2.2rem;
+	}
+
+	.loading-spinner {
+		width: 1.2rem;
+		height: 1.2rem;
+		border: 2px solid var(--color-border-secondary);
+		border-top-color: var(--color-accent-blue);
+		border-radius: 999px;
+		animation: spin 0.75s linear infinite;
+	}
+
+	.user-menu-wrap {
 		position: relative;
 	}
 
-	.hamburger-button {
-		display: flex;
+	.avatar-button {
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		width: 2.25rem;
 		height: 2.25rem;
 		padding: 0;
-		border: 1px solid var(--color-border-secondary);
-		border-radius: var(--radius-md);
-		background: var(--color-bg-secondary);
-		color: var(--color-text-primary);
-		cursor: pointer;
-		transition: all 0.2s ease;
-	}
-
-	.hamburger-button:hover {
-		background: var(--color-bg-tertiary);
-		border-color: var(--color-border-primary);
-	}
-
-	.hamburger-icon {
-		width: 1.25rem;
-		height: 1.25rem;
-	}
-
-	.mobile-nav-dropdown {
-		position: absolute;
-		top: calc(100% + 0.5rem);
-		left: 0;
-		min-width: 200px;
-		background: var(--color-bg-primary);
 		border: 1px solid var(--color-border-primary);
-		border-radius: var(--radius-lg);
-		z-index: 50;
+		border-radius: 999px;
+		background: var(--color-bg-primary);
+		cursor: pointer;
 		overflow: hidden;
-		animation: fadeIn 0.15s ease;
-	}
-
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(-4px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	.mobile-nav-link {
-		display: flex;
-		align-items: center;
-		gap: 0.625rem;
-		width: 100%;
-		padding: 0.75rem 1rem;
-		font-size: 0.9rem;
-		font-weight: 500;
-		color: var(--color-text-primary);
-		text-decoration: none;
-		transition: background 0.15s ease;
-	}
-
-	.mobile-nav-link:hover {
-		background: var(--color-bg-secondary);
-	}
-
-	.nav-icon {
-		width: 1.1rem;
-		height: 1.1rem;
-		color: var(--color-text-secondary);
-	}
-
-	/* Mobile - show hamburger, hide desktop nav */
-	@media (max-width: 768px) {
-		.header-content {
-			gap: 0.75rem;
-		}
-
-		.brand-group {
-			gap: 0.75rem;
-		}
-
-		.brand-text {
-			font-size: 1.15rem;
-		}
-
-		.desktop-nav {
-			display: none;
-		}
-
-		.mobile-menu-container {
-			display: block;
-		}
-
-		.controls {
-			gap: 0.35rem;
-		}
-
-		.app-header {
-			padding: 0.75rem 0;
-		}
-
-		.desktop-only-selectors {
-			display: none !important;
-		}
-	}
-
-	/* Very small screens */
-	@media (max-width: 400px) {
-		.brand-text {
-			font-size: 1rem;
-		}
 	}
 
 	.user-avatar {
-		width: 2rem;
-		height: 2rem;
-		border-radius: 50%;
+		width: 100%;
+		height: 100%;
 		object-fit: cover;
 	}
 
 	.user-avatar-fallback {
-		width: 2rem;
-		height: 2rem;
-		border-radius: 50%;
-		background: var(--color-accent-blue);
-		color: white;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.75rem;
-		font-weight: 600;
-	}
-
-	.user-menu-container {
-		position: relative;
-	}
-
-	.avatar-button {
-		background: none;
-		border: 2px solid transparent;
-		border-radius: 50%;
-		padding: 0;
-		cursor: pointer;
-		transition: border-color 0.2s ease;
-	}
-
-	.avatar-button:hover,
-	.avatar-button:focus-visible {
-		border-color: var(--color-accent-blue);
-	}
-
-	.avatar-button:focus-visible {
-		outline: none;
+		display: grid;
+		place-items: center;
+		width: 100%;
+		height: 100%;
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: var(--color-accent-blue);
+		background: color-mix(in srgb, var(--color-accent-blue) 15%, transparent);
 	}
 
 	.profile-dropdown {
 		position: absolute;
-		top: calc(100% + 0.5rem);
 		right: 0;
-		min-width: 220px;
-		background: var(--color-bg-primary);
-		border: 1px solid var(--color-border-primary);
-		border-radius: var(--radius-lg);
-		z-index: 50;
-		overflow: hidden;
+		top: calc(100% + 0.55rem);
+		width: 220px;
+		padding: 0.55rem;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--surface-paper-border);
+		background: var(--surface-paper);
+		box-shadow: var(--shadow-medium);
 	}
 
 	.dropdown-header {
-		padding: 0.75rem 1rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.125rem;
+		gap: 0.12rem;
+		padding: 0.4rem 0.5rem;
+		border-bottom: 1px solid var(--color-border-primary);
+		margin-bottom: 0.3rem;
 	}
 
 	.user-name {
+		font-size: 0.82rem;
 		font-weight: 600;
-		font-size: 0.9375rem;
 		color: var(--color-text-primary);
 	}
 
 	.user-email {
-		font-size: 0.8125rem;
+		font-size: 0.72rem;
 		color: var(--color-text-secondary);
 	}
 
-	.dropdown-divider {
-		height: 1px;
-		background: var(--color-border-primary);
+	.dropdown-section {
+		display: flex;
+		flex-direction: column;
 	}
 
 	.dropdown-item {
-		display: flex;
-		align-items: center;
-		gap: 0.625rem;
+		display: block;
 		width: 100%;
-		padding: 0.625rem 1rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--color-text-primary);
-		text-decoration: none;
-		background: none;
-		border: none;
-		cursor: pointer;
-		transition: background 0.15s ease;
 		text-align: left;
+		padding: 0.47rem 0.5rem;
+		border-radius: var(--radius-sm);
+		border: none;
+		background: transparent;
+		font-size: 0.8rem;
+		font-weight: 500;
+		text-decoration: none;
+		color: var(--color-text-primary);
+		cursor: pointer;
 	}
 
 	.dropdown-item:hover {
 		background: var(--color-bg-secondary);
 	}
 
-	.dropdown-item-danger {
-		color: #dc2626;
+	.dropdown-item.danger {
+		color: var(--color-error);
 	}
 
-	.dropdown-item-danger:hover {
-		background: rgba(220, 38, 38, 0.1);
+	.mobile-nav-panel {
+		display: none;
+		padding: 0 0.75rem 0.75rem;
+		border-top: 1px solid var(--color-border-primary);
+		background: var(--surface-paper);
 	}
 
-	.dropdown-item-admin {
-		color: #7c3aed;
-	}
-
-	.dropdown-item-admin:hover {
-		background: rgba(124, 58, 237, 0.1);
-	}
-
-	.admin-badge {
-		margin-left: auto;
-		background: #6366f1;
-		color: white;
-		font-size: 0.6rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		padding: 0.15rem 0.4rem;
-		border-radius: var(--radius-sm);
-	}
-
-	.dropdown-icon {
-		width: 1rem;
-		height: 1rem;
-		flex-shrink: 0;
-	}
-
-	.auth-button {
-		padding: 0.4rem 0.8rem;
-		border-radius: var(--radius-md);
-		background: var(--color-accent-blue);
-		color: white;
-		font-weight: 600;
-		font-size: 0.9rem;
-		border: none;
-		cursor: pointer;
-		transition: opacity 0.2s;
-	}
-
-	.auth-button:hover {
-		opacity: 0.9;
-	}
-
-	/* Mobile auth button */
-	@media (max-width: 680px) {
-		.auth-button {
-			padding: 0.35rem 0.65rem;
-			font-size: 0.8rem;
-		}
-	}
-
-	.auth-loading {
+	.mobile-selectors {
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 2.5rem;
-		height: 2.5rem;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		padding-top: 0.75rem;
 	}
 
-	.loading-spinner {
-		width: 1.25rem;
-		height: 1.25rem;
-		border: 2px solid var(--color-border-secondary);
-		border-top-color: var(--color-accent-blue);
-		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
+	.mobile-nav-links {
+		display: grid;
+		gap: 0.4rem;
+		padding-top: 0.6rem;
+	}
+
+	.mobile-nav-link {
+		display: block;
+		padding: 0.58rem 0.72rem;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border-primary);
+		text-decoration: none;
+		font-size: 0.84rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+		background: var(--color-bg-primary);
+	}
+
+	.mobile-nav-link:hover {
+		background: var(--color-bg-secondary);
+	}
+
+	.mobile-nav-link[aria-current='page'] {
+		color: var(--color-accent-blue);
+		border-color: color-mix(in srgb, var(--color-accent-blue) 40%, transparent);
+		background: color-mix(in srgb, var(--color-accent-blue) 8%, transparent);
 	}
 
 	@keyframes spin {
 		to {
 			transform: rotate(360deg);
+		}
+	}
+
+	@media (max-width: 900px) {
+		.mobile-menu-button {
+			display: inline-flex;
+		}
+
+		.desktop-nav,
+		.desktop-selectors {
+			display: none;
+		}
+
+		.mobile-nav-panel {
+			display: block;
+		}
+
+		.brand-sub {
+			display: none;
+		}
+
+		.header-inner {
+			padding-block: 0.45rem;
 		}
 	}
 </style>

@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { drizzle } from 'drizzle-orm/d1';
-import { user, session, account, verification } from './schema';
+import { account, session, user, verification } from './schema';
 
 // Only pass auth-related tables to better-auth
 const authSchema = { user, session, account, verification };

@@ -1,4 +1,4 @@
-import { register, init, getLocaleFromNavigator } from 'svelte-i18n';
+import { getLocaleFromNavigator, init, register } from 'svelte-i18n';
 import { browser } from '$app/environment';
 
 register('en', () => import('./en.json'));

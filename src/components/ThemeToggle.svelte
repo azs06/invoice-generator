@@ -2,11 +2,7 @@
 	import { theme, toggleTheme } from '$lib/theme.js';
 </script>
 
-<button
-	onclick={toggleTheme}
-	class="theme-toggle-btn p-2 rounded-lg transition-colors"
-	aria-label="Toggle theme"
->
+<button onclick={toggleTheme} class="theme-toggle-btn" aria-label="Toggle theme">
 	{#if $theme === 'dark'}
 		<!-- Sun icon for light mode -->
 		<svg
@@ -44,10 +40,32 @@
 
 <style>
 	.theme-toggle-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.15rem;
+		height: 2.15rem;
+		padding: 0;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
 		color: var(--color-theme-toggle);
+		transition:
+			color var(--motion-fast) var(--motion-ease),
+			background-color var(--motion-fast) var(--motion-ease),
+			border-color var(--motion-fast) var(--motion-ease);
+		cursor: pointer;
 	}
 
 	.theme-toggle-btn:hover {
 		color: var(--color-theme-toggle-hover);
+		background: var(--color-bg-secondary);
+		border-color: var(--color-border-secondary);
+	}
+
+	.theme-toggle-btn .w-6,
+	.theme-toggle-btn .h-6 {
+		width: 1.08rem;
+		height: 1.08rem;
 	}
 </style>

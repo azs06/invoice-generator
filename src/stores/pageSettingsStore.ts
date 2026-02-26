@@ -1,5 +1,5 @@
-import { writable, derived } from 'svelte/store';
-import type { PageSizeId, PageDimensions, PageMargins, PageSettings } from '$lib/types';
+import { derived, writable } from 'svelte/store';
+import type { PageDimensions, PageMargins, PageSettings, PageSizeId } from '$lib/types';
 
 // View mode for responsive vs fixed page view
 export type ViewMode = 'responsive' | 'page';

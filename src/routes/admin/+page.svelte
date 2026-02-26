@@ -370,14 +370,15 @@
 		min-height: 70vh;
 		display: flex;
 		flex-direction: column;
+		gap: 0.8rem;
 	}
 
 	.page-header {
-		margin-bottom: 2rem;
+		margin-bottom: 0.25rem;
 	}
 
 	.page-header h1 {
-		font-size: 1.75rem;
+		font-size: 1.3rem;
 		font-weight: 700;
 		color: var(--color-text-primary);
 		margin: 0 0 0.25rem;
@@ -386,32 +387,33 @@
 	.subtitle {
 		color: var(--color-text-secondary);
 		margin: 0;
+		font-size: 0.84rem;
 	}
 
-	/* Stats Grid */
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		gap: 1rem;
-		margin-bottom: 2rem;
+		gap: 0.7rem;
+		margin-bottom: 0.5rem;
 	}
 
 	.stat-card {
 		background: var(--surface-paper);
 		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-lg);
-		padding: 1.25rem;
+		border-radius: var(--radius-md);
+		padding: 0.85rem;
 		text-align: center;
+		box-shadow: var(--shadow-soft);
 	}
 
 	.stat-value {
-		font-size: 2rem;
+		font-size: 1.45rem;
 		font-weight: 700;
 		color: var(--color-text-primary);
 	}
 
 	.stat-label {
-		font-size: 0.8rem;
+		font-size: 0.66rem;
 		color: var(--color-text-secondary);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -427,11 +429,10 @@
 		color: #8b5cf6;
 	}
 
-	/* Filter Bar */
 	.filter-bar {
 		display: flex;
-		gap: 1rem;
-		margin-bottom: 1.5rem;
+		gap: 0.7rem;
+		margin-bottom: 0.8rem;
 		flex-wrap: wrap;
 	}
 
@@ -446,19 +447,19 @@
 		left: 0.75rem;
 		top: 50%;
 		transform: translateY(-50%);
-		width: 1.25rem;
-		height: 1.25rem;
+		width: 0.92rem;
+		height: 0.92rem;
 		color: var(--color-text-secondary);
 	}
 
 	.search-box input {
 		width: 100%;
-		padding: 0.75rem 1rem 0.75rem 2.5rem;
+		padding: 0.52rem 0.8rem 0.52rem 2rem;
 		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-md);
+		border-radius: var(--radius-pill);
 		background: var(--surface-paper);
 		color: var(--color-text-primary);
-		font-size: 0.9rem;
+		font-size: 0.82rem;
 	}
 
 	.filter-buttons {
@@ -467,29 +468,30 @@
 	}
 
 	.filter-buttons button {
-		padding: 0.5rem 1rem;
+		padding: 0.42rem 0.72rem;
 		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-md);
+		border-radius: var(--radius-pill);
 		background: var(--surface-paper);
 		color: var(--color-text-secondary);
-		font-size: 0.85rem;
+		font-size: 0.76rem;
+		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.15s ease;
 	}
 
 	.filter-buttons button.active {
-		background: var(--color-accent-blue);
-		border-color: var(--color-accent-blue);
-		color: white;
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		border-color: color-mix(in srgb, var(--color-accent-blue) 34%, var(--color-border-primary));
+		color: var(--color-accent-blue);
 	}
 
-	/* Table */
 	.table-container {
 		background: var(--surface-paper);
 		border: 1px solid var(--surface-paper-border);
-		border-radius: var(--radius-lg);
+		border-radius: var(--radius-md);
 		overflow: hidden;
 		min-height: 20rem;
+		box-shadow: var(--shadow-soft);
 	}
 
 	.users-table {
@@ -499,14 +501,14 @@
 
 	.users-table th,
 	.users-table td {
-		padding: 1rem;
+		padding: 0.7rem 0.75rem;
 		text-align: left;
 		border-bottom: 1px solid var(--surface-paper-border);
 	}
 
 	.users-table th {
 		background: var(--surface-paper-muted);
-		font-size: 0.75rem;
+		font-size: 0.66rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -524,15 +526,15 @@
 	}
 
 	.user-avatar {
-		width: 40px;
-		height: 40px;
+		width: 34px;
+		height: 34px;
 		border-radius: 50%;
 		object-fit: cover;
 	}
 
 	.user-avatar-fallback {
-		width: 40px;
-		height: 40px;
+		width: 34px;
+		height: 34px;
 		border-radius: 50%;
 		background: #6366f1;
 		color: white;
@@ -540,7 +542,7 @@
 		align-items: center;
 		justify-content: center;
 		font-weight: 600;
-		font-size: 0.85rem;
+		font-size: 0.72rem;
 	}
 
 	.user-info {
@@ -554,7 +556,7 @@
 	}
 
 	.user-email {
-		font-size: 0.8rem;
+		font-size: 0.74rem;
 		color: var(--color-text-secondary);
 	}
 

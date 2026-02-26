@@ -1,0 +1,12 @@
+{
+	"name": "FreeInvoice",
+	"short_name": "FreeInvoice",
+	"description": "Free online invoice generator",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#ffffff",
+	"theme_color": "#2563eb",
+	"icons": [
+		{ "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+	]
+}

@@ -1,25 +1,44 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { replaceState } from '$app/navigation';
+	import { onMount, tick, untrack } from 'svelte';
+	import { goto, replaceState } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
 	import InvoiceFormComponent from '$components/InvoiceFormComponent.svelte';
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
 	import PageSettingsSelector from '$components/PageSettingsSelector.svelte';
 	import ViewModeToggle from '$components/ViewModeToggle.svelte';
+	import ThemeToggle from '$components/ThemeToggle.svelte';
 	import SignUpPromptModal from '$components/SignUpPromptModal.svelte';
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
 	import CurrencySelector from '$components/CurrencySelector.svelte';
 	import LanguageSelector from '$components/LanguageSelector.svelte';
-	import { saveInvoice, getInvoice, getInvoiceUsage } from '$lib/db.js';
-	import { saveGuestInvoice, getAllGuestInvoices, getGuestInvoice } from '$lib/guestDb.js';
+	import {
+		saveInvoice,
+		getInvoice,
+		getInvoiceUsage,
+		getAllInvoices,
+		deleteInvoice as deleteStoredInvoice
+	} from '$lib/db.js';
+	import {
+		saveLocalInvoice,
+		getAllLocalInvoices,
+		getLocalInvoiceData,
+		deleteLocalInvoice
+	} from '$lib/localDb.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
 	import { runMigrationIfNeeded } from '$lib/templates/migration.js';
 	import { selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
-	import { pageSettings, viewMode } from '../stores/pageSettingsStore.js';
-	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
+	import { pageSettings, currentPageDimensions, viewMode } from '../stores/pageSettingsStore.js';
+	import { getTemplate } from '$lib/templates/registry';
+	import type {
+		InvoiceData,
+		InvoiceItem,
+		MonetaryAdjustment,
+		SavedInvoiceRecord,
+		ShippingInfo
+	} from '$lib/types';
 	import { authClient } from '$lib/auth';
 	import { isInvoiceComplete } from '$lib/invoiceValidation';
 	import {
@@ -31,24 +50,146 @@
 
 	type PDFAction = 'download' | 'print' | null;
 	type TabName = 'edit' | 'preview';
+	type SidebarInvoiceItem = {
+		id: string;
+		title: string;
+		isDraft: boolean;
+	};
 
 	let invoice = $state<InvoiceData | null>(null);
 	let previewRef = $state<HTMLElement | null>(null);
 	let isGeneratingPDF = $state<boolean>(false);
 	let pdfAction = $state<PDFAction>(null);
-	let showMobilePreview = $state<boolean>(false);
 	let activeTab = $state<TabName>('edit');
 	const validTabs = new Set<string>(['edit', 'preview']);
+	let documentTitle = $derived(
+		invoice
+			? `${invoice.invoiceLabel || 'Invoice'} ${invoice.invoiceNumber || ''}`.trim()
+			: 'Untitled invoice'
+	);
 
 	let userEditedDueDate = $state<boolean>(false);
 	let showSaveDraftModal = $state<boolean>(false);
 	let draftName = $state<string>('');
 
-	let usage = $state<{ count: number; limit: number }>({ count: 0, limit: 12 });
+	let usage = $state<{ count: number; limit: number }>({ count: 0, limit: 10 });
 	let showLimitWarning = $state<boolean>(false);
 	let showSignUpPrompt = $state<boolean>(false);
 	let showShareModal = $state<boolean>(false);
+	let showFileMenu = $state<boolean>(false);
+	let showProfileMenu = $state<boolean>(false);
 	let userInvoicePrefix = $state<string>('INV-');
+	let imageError = $state(false);
+	let fileMenuTrigger = $state<HTMLButtonElement | null>(null);
+	let profileMenuTrigger = $state<HTMLButtonElement | null>(null);
+	let sidebarInvoices = $state<SidebarInvoiceItem[]>([]);
+	let isSidebarLoading = $state<boolean>(false);
+	let deleteConfirmId = $state<string | null>(null);
+	let deleteConfirmTitle = $state<string>('');
+
+	// Mode dropdown state
+	let showModeMenu = $state<boolean>(false);
+
+	// Context bar highlight state
+	let contextBarHighlight = $state<boolean>(false);
+	let contextBarInitialized = false;
+
+	// Toolbar scroll-fade state (mobile)
+	let toolbarEl = $state<HTMLElement | null>(null);
+	let toolbarScrollState = $state<'start' | 'middle' | 'end' | 'none'>('none');
+	let isSnapping = $state<boolean>(false);
+
+	function handleToolbarScroll() {
+		if (!toolbarEl) return;
+		const { scrollLeft, scrollWidth, clientWidth } = toolbarEl;
+		const atStart = scrollLeft <= 2;
+		const atEnd = scrollLeft + clientWidth >= scrollWidth - 2;
+
+		if (scrollWidth <= clientWidth) toolbarScrollState = 'none';
+		else if (atStart) toolbarScrollState = 'start';
+		else if (atEnd) toolbarScrollState = 'end';
+		else toolbarScrollState = 'middle';
+	}
+
+	$effect(() => {
+		if (toolbarEl) {
+			requestAnimationFrame(() => handleToolbarScroll());
+		}
+	});
+
+	// Rubber-band snap-back: if toolbar is partially hidden on mobile, snap page back
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const el = toolbarEl;
+		if (!el) return;
+
+		const mql = window.matchMedia('(max-width: 768px)');
+
+		function smoothSnapTo(targetY: number, duration = 200) {
+			const startY = window.scrollY;
+			const distance = targetY - startY;
+			const startTime = performance.now();
+
+			function step(now: number) {
+				const elapsed = now - startTime;
+				const t = Math.min(elapsed / duration, 1);
+				const ease = 1 - (1 - t) * (1 - t); // ease-out quad
+				window.scrollTo(0, startY + distance * ease);
+				if (t < 1) {
+					requestAnimationFrame(step);
+				} else {
+					isSnapping = false;
+				}
+			}
+			requestAnimationFrame(step);
+		}
+
+		function handleScrollEnd() {
+			if (isSnapping || !mql.matches || !el) return;
+
+			const rect = el.getBoundingClientRect();
+			const isPartiallyHidden = rect.top < 0 && rect.bottom > 0;
+			const mostlyVisible = rect.top > -(rect.height * 0.75);
+
+			if (isPartiallyHidden && mostlyVisible) {
+				isSnapping = true;
+				smoothSnapTo(window.scrollY + rect.top);
+			}
+		}
+
+		let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+		function handleScroll() {
+			if (scrollTimer !== null) clearTimeout(scrollTimer);
+			scrollTimer = setTimeout(handleScrollEnd, 150);
+		}
+
+		const supportsScrollEnd = 'onscrollend' in window;
+		if (supportsScrollEnd) {
+			window.addEventListener('scrollend', handleScrollEnd, { passive: true });
+		}
+		window.addEventListener('scroll', handleScroll, { passive: true });
+
+		return () => {
+			if (supportsScrollEnd) window.removeEventListener('scrollend', handleScrollEnd);
+			window.removeEventListener('scroll', handleScroll);
+			if (scrollTimer !== null) clearTimeout(scrollTimer);
+		};
+	});
+
+	// Coachmark state
+	let showCoachmark = $state<boolean>(false);
+
+	// Derived state for context bar
+	let currentTemplateName = $derived(
+		getTemplate($selectedTemplateId)?.name ?? 'Modern'
+	);
+	let marginsSummary = $derived.by(() => {
+		const m = $pageSettings.margins;
+		if (m.top === m.right && m.right === m.bottom && m.bottom === m.left) {
+			return `${m.top}mm`;
+		}
+		return `${m.top}/${m.right}/${m.bottom}/${m.left}mm`;
+	});
 
 	// Derived state for share button availability
 	let isShareable = $derived(isInvoiceComplete(invoice));
@@ -87,8 +228,77 @@
 		return invoice;
 	};
 
+	const syncInvoiceQueryInUrl = (invoiceId: string): void => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		const currentUrl = new URL(window.location.href);
+		currentUrl.searchParams.set('invoice', invoiceId);
+		currentUrl.searchParams.delete('mode');
+		replaceState(currentUrl.toString(), {});
+	};
+
+	const getSidebarItemTitle = (invoiceData: InvoiceData | null | undefined): string => {
+		if (!invoiceData) {
+			return 'Untitled invoice';
+		}
+
+		const draftName = invoiceData.draftName?.trim();
+		if (draftName) {
+			return draftName;
+		}
+
+		const label = invoiceData.invoiceLabel?.trim() || 'Invoice';
+		const number = invoiceData.invoiceNumber?.trim();
+		return number ? `${label} ${number}` : label;
+	};
+
+	const mapRecordsToSidebarItems = (records: { id: string; invoice: InvoiceData }[]): SidebarInvoiceItem[] => {
+		return records
+			.filter((record) => Boolean(record?.id) && Boolean(record?.invoice))
+			.map((record) => ({
+				id: record.id,
+				title: getSidebarItemTitle(record.invoice),
+				isDraft: record.invoice.draft === true
+			}));
+	};
+
+	const upsertSidebarInvoice = (invoiceData: InvoiceData): void => {
+		const id = invoiceData.id;
+		if (!id) {
+			return;
+		}
+
+		const nextItem: SidebarInvoiceItem = {
+			id,
+			title: getSidebarItemTitle(invoiceData),
+			isDraft: invoiceData.draft === true
+		};
+
+		const previousItems = untrack(() => sidebarInvoices);
+		sidebarInvoices = [nextItem, ...previousItems.filter((item) => item.id !== id)];
+	};
+
+	const loadSidebarInvoices = async (): Promise<void> => {
+		isSidebarLoading = true;
+
+		try {
+			const records = await getAllLocalInvoices();
+			sidebarInvoices = mapRecordsToSidebarItems(records);
+		} catch (error) {
+			console.warn('Failed to load sidebar invoices:', error);
+		} finally {
+			isSidebarLoading = false;
+		}
+	};
+
 	const startNewInvoice = (): void => {
-		invoice = createNewInvoice();
+		const newInvoice = createNewInvoice();
+		invoice = newInvoice;
+		setTemplateId(newInvoice.templateId);
+		syncInvoiceQueryInUrl(newInvoice.id);
+		upsertSidebarInvoice(newInvoice);
 	};
 
 	const clearInvoice = (): void => {
@@ -102,6 +312,113 @@
 			id: currentId,
 			invoiceNumber: currentInvoiceNumber
 		};
+		upsertSidebarInvoice(invoice);
+	};
+
+	const openSidebarInvoice = async (invoiceId: string): Promise<boolean> => {
+		if (invoice?.id === invoiceId) {
+			return true;
+		}
+
+		// Always load from local IndexedDB (source of truth)
+		let loadedInvoice = await getLocalInvoiceData(invoiceId);
+		if (!loadedInvoice) {
+			return false;
+		}
+
+		if (!loadedInvoice.id) {
+			loadedInvoice.id = invoiceId;
+		}
+
+		invoice = loadedInvoice;
+		setTemplateId(loadedInvoice.templateId || 'modern');
+		setActiveTab('edit');
+		syncInvoiceQueryInUrl(invoiceId);
+		return true;
+	};
+
+	const deleteCurrentInvoice = async (): Promise<void> => {
+		const currentInvoice = invoice;
+		if (!currentInvoice?.id || typeof window === 'undefined') {
+			return;
+		}
+
+		const shouldDelete = window.confirm(
+			'Delete this invoice permanently? This action cannot be undone.'
+		);
+		if (!shouldDelete) {
+			return;
+		}
+
+		const deletingId = currentInvoice.id;
+		const nextInvoiceId = untrack(() => sidebarInvoices.find((item) => item.id !== deletingId)?.id);
+
+		try {
+			// Also remove from cloud if it was synced
+			if ($session.data) {
+				await deleteStoredInvoice(deletingId).catch(() => {});
+			}
+			await deleteLocalInvoice(deletingId);
+
+			sidebarInvoices = untrack(() => sidebarInvoices.filter((item) => item.id !== deletingId));
+
+			if (nextInvoiceId) {
+				const opened = await openSidebarInvoice(nextInvoiceId);
+				if (opened) {
+					return;
+				}
+			}
+
+			startNewInvoice();
+		} catch (error) {
+			console.error('Failed to delete invoice:', error);
+			alert('Failed to delete invoice. Please try again.');
+		}
+	};
+
+	const promptDeleteInvoice = (id: string, title: string, event: MouseEvent): void => {
+		event.stopPropagation();
+		deleteConfirmId = id;
+		deleteConfirmTitle = title;
+	};
+
+	const cancelDelete = (): void => {
+		deleteConfirmId = null;
+		deleteConfirmTitle = '';
+	};
+
+	const confirmDeleteInvoice = async (): Promise<void> => {
+		const deletingId = deleteConfirmId;
+		if (!deletingId) return;
+
+		deleteConfirmId = null;
+		deleteConfirmTitle = '';
+
+		const isCurrentInvoice = invoice?.id === deletingId;
+		const nextInvoiceId = untrack(() =>
+			sidebarInvoices.find((item) => item.id !== deletingId)?.id
+		);
+
+		try {
+			// Also remove from cloud if it was synced
+			if ($session.data) {
+				await deleteStoredInvoice(deletingId).catch(() => {});
+			}
+			await deleteLocalInvoice(deletingId);
+
+			sidebarInvoices = untrack(() => sidebarInvoices.filter((item) => item.id !== deletingId));
+
+			if (isCurrentInvoice) {
+				if (nextInvoiceId) {
+					await openSidebarInvoice(nextInvoiceId);
+				} else {
+					startNewInvoice();
+				}
+			}
+		} catch (error) {
+			console.error('Failed to delete invoice:', error);
+			alert('Failed to delete invoice. Please try again.');
+		}
 	};
 
 	const setActiveTab = (tab: string): void => {
@@ -133,16 +450,130 @@
 		}
 	};
 
+	const ensurePreviewIsActive = async (): Promise<void> => {
+		if (typeof window === 'undefined' || activeTab === 'preview') {
+			return;
+		}
+
+		setActiveTab('preview');
+		await tick();
+		await new Promise<void>((resolve) => {
+			window.requestAnimationFrame(() => resolve());
+		});
+	};
+
 	const session = authClient.useSession();
+
+	const signIn = async (): Promise<void> => {
+		await authClient.signIn.social({
+			provider: 'google'
+		});
+	};
+
+	const signOut = async (): Promise<void> => {
+		showProfileMenu = false;
+		await authClient.signOut();
+		window.location.href = '/';
+	};
+
+	const getUserInitials = (name: string | undefined): string => {
+		if (!name) return '?';
+		const parts = name.split(' ').filter(Boolean);
+		if (parts.length >= 2) {
+			return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+		}
+		return name.substring(0, 2).toUpperCase();
+	};
+
+	const handleImageError = (): void => {
+		imageError = true;
+	};
+
+	const closeFileMenu = (returnFocus: boolean = false): void => {
+		if (!showFileMenu) return;
+		showFileMenu = false;
+		if (returnFocus) {
+			fileMenuTrigger?.focus();
+		}
+	};
+
+	const closeProfileMenu = (): void => {
+		showProfileMenu = false;
+	};
+
+	const closeModeMenu = (): void => {
+		showModeMenu = false;
+	};
+
+	const toggleModeMenu = (): void => {
+		showModeMenu = !showModeMenu;
+		if (showModeMenu) {
+			dismissCoachmark();
+		}
+	};
+
+	const selectMode = (mode: TabName): void => {
+		closeModeMenu();
+		setActiveTab(mode);
+	};
+
+	const dismissCoachmark = (): void => {
+		if (!showCoachmark) return;
+		showCoachmark = false;
+		try {
+			localStorage.setItem('ig.coachmark.mode-toggle', '1');
+		} catch {}
+	};
+
+	const closeHeaderMenus = (): void => {
+		closeFileMenu();
+		closeProfileMenu();
+		closeModeMenu();
+	};
+
+	const toggleFileMenu = (): void => {
+		showFileMenu = !showFileMenu;
+		if (showFileMenu) {
+			showProfileMenu = false;
+		}
+	};
+
+	const toggleProfileMenu = (): void => {
+		showProfileMenu = !showProfileMenu;
+		if (showProfileMenu) {
+			closeFileMenu();
+		}
+	};
+
+	const navigateToDashboard = async (): Promise<void> => {
+		closeHeaderMenus();
+		await goto('/history');
+	};
+
+	const runFileMenuAction = async (action: () => void | Promise<void>): Promise<void> => {
+		closeFileMenu();
+		await action();
+	};
+
+	const handleGlobalKeydown = (event: KeyboardEvent): void => {
+		if (event.key === 'Escape') {
+			closeFileMenu(true);
+			closeProfileMenu();
+			closeModeMenu();
+		}
+	};
 
 	const saveAsPDF = async (): Promise<void> => {
 		// Guard against double-clicks immediately
 		if (isGeneratingPDF) return;
 
 		const currentInvoice = invoice;
-		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
+		if (typeof window === 'undefined' || !currentInvoice) {
 			return;
 		}
+
+		await ensurePreviewIsActive();
+		if (!previewRef) return;
 
 		// For guests, show sign-up prompt once per session
 		if (!$session.data) {
@@ -158,9 +589,12 @@
 
 	const generateAndDownloadPDF = async (): Promise<void> => {
 		const currentInvoice = invoice;
-		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
+		if (typeof window === 'undefined' || !currentInvoice) {
 			return;
 		}
+
+		await ensurePreviewIsActive();
+		if (!previewRef) return;
 
 		isGeneratingPDF = true;
 		pdfAction = 'download';
@@ -220,9 +654,12 @@
 
 	const printPDF = async (): Promise<void> => {
 		const currentInvoice = invoice;
-		if (typeof window === 'undefined' || !previewRef || !currentInvoice) {
+		if (typeof window === 'undefined' || !currentInvoice) {
 			return;
 		}
+
+		await ensurePreviewIsActive();
+		if (!previewRef) return;
 
 		isGeneratingPDF = true;
 		pdfAction = 'print';
@@ -339,7 +776,8 @@
 
 			// Always start with guest storage - it's local and fast
 			// We'll load from API only after session is confirmed
-			const invoicesFromDb = await getAllGuestInvoices();
+			const invoicesFromDb = await getAllLocalInvoices();
+			sidebarInvoices = mapRecordsToSidebarItems(invoicesFromDb);
 
 			let loadedInvoice = /** @type {InvoiceData | null} */ (null);
 
@@ -349,7 +787,7 @@
 
 				if (invoiceIdFromQuery) {
 					// Get invoice from guest storage first (fast)
-					const storedInvoice = await getGuestInvoice(invoiceIdFromQuery);
+					const storedInvoice = await getLocalInvoiceData(invoiceIdFromQuery);
 					if (storedInvoice) {
 						if (!storedInvoice.id) {
 							storedInvoice.id = invoiceIdFromQuery;
@@ -397,6 +835,7 @@
 			if (invoice.templateId) {
 				setTemplateId(invoice.templateId);
 			}
+			upsertSidebarInvoice(invoice);
 		})();
 
 		return () => {
@@ -440,6 +879,8 @@
 							}
 						}
 					}
+
+					await loadSidebarInvoices();
 				} catch (e) {
 					console.warn('Failed to fetch user data:', e);
 				}
@@ -448,18 +889,17 @@
 	});
 
 	$effect(() => {
-		if (invoice && invoice.id) {
-			// Only save when session is resolved (not pending)
-			if ($session.isPending) return;
+		if (!$session.isPending && !$session.data) {
+			void loadSidebarInvoices();
+		}
+	});
 
-			// Conditionally save based on authentication status
-			if ($session.data) {
-				// Logged-in user: save to server API
-				saveInvoice(invoice.id, invoice);
-			} else {
-				// Guest: save to IndexedDB
-				saveGuestInvoice(invoice.id, invoice);
-			}
+	$effect(() => {
+		if (invoice && invoice.id) {
+			upsertSidebarInvoice(invoice);
+
+			// Always save to local IndexedDB regardless of auth state
+			saveLocalInvoice(invoice.id, invoice);
 		}
 		if (invoice && invoice.items) {
 			invoice.subTotal = invoice.items.reduce(
@@ -469,6 +909,44 @@
 			invoice.total = totalAmounts(invoice, invoice.subTotal);
 			invoice.balanceDue = invoice.total - (invoice.amountPaid || 0);
 		}
+	});
+
+	// Context bar: detect settings changes and flash highlight
+	$effect(() => {
+		// Read these to track them
+		void $selectedTemplateId;
+		void $pageSettings.pageSize;
+		void $pageSettings.margins;
+
+		if (!contextBarInitialized) {
+			contextBarInitialized = true;
+			return;
+		}
+		contextBarHighlight = true;
+		const timer = setTimeout(() => {
+			contextBarHighlight = false;
+		}, 1500);
+		return () => clearTimeout(timer);
+	});
+
+	// Coachmark: show on first visit after a delay
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const seen = localStorage.getItem('ig.coachmark.mode-toggle');
+		if (seen) return;
+
+		const showTimer = setTimeout(() => {
+			showCoachmark = true;
+		}, 1000);
+
+		const autoTimer = setTimeout(() => {
+			dismissCoachmark();
+		}, 9000); // 1s delay + 8s visible
+
+		return () => {
+			clearTimeout(showTimer);
+			clearTimeout(autoTimer);
+		};
 	});
 
 	const updateInvoiceItems = (index: number, updatedItem: InvoiceItem): void => {
@@ -598,6 +1076,7 @@
 	};
 
 	const openSaveDraftModal = (): void => {
+		closeFileMenu();
 		// Pre-fill with invoice label + number
 		if (invoice) {
 			draftName =
@@ -650,156 +1129,257 @@
 </script>
 
 <svelte:head>
-	<title>Free Invoice Generator - Create Professional Invoices Online | FreeInvoice.info</title>
+	<title>FreeInvoice — Free Online Invoice Generator</title>
 	<meta
 		name="description"
-		content="Create professional invoices for free in seconds. No signup required. Multiple templates, PDF export, multi-language support. Perfect for freelancers and small businesses."
+		content="Create professional invoices instantly. Free, no sign-up required. Supports multiple currencies, templates, and PDF export."
 	/>
 	<meta
 		name="keywords"
 		content="free invoice generator, online invoice maker, create invoice, PDF invoice, invoice template, freelance invoice, small business invoicing, no signup invoice"
 	/>
+	<meta property="og:title" content="FreeInvoice — Free Online Invoice Generator" />
+	<meta
+		property="og:description"
+		content="Create professional invoices instantly. Free, no sign-up required. Supports multiple currencies, templates, and PDF export."
+	/>
+	<meta property="og:url" content="https://freeinvoice.info/" />
 </svelte:head>
 
+<svelte:window onpointerdown={closeHeaderMenus} onkeydown={handleGlobalKeydown} />
+
 {#if invoice}
-	<div class="page-layout app-container app-page">
-		<!-- Mobile selectors row -->
-		<div class="mobile-selectors-row">
-			<CurrencySelector />
-			<LanguageSelector />
-		</div>
+	<div class="workspace-shell editor-workspace app-page">
+		<div class="desktop-docs-chrome">
+			<div class="docs-title-row docs-surface" onpointerdown={(event) => event.stopPropagation()}>
+				<div class="docs-title-cluster">
+					<div class="docs-file-badge" aria-hidden="true">
+						<svg class="docs-file-icon" viewBox="0 0 20 20" fill="currentColor">
+							<path d="M5 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7.5L11.5 2H5Z" />
+							<path d="M11 2.5V8h5.5L11 2.5Z" opacity="0.6" />
+						</svg>
+					</div>
+					<div class="docs-title-stack">
+						<div class="docs-document-title">{documentTitle || 'Untitled invoice'}</div>
+						<nav class="docs-menu-bar" aria-label="Document menu">
+							<div class="docs-menu-wrap">
+								<button
+									type="button"
+									class="docs-menu-trigger"
+									aria-haspopup="menu"
+									aria-expanded={showFileMenu}
+									aria-controls="file-menu"
+									onclick={toggleFileMenu}
+									data-testid="file-menu-button"
+									bind:this={fileMenuTrigger}
+								>
+									File
+									<svg class="docs-menu-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+										<path
+											fill-rule="evenodd"
+											d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 0 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0l-4.25-4.51a.75.75 0 0 1 .02-1.06Z"
+											clip-rule="evenodd"
+										/>
+									</svg>
+								</button>
 
-		<div class="page-toolbar">
-			<!-- Tab Navigation -->
-			<div class="tab-navigation">
-				<button
-					class="tab-button"
-					class:active={activeTab === 'edit'}
-					onclick={() => setActiveTab('edit')}
-					data-testid="edit-tab"
-				>
-					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							d="M2.5 3A1.5 1.5 0 0 0 1 4.5v4A1.5 1.5 0 0 0 2.5 10h6A1.5 1.5 0 0 0 10 8.5v-4A1.5 1.5 0 0 0 8.5 3h-6Zm9 0A1.5 1.5 0 0 0 10 4.5v4A1.5 1.5 0 0 0 11.5 10h6A1.5 1.5 0 0 0 19 8.5v-4A1.5 1.5 0 0 0 17.5 3h-6Zm-9 7A1.5 1.5 0 0 0 1 11.5v4A1.5 1.5 0 0 0 2.5 17h6A1.5 1.5 0 0 0 10 15.5v-4A1.5 1.5 0 0 0 8.5 10h-6Zm9 0a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 0-1.5-1.5h-6Z"
-						/>
-					</svg>
-					Edit
-				</button>
-				<button
-					class="tab-button"
-					class:active={activeTab === 'preview'}
-					onclick={() => setActiveTab('preview')}
-					data-testid="preview-tab"
-				>
-					<svg class="tab-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-						<path
-							fill-rule="evenodd"
-							d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					Preview
-				</button>
-			</div>
+								{#if showFileMenu}
+									<div
+										id="file-menu"
+										class="docs-menu-dropdown"
+										role="menu"
+										aria-label="File menu"
+										data-testid="file-menu"
+										onpointerdown={(event) => event.stopPropagation()}
+									>
+										<button
+											type="button"
+											class="docs-menu-option"
+											role="menuitem"
+											onclick={() => void runFileMenuAction(() => startNewInvoice())}
+										>
+											New invoice
+										</button>
+										<button
+											type="button"
+											class="docs-menu-option"
+											role="menuitem"
+											data-testid="file-menu-save-draft"
+											onclick={() => void runFileMenuAction(() => openSaveDraftModal())}
+										>
+											Save draft
+										</button>
+										<button
+											type="button"
+											class="docs-menu-option"
+											role="menuitem"
+											onclick={() => void runFileMenuAction(() => clearInvoice())}
+										>
+											Clear invoice
+										</button>
+										<span class="docs-menu-divider" aria-hidden="true"></span>
+										<button
+											type="button"
+											class="docs-menu-option docs-menu-option--danger"
+											role="menuitem"
+											data-testid="file-menu-delete"
+											onclick={() => void runFileMenuAction(() => deleteCurrentInvoice())}
+										>
+											Delete invoice
+										</button>
+										<span class="docs-menu-divider" aria-hidden="true"></span>
+										<button
+											type="button"
+											class="docs-menu-option"
+											role="menuitem"
+											disabled={isGeneratingPDF}
+											onclick={() => void runFileMenuAction(() => printPDF())}
+										>
+											Print
+										</button>
+										<button
+											type="button"
+											class="docs-menu-option"
+											role="menuitem"
+											disabled={isGeneratingPDF}
+											onclick={() => void runFileMenuAction(() => saveAsPDF())}
+										>
+											Download PDF
+										</button>
+										<button
+											type="button"
+											class="docs-menu-option"
+											role="menuitem"
+											disabled={!$session.data || !isShareable}
+											title={!$session.data
+												? 'Sign in to share invoices'
+												: 'Complete the invoice to enable sharing (requires: From, To, Invoice #, Date, and at least one item)'}
+											onclick={() =>
+												void runFileMenuAction(() => {
+													showShareModal = true;
+												})}
+										>
+											Share
+										</button>
+									</div>
+								{/if}
+							</div>
+							<a href="/history" class="docs-menu-trigger docs-menu-link">History</a>
+						</nav>
+					</div>
+				</div>
+				<div class="docs-header-controls" onpointerdown={(event) => event.stopPropagation()}>
+					<ThemeToggle />
+					{#if $session.isPending}
+						<div class="docs-auth-loading" aria-label="Loading session">
+							<div class="docs-loading-spinner"></div>
+						</div>
+					{:else if $session.data}
+						<div class="docs-user-menu-wrap">
+							<button
+								type="button"
+								class="docs-avatar-button"
+								onclick={toggleProfileMenu}
+								aria-label="Open user menu"
+								aria-expanded={showProfileMenu}
+								bind:this={profileMenuTrigger}
+							>
+								{#if $session.data.user.image && !imageError}
+									<img
+										src={$session.data.user.image}
+										alt={$session.data.user.name || 'User'}
+										class="docs-user-avatar"
+										onerror={handleImageError}
+										referrerpolicy="no-referrer"
+									/>
+								{:else}
+									<span class="docs-user-avatar-fallback">{getUserInitials($session.data.user.name)}</span>
+								{/if}
+							</button>
 
-			{#if activeTab === 'preview'}
-				<div class="preview-toolbar-controls">
-					<TemplateSelector />
-					<ViewModeToggle />
-					{#if $viewMode === 'page'}
-						<PageSettingsSelector />
+							{#if showProfileMenu}
+								<div class="docs-profile-dropdown" onpointerdown={(event) => event.stopPropagation()}>
+									<div class="docs-dropdown-header">
+										<span class="docs-user-name">{$session.data.user.name || 'User'}</span>
+										<span class="docs-user-email">{$session.data.user.email}</span>
+									</div>
+									<button
+										type="button"
+										class="docs-dropdown-item"
+										onclick={() => void navigateToDashboard()}
+									>
+										Dashboard
+									</button>
+									<button type="button" class="docs-dropdown-item docs-dropdown-item--danger" onclick={signOut}
+										>Sign Out</button
+									>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<button type="button" class="docs-auth-button" onclick={signIn}>Sign In</button>
 					{/if}
 				</div>
-			{/if}
-		</div>
+			</div>
 
-		<!-- Edit View -->
-		<div class="content-section form-section" class:hidden={activeTab !== 'edit'}>
-			<div class="sticky-button-wrapper">
-				<div class="button-group">
+			<div class="docs-toolbar-scroll-wrapper{toolbarScrollState === 'start' || toolbarScrollState === 'middle' ? ' show-fade-right' : ''}{toolbarScrollState === 'end' || toolbarScrollState === 'middle' ? ' show-fade-left' : ''}">
+				<div class="docs-toolbar-row docs-toolbar" bind:this={toolbarEl} onscroll={handleToolbarScroll}>
+				<div class="docs-toolbar-group docs-toolbar-group--file-actions">
 					<button
-						class="action-button save-draft-button"
-						title={$_('actions.save_draft')}
+						type="button"
+						class="docs-tool-button docs-tool-button--primary"
 						onclick={openSaveDraftModal}
 					>
-						<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-							<path
-								fill-rule="evenodd"
-								d="M10 2c-1.716 0-3.408.106-5.07.31C3.806 2.45 3 3.414 3 4.517V17.25a.75.75 0 0 0 1.075.676L10 15.082l5.925 2.844A.75.75 0 0 0 17 17.25V4.517c0-1.103-.806-2.068-1.93-2.207A41.403 41.403 0 0 0 10 2Z"
-								clip-rule="evenodd"
-							/>
-						</svg>
 						{$_('actions.save_draft')}
 					</button>
-					<button
-						class="icon-button form-action"
-						aria-label={$_('invoice.new')}
-						title={$_('invoice.new')}
-						onclick={startNewInvoice}
-					>
-						<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<button type="button" class="docs-tool-button" onclick={startNewInvoice}>
+						<svg class="docs-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 							<path
 								fill-rule="evenodd"
 								d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z"
 								clip-rule="evenodd"
 							/>
 						</svg>
-						<span class="sr-only">{$_('invoice.new')}</span>
+						<span class="docs-tool-label">New</span>
 					</button>
-					<button
-						class="icon-button form-action"
-						aria-label={$_('actions.clear')}
-						title={$_('actions.clear')}
-						onclick={clearInvoice}
-					>
-						<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<button type="button" class="docs-tool-button" onclick={clearInvoice}>
+						<svg class="docs-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 							<path
 								fill-rule="evenodd"
 								d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0v2.43l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389 5.5 5.5 0 0 1 9.2-2.466l.312.312H11.766a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .533-.22Z"
 								clip-rule="evenodd"
 							/>
 						</svg>
-						<span class="sr-only">{$_('actions.clear')}</span>
+						<span class="docs-tool-label">Clear</span>
 					</button>
 				</div>
-			</div>
-
-			<InvoiceFormComponent
-				{invoice}
-				{updateInvoiceItems}
-				{addInvoiceItem}
-				{updateInvoiceTerms}
-				{updateInvoiceNotes}
-				{updateInvoicePaidAmount}
-				{handleInvoiceDateChange}
-				{handleDueDateChange}
-				{onUpdateTax}
-				{onUpdateDiscount}
-				{onUpdateShipping}
-				{onUpdateLogo}
-				{togglePaidStatus}
-				{onInvoiceToInput}
-				{onInvoiceFromInput}
-				{onInvoiceNumberInput}
-				{onInvoiceLabelInput}
-			/>
-		</div>
-
-		<!-- Preview View -->
-		<div class="content-section preview-section" class:hidden={activeTab !== 'preview'}>
-			<div class="sticky-button-wrapper">
-				<div class="button-group">
+				<span class="docs-toolbar-divider" aria-hidden="true"></span>
+				<div class="docs-toolbar-group">
+					<CurrencySelector />
+					<LanguageSelector />
+				</div>
+				<span class="docs-toolbar-divider" aria-hidden="true"></span>
+				<div class="docs-toolbar-group docs-toolbar-group--controls">
+					{#if activeTab === 'preview' || $viewMode === 'page'}
+						<TemplateSelector />
+						<PageSettingsSelector />
+					{:else}
+						<TemplateSelector />
+						<ViewModeToggle />
+					{/if}
+				</div>
+				<div class="docs-toolbar-spacer"></div>
+				<div class="docs-toolbar-group">
 					<button
-						class="icon-button preview-action"
-						aria-label={$_('invoice.print_pdf')}
-						title={$_('invoice.print_pdf')}
+						type="button"
+						class="docs-tool-button"
 						onclick={printPDF}
 						disabled={isGeneratingPDF}
+						aria-label={$_('invoice.print_pdf')}
 					>
 						{#if isGeneratingPDF && pdfAction === 'print'}
 							<svg
-								class="icon spin"
+								class="docs-tool-icon spin"
 								viewBox="0 0 24 24"
 								fill="none"
 								stroke="currentColor"
@@ -815,9 +1395,9 @@
 									stroke-linecap="round"
 								/>
 							</svg>
-							<span class="sr-only">{$_('invoice.printing')}</span>
+							<span class="docs-tool-label">Printing</span>
 						{:else}
-							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<svg class="docs-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 								<path d="M6 2a2 2 0 0 0-2 2v3h12V4a2 2 0 0 0-2-2H6Z" />
 								<path
 									fill-rule="evenodd"
@@ -826,20 +1406,20 @@
 								/>
 								<path d="M6 6.5h8v2H6v-2Z" />
 							</svg>
-							<span class="sr-only">{$_('invoice.print_pdf')}</span>
+							<span class="docs-tool-label">Print</span>
 						{/if}
 					</button>
 					<button
-						class="icon-button preview-action"
-						aria-label={$_('invoice.save_pdf')}
-						title={$_('invoice.save_pdf')}
+						type="button"
+						class="docs-tool-button"
 						onclick={saveAsPDF}
 						disabled={isGeneratingPDF}
-						data-testid="download-pdf"
+						data-testid="download-pdf-desktop"
+						aria-label={$_('invoice.save_pdf')}
 					>
 						{#if isGeneratingPDF && pdfAction === 'download'}
 							<svg
-								class="icon spin"
+								class="docs-tool-icon spin"
 								viewBox="0 0 24 24"
 								fill="none"
 								stroke="currentColor"
@@ -855,30 +1435,30 @@
 									stroke-linecap="round"
 								/>
 							</svg>
-							<span class="sr-only">{$_('invoice.downloading')}</span>
+							<span class="docs-tool-label">Downloading</span>
 						{:else}
-							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<svg class="docs-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 								<path
 									fill-rule="evenodd"
 									d="M10 2a1 1 0 0 1 1 1v7.586l1.293-1.293a1 1 0 0 1 1.414 1.414l-3.006 3.006a1 1 0 0 1-1.414 0L6.28 10.707a1 1 0 0 1 1.414-1.414L9 10.586V3a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H5Z"
 									clip-rule="evenodd"
 								/>
 							</svg>
-							<span class="sr-only">{$_('invoice.save_pdf')}</span>
+							<span class="docs-tool-label">Download</span>
 						{/if}
 					</button>
 					{#if $session.data && invoice}
 						<button
-							class="icon-button preview-action share-button"
-							class:disabled-share={!isShareable}
-							aria-label="Share Invoice"
+							type="button"
+							class="docs-tool-button docs-tool-button--share"
+							onclick={() => (showShareModal = true)}
+							disabled={!isShareable}
 							title={isShareable
 								? 'Share Invoice'
 								: 'Complete the invoice to enable sharing (requires: From, To, Invoice #, Date, and at least one item)'}
-							onclick={() => (showShareModal = true)}
-							disabled={!isShareable}
+							aria-label="Share Invoice"
 						>
-							<svg class="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<svg class="docs-tool-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 								<path
 									d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z"
 								/>
@@ -886,14 +1466,215 @@
 									d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z"
 								/>
 							</svg>
-							<span class="sr-only">Share Invoice</span>
+							Share
 						</button>
 					{/if}
 				</div>
-			</div>
+				<span class="docs-toolbar-divider" aria-hidden="true"></span>
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div class="docs-mode-menu-wrap" onpointerdown={(e) => e.stopPropagation()}>
+					<button
+						type="button"
+						class="docs-mode-pill"
+						class:docs-mode-pill--viewing={activeTab === 'preview'}
+						class:docs-mode-pill--open={showModeMenu}
+						onclick={toggleModeMenu}
+						data-testid="workspace-toggle"
+						aria-haspopup="menu"
+						aria-expanded={showModeMenu}
+					>
+						{#if activeTab === 'edit'}
+							<svg class="docs-mode-pill__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+								<path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+							</svg>
+							<span class="docs-mode-pill__label">Editing</span>
+						{:else}
+							<svg class="docs-mode-pill__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+								<path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+							</svg>
+							<span class="docs-mode-pill__label">Viewing</span>
+						{/if}
+						<svg class="docs-mode-pill__caret" class:docs-mode-pill__caret--open={showModeMenu} viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+							<path d="M3.5 4.5 6 7l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+						</svg>
+					</button>
 
-			<div bind:this={previewRef}>
-				<InvoicePreviewWrapper {invoice} />
+					{#if showModeMenu}
+						<div class="docs-mode-dropdown" role="menu">
+							<button
+								class="docs-mode-option"
+								class:docs-mode-option--active={activeTab === 'edit'}
+								role="menuitem"
+								onclick={() => selectMode('edit')}
+							>
+								<svg class="docs-mode-option__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+									<path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+								</svg>
+								<span class="docs-mode-option__label">Editing</span>
+								{#if activeTab === 'edit'}
+									<svg class="docs-mode-option__check" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+										<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+									</svg>
+								{/if}
+							</button>
+							<button
+								class="docs-mode-option"
+								class:docs-mode-option--active={activeTab === 'preview'}
+								role="menuitem"
+								onclick={() => selectMode('preview')}
+							>
+								<svg class="docs-mode-option__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+									<path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+								</svg>
+								<span class="docs-mode-option__label">Viewing</span>
+								{#if activeTab === 'preview'}
+									<svg class="docs-mode-option__check" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+										<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+									</svg>
+								{/if}
+							</button>
+						</div>
+					{/if}
+
+					{#if showCoachmark}
+						<div class="coachmark" role="tooltip">
+							<div class="coachmark__arrow"></div>
+							<p>Click here to switch between editing and previewing your invoice</p>
+							<button class="coachmark__dismiss" onclick={dismissCoachmark} aria-label="Dismiss tip">✕</button>
+						</div>
+					{/if}
+				</div>
+			</div>
+		</div>
+
+			{#if activeTab === 'edit'}
+				<div class="settings-context-bar" class:settings-context-bar--highlight={contextBarHighlight}>
+					<div class="settings-context-bar__settings">
+						<span class="settings-context-bar__item">
+							<span class="settings-context-bar__label">Template</span>
+							<span class="settings-context-bar__value">{currentTemplateName}</span>
+						</span>
+						<span class="settings-context-bar__sep"></span>
+						<span class="settings-context-bar__item">
+							<span class="settings-context-bar__label">Page</span>
+							<span class="settings-context-bar__value">{$currentPageDimensions.label}</span>
+						</span>
+						<span class="settings-context-bar__sep"></span>
+						<span class="settings-context-bar__item">
+							<span class="settings-context-bar__label">Margins</span>
+							<span class="settings-context-bar__value">{marginsSummary}</span>
+						</span>
+					</div>
+					<button class="settings-context-bar__preview-link" onclick={() => setActiveTab('preview')}>
+						Preview →
+					</button>
+				</div>
+			{/if}
+		</div>
+
+		<div class="workspace-main">
+			<aside class="invoice-sidebar docs-surface" aria-label="Saved invoices">
+				<div class="invoice-sidebar__header">
+					<h2>Invoices</h2>
+					<button
+						type="button"
+						class="invoice-sidebar__add"
+						onclick={startNewInvoice}
+						aria-label="Add new invoice"
+						title="Add new invoice"
+					>
+						+
+					</button>
+				</div>
+
+				{#if isSidebarLoading && sidebarInvoices.length === 0}
+					<p class="invoice-sidebar__empty">Loading invoices...</p>
+				{:else if sidebarInvoices.length === 0}
+					<p class="invoice-sidebar__empty">No invoices saved yet.</p>
+				{:else}
+					<ul class="invoice-sidebar__list">
+						{#each sidebarInvoices as item (item.id)}
+							<li class="invoice-sidebar__li">
+								<button
+									type="button"
+									class="invoice-sidebar__item"
+									class:invoice-sidebar__item--active={invoice?.id === item.id}
+									onclick={() => void openSidebarInvoice(item.id)}
+								>
+									<svg
+										class="invoice-sidebar__item-icon"
+										viewBox="0 0 20 20"
+										fill="currentColor"
+										aria-hidden="true"
+									>
+										<path
+											fill-rule="evenodd"
+											d="M4.5 2.5A1.5 1.5 0 0 0 3 4v12a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 17 16V6.7a1.5 1.5 0 0 0-.44-1.06l-2.2-2.2A1.5 1.5 0 0 0 13.3 3H4.5Zm1.25 4a.75.75 0 0 1 .75-.75h7a.75.75 0 0 1 0 1.5h-7a.75.75 0 0 1-.75-.75Zm0 3a.75.75 0 0 1 .75-.75h7a.75.75 0 0 1 0 1.5h-7a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5h-4.5Z"
+											clip-rule="evenodd"
+										/>
+									</svg>
+									<span class="invoice-sidebar__item-text">{item.title}</span>
+									{#if item.isDraft}
+										<span class="invoice-sidebar__badge">Draft</span>
+									{/if}
+								</button>
+								<button
+									type="button"
+									class="invoice-sidebar__delete"
+									onclick={(e) => promptDeleteInvoice(item.id, item.title, e)}
+									aria-label="Delete {item.title}"
+									title="Delete invoice"
+								>
+									<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+										<path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd" />
+									</svg>
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</aside>
+
+			<div class="workspace-grid">
+				{#if activeTab === 'edit'}
+					<section class="workspace-panel editor-panel">
+						<div class="panel-body">
+							<InvoiceFormComponent
+								{invoice}
+								{updateInvoiceItems}
+								{addInvoiceItem}
+								{updateInvoiceTerms}
+								{updateInvoiceNotes}
+								{updateInvoicePaidAmount}
+								{handleInvoiceDateChange}
+								{handleDueDateChange}
+								{onUpdateTax}
+								{onUpdateDiscount}
+								{onUpdateShipping}
+								{onUpdateLogo}
+								{togglePaidStatus}
+								{onInvoiceToInput}
+								{onInvoiceFromInput}
+								{onInvoiceNumberInput}
+								{onInvoiceLabelInput}
+							/>
+						</div>
+					</section>
+				{:else}
+					<section class="workspace-panel preview-panel">
+						<div class="panel-body preview-body">
+							<div class="preview-canvas">
+								<div bind:this={previewRef}>
+									<InvoicePreviewWrapper {invoice} />
+								</div>
+							</div>
+						</div>
+					</section>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -957,211 +1738,887 @@
 	</div>
 {/if}
 
+{#if deleteConfirmId}
+	<div
+		class="modal-backdrop"
+		role="button"
+		aria-label="Cancel delete"
+		tabindex="0"
+		onclick={cancelDelete}
+		onkeydown={(e) => { if (e.key === 'Escape') cancelDelete(); }}
+	>
+		<div class="modal" role="dialog" aria-modal="true" onpointerdown={(e) => e.stopPropagation()}>
+			<h2 class="modal-title">Delete Invoice</h2>
+			<p class="modal-description">
+				Are you sure you want to delete <strong>{deleteConfirmTitle}</strong>? This action cannot be undone.
+			</p>
+			<div class="modal-actions">
+				<button class="modal-button cancel-button" onclick={cancelDelete}>
+					No
+				</button>
+				<button class="modal-button delete-button" onclick={() => void confirmDeleteInvoice()}>
+					Yes, Delete
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
-	.page-layout {
+	.workspace-shell {
+		--workspace-inline-padding: var(--layout-gutter-desktop);
 		display: flex;
 		flex-direction: column;
-		gap: var(--layout-section-gap);
-		position: relative;
+		gap: 0;
+		padding-top: 0.35rem;
+		width: 100%;
+		max-width: var(--layout-max-width);
+		margin: 0 auto;
+		padding-inline: var(--workspace-inline-padding);
 	}
 
-	/* Mobile selectors - hidden on desktop */
-	.mobile-selectors-row {
-		display: none;
-		gap: 0.75rem;
-		align-items: center;
-	}
-
-	@media (max-width: 768px) {
-		.mobile-selectors-row {
-			display: flex;
-		}
-	}
-
-	.page-toolbar {
+	.desktop-docs-chrome {
 		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.docs-title-row {
+		display: flex;
+		flex-direction: row;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-
-	.tab-navigation {
-		display: flex;
-		gap: 0.375rem;
-		background: var(--surface-paper-muted);
-		padding: 0.25rem;
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--surface-paper-border);
-		width: fit-content;
-	}
-
-	.tab-button {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 1rem;
-		border-radius: var(--radius-lg);
-		font-weight: 500;
-		font-size: 0.9375rem;
-		color: var(--color-text-secondary);
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		position: relative;
-	}
-
-	.tab-button:hover {
-		color: var(--color-text-primary);
-		background: var(--color-bg-tertiary);
-	}
-
-	.tab-button.active {
-		color: var(--color-text-primary);
-		background: var(--surface-paper);
-		border: 1px solid var(--surface-paper-border);
-	}
-
-	.tab-icon {
-		width: 1.125rem;
-		height: 1.125rem;
-	}
-
-	.preview-toolbar-controls {
-		display: flex;
-		align-items: center;
 		gap: 0.75rem;
-		flex-wrap: wrap;
+		padding: 0.52rem 0.8rem;
+		border-radius: 0;
+		width: 100%;
 	}
 
-	.content-section {
-		--section-padding: 0.875rem;
-		--section-radius: var(--radius-lg);
-		background: var(--surface-paper);
-		padding: var(--section-padding);
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--surface-paper-border);
-		overflow: visible;
-		position: relative;
+	.docs-title-cluster {
+		display: flex;
+		align-items: center;
+		gap: 0.62rem;
+		min-width: 0;
+		flex: 1;
 	}
 
-	.content-section.hidden {
-		display: none;
-	}
-
-	.icon-button {
+	.docs-file-badge {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 2.5rem;
-		height: 2.5rem;
-		border-radius: var(--radius-md);
-		border: 1px solid transparent;
-		background-color: var(--color-accent, #2563eb);
-		color: var(--color-accent-contrast, #ffffff);
-		cursor: pointer;
-		transition:
-			background-color 0.2s ease,
-			border-color 0.2s ease;
+		width: 1.8rem;
+		height: 1.8rem;
+		border-radius: 0.45rem;
+		background: color-mix(in srgb, var(--color-accent-blue) 14%, var(--color-bg-primary));
+		color: var(--color-accent-blue);
+		flex-shrink: 0;
+	}
+
+	.docs-file-icon {
+		width: 1.06rem;
+		height: 1.06rem;
+	}
+
+	.docs-title-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+		min-width: 0;
+	}
+
+	.docs-document-title {
+		font-size: 1rem;
+		font-weight: 600;
+		line-height: 1.25;
+		color: var(--color-text-primary);
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		overflow: hidden;
+	}
+
+	.docs-menu-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.2rem;
+	}
+
+	.docs-menu-wrap {
 		position: relative;
 	}
 
-	.icon-button:disabled {
+	.docs-menu-trigger {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.22rem;
+		padding: 0.24rem 0.44rem;
+		border-radius: 0.4rem;
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--color-text-primary);
+		font-size: 0.8rem;
+		font-weight: 500;
+		line-height: 1.15;
+		cursor: pointer;
+		transition:
+			background-color var(--motion-fast) var(--motion-ease),
+			border-color var(--motion-fast) var(--motion-ease);
+	}
+
+	.docs-menu-trigger:hover {
+		background: var(--color-bg-secondary);
+		border-color: var(--color-border-primary);
+	}
+
+	.docs-menu-chevron {
+		width: 0.72rem;
+		height: 0.72rem;
+		opacity: 0.72;
+	}
+
+	.docs-menu-dropdown {
+		position: absolute;
+		top: calc(100% + 0.32rem);
+		left: 0;
+		min-width: 170px;
+		padding: 0.34rem;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--surface-paper-border);
+		background: var(--surface-paper);
+		box-shadow: var(--shadow-medium);
+		z-index: 15;
+		display: grid;
+		gap: 0.12rem;
+	}
+
+	.docs-menu-option {
+		display: flex;
+		align-items: center;
+		width: 100%;
+		border: none;
+		background: transparent;
+		padding: 0.4rem 0.5rem;
+		border-radius: 0.45rem;
+		font-size: 0.8rem;
+		font-weight: 500;
+		color: var(--color-text-primary);
+		cursor: pointer;
+		text-align: left;
+	}
+
+	.docs-menu-option:hover:not(:disabled) {
+		background: var(--color-bg-secondary);
+	}
+
+	.docs-menu-option:disabled {
 		cursor: not-allowed;
-		opacity: 0.7;
+		color: var(--color-text-soft);
 	}
 
-	.icon-button:not(:disabled):hover {
-		border-color: color-mix(in srgb, var(--color-accent, #2563eb) 30%, transparent 70%);
+	.docs-menu-option--danger {
+		color: var(--color-error);
 	}
 
-	.icon-button:focus-visible {
-		outline: none;
-		box-shadow: var(--shadow-focus);
+	.docs-menu-option--danger:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--color-error) 12%, var(--surface-paper));
 	}
 
-	.icon {
-		width: 1.25rem;
-		height: 1.25rem;
+	.docs-menu-divider {
+		height: 1px;
+		background: var(--color-border-primary);
+		margin: 0.18rem 0.22rem;
+	}
+
+	.docs-header-controls {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		flex-shrink: 0;
+	}
+
+	.docs-auth-button {
+		padding: 0.4rem 0.75rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid transparent;
+		background: var(--color-accent-blue);
+		color: #fff;
+		font-size: 0.78rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.docs-auth-button:hover {
+		background: var(--color-accent-hover);
+	}
+
+	.docs-auth-loading {
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+	}
+
+	.docs-loading-spinner {
+		width: 1.05rem;
+		height: 1.05rem;
+		border: 2px solid var(--color-border-secondary);
+		border-top-color: var(--color-accent-blue);
+		border-radius: 999px;
+		animation: spin 0.75s linear infinite;
+	}
+
+	.docs-user-menu-wrap {
+		position: relative;
+	}
+
+	.docs-avatar-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		border: 1px solid var(--color-border-primary);
+		border-radius: 999px;
+		background: var(--color-bg-primary);
+		cursor: pointer;
+		overflow: hidden;
+		padding: 0;
+	}
+
+	.docs-user-avatar {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.docs-user-avatar-fallback {
+		display: grid;
+		place-items: center;
+		width: 100%;
+		height: 100%;
+		font-size: 0.7rem;
+		font-weight: 700;
+		color: var(--color-accent-blue);
+		background: color-mix(in srgb, var(--color-accent-blue) 15%, transparent);
+	}
+
+	.docs-profile-dropdown {
+		position: absolute;
+		right: 0;
+		top: calc(100% + 0.42rem);
+		width: 220px;
+		padding: 0.5rem;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--surface-paper-border);
+		background: var(--surface-paper);
+		box-shadow: var(--shadow-medium);
+		z-index: 20;
+	}
+
+	.docs-dropdown-header {
+		display: flex;
+		flex-direction: column;
+		gap: 0.08rem;
+		padding: 0.35rem 0.45rem;
+		margin-bottom: 0.22rem;
+		border-bottom: 1px solid var(--color-border-primary);
+	}
+
+	.docs-user-name {
+		font-size: 0.82rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.docs-user-email {
+		font-size: 0.72rem;
+		color: var(--color-text-secondary);
+	}
+
+	.docs-dropdown-item {
+		display: block;
+		width: 100%;
+		border: none;
+		background: transparent;
+		padding: 0.46rem;
+		border-radius: 0.45rem;
+		font-size: 0.8rem;
+		font-weight: 500;
+		color: var(--color-text-primary);
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.docs-dropdown-item:hover {
+		background: var(--color-bg-secondary);
+	}
+
+	.docs-dropdown-item--danger {
+		color: var(--color-error);
+	}
+
+	.docs-toolbar-row {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.2rem;
+		padding: 0.25rem 0.5rem;
+		border-radius: 0;
+		border-top: 0;
+		border-bottom: 1px solid var(--color-border-primary);
+		background: var(--color-bg-secondary);
+		width: 100%;
+	}
+
+	.docs-toolbar-group {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.1rem;
+		flex-wrap: wrap;
+	}
+
+	.docs-toolbar-divider {
+		width: 1px;
+		height: 1.2rem;
+		background: var(--color-border-primary);
+		margin: 0 0.15rem;
+		opacity: 0.6;
+	}
+
+	.docs-toolbar-spacer {
+		flex: 1 1 auto;
+		min-width: 0.5rem;
+	}
+
+	.docs-tool-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		height: 1.75rem;
+		padding: 0 0.5rem;
+		border-radius: 0.25rem;
+		border: none;
+		background: transparent;
+		color: var(--color-text-primary);
+		font-size: 0.78rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color var(--motion-fast) var(--motion-ease);
+	}
+
+	.docs-tool-button:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+	}
+
+	.docs-tool-button:active:not(:disabled) {
+		background: color-mix(in srgb, var(--color-text-primary) 14%, transparent);
+	}
+
+	.docs-tool-button:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.docs-tool-button--primary {
+		color: var(--color-accent-blue);
+		font-weight: 600;
+	}
+
+	.docs-tool-button--primary:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
+	}
+
+	.docs-tool-button--share {
+		color: var(--color-accent-blue);
+	}
+
+	.docs-tool-button--share:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
+	}
+
+	.docs-mode-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		height: 1.75rem;
+		padding: 0 0.55rem 0 0.45rem;
+		border-radius: var(--radius-pill);
+		border: none;
+		background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+		color: var(--color-text-primary);
+		font-size: 0.78rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			background-color var(--motion-fast) var(--motion-ease),
+			color var(--motion-fast) var(--motion-ease);
+		flex-shrink: 0;
+	}
+
+	.docs-mode-pill:hover {
+		background: color-mix(in srgb, var(--color-text-primary) 14%, transparent);
+	}
+
+	.docs-mode-pill--viewing {
+		background: color-mix(in srgb, var(--color-accent-blue) 14%, transparent);
+		color: var(--color-accent-blue);
+	}
+
+	.docs-mode-pill--viewing:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 22%, transparent);
+	}
+
+	.docs-mode-pill__icon {
+		width: 0.85rem;
+		height: 0.85rem;
+	}
+
+	.docs-mode-pill__label {
+		line-height: 1;
+	}
+
+	.docs-mode-pill__caret {
+		width: 0.7rem;
+		height: 0.7rem;
+		opacity: 0.55;
+		margin-left: -0.1rem;
+		transition: transform var(--motion-fast) var(--motion-ease);
+	}
+
+	.docs-mode-pill__caret--open {
+		transform: rotate(180deg);
+	}
+
+	/* Mode menu wrapper */
+	.docs-mode-menu-wrap {
+		position: relative;
+		flex-shrink: 0;
+	}
+
+	/* Mode dropdown */
+	.docs-mode-dropdown {
+		position: absolute;
+		top: calc(100% + 0.32rem);
+		right: 0;
+		min-width: 150px;
+		background: var(--color-bg-primary);
+		border: 1px solid var(--color-border-primary);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-medium);
+		padding: 0.25rem;
+		z-index: 20;
+		animation: dropdown-fade-in 0.12s ease-out;
+	}
+
+	@keyframes dropdown-fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.docs-mode-option {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		width: 100%;
+		padding: 0.4rem 0.55rem;
+		border: none;
+		border-radius: calc(var(--radius-md) - 2px);
+		background: transparent;
+		color: var(--color-text-primary);
+		font-size: 0.8rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color var(--motion-fast) var(--motion-ease);
+	}
+
+	.docs-mode-option:hover {
+		background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+	}
+
+	.docs-mode-option--active {
+		color: var(--color-accent-blue);
+	}
+
+	.docs-mode-option__icon {
+		width: 0.88rem;
+		height: 0.88rem;
+		flex-shrink: 0;
+	}
+
+	.docs-mode-option__label {
+		flex: 1;
+		text-align: left;
+	}
+
+	.docs-mode-option__check {
+		width: 0.82rem;
+		height: 0.82rem;
+		flex-shrink: 0;
+	}
+
+	/* Settings Context Bar */
+	.settings-context-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.22rem 0.65rem;
+		font-size: 0.72rem;
+		border-bottom: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
+		transition: background-color 0.4s ease;
+	}
+
+	.settings-context-bar--highlight {
+		background: color-mix(in srgb, var(--color-accent-blue) 6%, var(--color-bg-primary));
+	}
+
+	.settings-context-bar__settings {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--color-text-secondary);
+	}
+
+	.settings-context-bar__item {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.settings-context-bar__label {
+		color: var(--color-text-tertiary);
+	}
+
+	.settings-context-bar__value {
+		color: var(--color-text-primary);
+		font-weight: 500;
+	}
+
+	.settings-context-bar__sep {
+		width: 1px;
+		height: 0.7rem;
+		background: var(--color-border-primary);
+	}
+
+	.settings-context-bar__preview-link {
+		border: none;
+		background: transparent;
+		color: var(--color-accent-blue);
+		font-size: 0.72rem;
+		font-weight: 500;
+		cursor: pointer;
+		padding: 0.15rem 0.45rem;
+		border-radius: var(--radius-pill);
+		transition: background-color var(--motion-fast) var(--motion-ease);
+	}
+
+	.settings-context-bar__preview-link:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
+	}
+
+	/* Coachmark */
+	.coachmark {
+		position: absolute;
+		top: calc(100% + 0.55rem);
+		right: 0;
+		min-width: 220px;
+		max-width: 280px;
+		background: var(--color-accent-blue);
+		color: #fff;
+		font-size: 0.78rem;
+		line-height: 1.4;
+		padding: 0.6rem 0.75rem;
+		border-radius: var(--radius-md);
+		z-index: 25;
+		animation: coachmark-fade-in 0.3s ease-out;
+	}
+
+	.coachmark p {
+		margin: 0;
+		padding-right: 1rem;
+	}
+
+	.coachmark__arrow {
+		position: absolute;
+		top: -5px;
+		right: 1rem;
+		width: 10px;
+		height: 10px;
+		background: var(--color-accent-blue);
+		transform: rotate(45deg);
+	}
+
+	.coachmark__dismiss {
+		position: absolute;
+		top: 0.35rem;
+		right: 0.35rem;
+		width: 1.2rem;
+		height: 1.2rem;
+		border: none;
+		background: transparent;
+		color: rgba(255, 255, 255, 0.7);
+		font-size: 0.7rem;
+		cursor: pointer;
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+		transition: color var(--motion-fast) var(--motion-ease);
+	}
+
+	.coachmark__dismiss:hover {
+		color: #fff;
+	}
+
+	@keyframes coachmark-fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(-6px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	:global(.dark) .coachmark {
+		background: #1a73e8;
+	}
+
+	:global(.dark) .coachmark__arrow {
+		background: #1a73e8;
+	}
+
+	.docs-tool-icon {
+		width: 0.88rem;
+		height: 0.88rem;
+	}
+
+	.workspace-main {
+		display: grid;
+		grid-template-columns: minmax(220px, 270px) minmax(0, 1fr);
+		gap: 0;
+		min-height: calc(100vh - 170px);
+	}
+
+	.invoice-sidebar {
+		display: flex;
+		flex-direction: column;
+		padding: 1rem 0.65rem 0.9rem;
+		border-radius: 0;
+		border-right: 1px solid var(--color-border-primary);
+		background: var(--color-surface);
+	}
+
+	.invoice-sidebar__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0 0.35rem;
+		margin-bottom: 0.65rem;
+	}
+
+	.invoice-sidebar__header h2 {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 650;
+		color: var(--color-text-primary);
+	}
+
+	.invoice-sidebar__add {
+		width: 1.9rem;
+		height: 1.9rem;
+		border-radius: 0.42rem;
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--color-text-primary);
+		font-size: 1.2rem;
+		line-height: 1;
+		display: grid;
+		place-items: center;
+		cursor: pointer;
+		transition:
+			background-color var(--motion-fast) var(--motion-ease),
+			border-color var(--motion-fast) var(--motion-ease);
+	}
+
+	.invoice-sidebar__add:hover {
+		background: var(--color-bg-secondary);
+		border-color: var(--color-border-primary);
+	}
+
+	.invoice-sidebar__empty {
+		margin: 0;
+		padding: 0.6rem 0.5rem;
+		font-size: 0.82rem;
+		color: var(--color-text-secondary);
+	}
+
+	.invoice-sidebar__list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: 0.25rem;
+		overflow: auto;
+	}
+
+	.invoice-sidebar__item {
+		width: 100%;
+		border: 1px solid transparent;
+		border-radius: 0.58rem;
+		background: transparent;
+		padding: 0.5rem 0.7rem;
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		color: var(--color-text-primary);
+		cursor: pointer;
+		text-align: left;
+		transition:
+			background-color var(--motion-fast) var(--motion-ease),
+			border-color var(--motion-fast) var(--motion-ease),
+			color var(--motion-fast) var(--motion-ease);
+	}
+
+	.invoice-sidebar__item:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 9%, var(--color-bg-primary));
+		border-color: color-mix(in srgb, var(--color-accent-blue) 24%, transparent);
+	}
+
+	.invoice-sidebar__item--active {
+		background: color-mix(in srgb, var(--color-accent-blue) 22%, var(--color-bg-primary));
+		color: color-mix(in srgb, var(--color-accent-blue) 82%, #0f172a);
+	}
+
+	.invoice-sidebar__item-icon {
+		width: 1rem;
+		height: 1rem;
+		flex-shrink: 0;
+		opacity: 0.9;
+	}
+
+	.invoice-sidebar__item-text {
+		font-size: 0.84rem;
+		font-weight: 550;
+		line-height: 1.2;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.invoice-sidebar__badge {
+		margin-left: auto;
+		padding: 0.14rem 0.45rem;
+		border-radius: 0.42rem;
+		font-size: 0.66rem;
+		font-weight: 650;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		color: var(--color-accent-blue);
+		background: color-mix(in srgb, var(--color-accent-blue) 14%, #fff);
+	}
+
+	.invoice-sidebar__li {
+		display: flex;
+		align-items: center;
+		min-width: 0;
+	}
+
+	.invoice-sidebar__li .invoice-sidebar__item {
+		flex: 1 1 0%;
+		width: 0;
+		min-width: 0;
+	}
+
+	.invoice-sidebar__delete {
+		width: 1.5rem;
+		height: 1.5rem;
+		flex-shrink: 0;
+		border-radius: 0.35rem;
+		border: none;
+		background: transparent;
+		color: var(--color-text-soft);
+		display: grid;
+		place-items: center;
+		cursor: pointer;
+		opacity: 0;
+		padding: 0;
+		transition:
+			opacity var(--motion-fast) var(--motion-ease),
+			background-color var(--motion-fast) var(--motion-ease),
+			color var(--motion-fast) var(--motion-ease);
+	}
+
+	.invoice-sidebar__delete svg {
+		width: 0.82rem;
+		height: 0.82rem;
+	}
+
+	.invoice-sidebar__li:hover .invoice-sidebar__delete {
+		opacity: 1;
+	}
+
+	.invoice-sidebar__delete:hover {
+		background: color-mix(in srgb, var(--color-error) 14%, var(--color-bg-primary));
+		color: var(--color-error);
+	}
+
+	.docs-menu-link {
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.delete-button {
+		background-color: var(--color-error);
+		color: white;
+	}
+
+	.delete-button:hover {
+		background-color: color-mix(in srgb, var(--color-error) 88%, #000);
+	}
+
+	.workspace-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0;
+		background: var(--color-surface);
+	}
+
+	.workspace-panel {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		background: var(--color-surface);
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	.panel-body {
+		padding: 0;
+		background: var(--color-surface);
+	}
+
+	.preview-body {
+		padding-top: 0.35rem;
+	}
+
+	.preview-canvas {
+		padding: 0;
+		background: transparent;
+		border: 0;
+		border-radius: 0;
 	}
 
 	.spin {
 		animation: spin 0.9s linear infinite;
-	}
-
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
-	}
-
-	.sticky-button-wrapper {
-		position: absolute;
-		top: 0;
-		right: 0;
-		z-index: 10;
-		pointer-events: none;
-		flex-shrink: 0;
-		height: 0;
-	}
-
-	.sticky-button-wrapper .button-group {
-		pointer-events: all;
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-		transform: translate(25%, -25%);
-	}
-
-	.sticky-button-wrapper .icon-button {
-		pointer-events: all;
-		transform: none;
-	}
-
-	.action-button {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.375rem;
-		padding: 0.5rem 1rem;
-		border-radius: var(--radius-md);
-		border: 1px solid transparent;
-		font-weight: 500;
-		font-size: 0.875rem;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		white-space: nowrap;
-	}
-
-	.save-draft-button {
-		background-color: #3b82f6;
-		color: white;
-	}
-
-	.save-draft-button:hover {
-		background-color: #2563eb;
-		border-color: rgba(59, 130, 246, 0.3);
-	}
-
-	.action-button:focus-visible {
-		outline: none;
-		box-shadow: var(--shadow-focus);
-	}
-
-	.action-button .icon {
-		width: 1rem;
-		height: 1rem;
-	}
-
-	:global(.invoice-form) {
-		padding-top: 0.5rem;
 	}
 
 	@keyframes spin {
@@ -1173,61 +2630,190 @@
 		}
 	}
 
-	/* Tablet */
 	@media (max-width: 1024px) {
-		.content-section {
-			--section-padding: 0.9rem;
+		.workspace-shell {
+			--workspace-inline-padding: var(--layout-gutter-tablet);
 		}
 	}
 
-	/* Mobile */
 	@media (max-width: 768px) {
-		.page-toolbar {
+		.workspace-shell {
+			--workspace-inline-padding: var(--layout-gutter-mobile);
+		}
+
+		.workspace-main {
+			grid-template-columns: 1fr;
+			gap: 0;
+			min-height: auto;
+		}
+
+		.invoice-sidebar {
+			display: none;
+		}
+
+		.docs-toolbar-scroll-wrapper {
+			position: relative;
+		}
+
+		.docs-toolbar-scroll-wrapper::before,
+		.docs-toolbar-scroll-wrapper::after {
+			content: '';
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			width: 24px;
+			pointer-events: none;
+			z-index: 2;
+			opacity: 0;
+			transition: opacity 0.2s ease;
+		}
+
+		.docs-toolbar-scroll-wrapper::before {
+			left: 0;
+			background: linear-gradient(to right, var(--color-bg-secondary), transparent);
+		}
+
+		.docs-toolbar-scroll-wrapper::after {
+			right: 0;
+			background: linear-gradient(to left, var(--color-bg-secondary), transparent);
+		}
+
+		.docs-toolbar-scroll-wrapper.show-fade-right::after {
+			opacity: 1;
+		}
+
+		.docs-toolbar-scroll-wrapper.show-fade-left::before {
+			opacity: 1;
+		}
+
+		.docs-toolbar-row {
+			gap: 0.15rem;
+			padding: 0.2rem 0.35rem;
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none;
+		}
+
+		.docs-toolbar-row::-webkit-scrollbar {
+			display: none;
+		}
+
+		.docs-tool-button {
+			height: 1.6rem;
+			padding: 0 0.4rem;
+			font-size: 0.74rem;
+			flex-shrink: 0;
+		}
+
+		.docs-tool-button .docs-tool-label {
+			display: none;
+		}
+
+		.docs-toolbar-spacer {
+			display: none;
+		}
+
+		.docs-mode-pill {
+			height: 1.6rem;
+			padding: 0 0.35rem;
+			font-size: 0.74rem;
+		}
+
+		.docs-mode-pill__label,
+		.docs-mode-pill__caret {
+			display: none;
+		}
+
+		.docs-mode-dropdown {
+			position: fixed;
+			top: auto;
+			bottom: 1rem;
+			right: 1rem;
+			z-index: 50;
+			min-width: 160px;
+		}
+
+		.settings-context-bar {
+			padding: 0.18rem 0.4rem;
+			font-size: 0.68rem;
+		}
+
+		.settings-context-bar__label {
+			display: none;
+		}
+
+		.coachmark {
+			position: fixed;
+			top: auto;
+			bottom: 1rem;
+			right: 1rem;
+			left: 1rem;
+			max-width: none;
+			min-width: auto;
+		}
+
+		.coachmark__arrow {
+			display: none;
+		}
+
+		.docs-toolbar-divider {
+			flex-shrink: 0;
+		}
+
+		.docs-toolbar-group {
+			flex-shrink: 0;
+			flex-wrap: nowrap;
+		}
+
+		.docs-toolbar-group--controls {
+			flex-shrink: 0;
+		}
+
+		.docs-toolbar-group--file-actions {
+			display: none;
+		}
+
+		.docs-title-row {
 			flex-direction: column;
 			align-items: stretch;
 		}
 
-		.preview-toolbar-controls {
-			width: 100%;
-			justify-content: space-between;
+		.docs-header-controls {
+			justify-content: flex-start;
 		}
 
-		.tab-navigation {
-			width: 100%;
+		.panel-body {
+			padding: 0;
 		}
 
-		.tab-button {
-			flex: 1;
-			justify-content: center;
-			padding: 0.75rem 1rem;
-			font-size: 0.875rem;
+		.preview-canvas {
+			padding: 0;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.workspace-grid {
+			grid-template-columns: minmax(0, 1fr);
+			align-items: start;
 		}
 
-		.content-section {
-			--section-padding: 0.85rem;
+		.workspace-panel {
+			min-height: calc(100vh - 130px);
 		}
 
-		.sticky-button-wrapper {
-			position: static;
-			height: auto;
-			margin-bottom: 0.75rem;
+		.preview-canvas {
+			min-height: 600px;
+		}
+	}
+
+	@media (min-width: 769px) {
+		.desktop-docs-chrome {
+			display: flex;
 		}
 
-		.sticky-button-wrapper .button-group {
-			transform: none;
-			flex-direction: row;
-			justify-content: flex-end;
-			gap: 0.5rem;
-		}
-
-		.action-button {
-			font-size: 0.8rem;
-			padding: 0.5rem 0.875rem;
-		}
-
-		.icon-button {
-			width: 2.25rem;
-			height: 2.25rem;
+		.docs-toolbar-row {
+			display: flex;
 		}
 	}
 

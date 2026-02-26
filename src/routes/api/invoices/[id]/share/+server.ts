@@ -1,8 +1,8 @@
-import { json, error } from '@sveltejs/kit';
+import { error, json } from '@sveltejs/kit';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
-import type { RequestHandler } from './$types';
+import { createShareLink, getInvoice, getShareLinks, revokeShareLink } from '$lib/server/db';
 import { requireDB, requireSession } from '$lib/server/session';
-import { createShareLink, getShareLinks, revokeShareLink, getInvoice } from '$lib/server/db';
+import type { RequestHandler } from './$types';
 
 /**
  * POST - Create a new share link for an invoice

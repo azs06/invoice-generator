@@ -70,9 +70,9 @@
 				</svg>
 			</div>
 
-			<h2 id="signup-prompt-title" class="modal-title">Unlock High-Quality PDFs & Cloud Backup</h2>
+			<h2 id="signup-prompt-title" class="modal-title">Unlock Cloud Sync & Sharing</h2>
 
-			<p class="modal-description">Sign up for free to get premium features:</p>
+			<p class="modal-description">Sign up for free to enhance your invoicing:</p>
 
 			<ul class="benefits-list">
 				<li>
@@ -81,15 +81,15 @@
 				</li>
 				<li>
 					<span class="benefit-icon">☁️</span>
-					<span>Cloud storage for all your invoices</span>
+					<span>Sync up to 10 invoices to the cloud</span>
 				</li>
 				<li>
 					<span class="benefit-icon">📱</span>
-					<span>Access your invoices from any device</span>
+					<span>Access synced invoices from any device</span>
 				</li>
 				<li>
-					<span class="benefit-icon">📋</span>
-					<span>Complete invoice history & management</span>
+					<span class="benefit-icon">🔗</span>
+					<span>Share invoices with clients via link</span>
 				</li>
 			</ul>
 
@@ -121,7 +121,7 @@
 				</button>
 			</div>
 
-			<p class="modal-footer-text">Free accounts include 12 saved invoices with cloud backup.</p>
+			<p class="modal-footer-text">Your local invoices are always free and unlimited. Cloud sync adds sharing and multi-device access.</p>
 		</div>
 	</div>
 {/if}

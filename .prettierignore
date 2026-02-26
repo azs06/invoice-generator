@@ -1,6 +1,4 @@
-# Package Managers
-package-lock.json
-pnpm-lock.yaml
-yarn.lock
-bun.lock
-bun.lockb
+# Prettier is only used for .svelte files
+# oxfmt handles everything else
+*
+!**/*.svelte

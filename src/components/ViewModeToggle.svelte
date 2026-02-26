@@ -24,7 +24,13 @@
 </script>
 
 {#if isMobile}
-	<button class="view-mode-toggle" onclick={toggleViewMode} title={$viewMode === 'responsive' ? `Preview ${$currentPageDimensions.label} page` : 'Switch to responsive view'}>
+	<button
+		class="view-mode-toggle"
+		onclick={toggleViewMode}
+		title={$viewMode === 'responsive'
+			? `Preview ${$currentPageDimensions.label} page`
+			: 'Switch to responsive view'}
+	>
 		{#if $viewMode === 'responsive'}
 			<!-- Document/Page icon -->
 			<svg
@@ -71,19 +77,21 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.375rem;
-		padding: 0.5rem 0.75rem;
-		background: var(--color-bg-secondary, #f9fafb);
+		padding: 0.36rem 0.66rem;
+		background: var(--color-bg-primary, #ffffff);
 		border: 1px solid var(--color-border-primary, #e5e7eb);
-		border-radius: 0.5rem;
+		border-radius: var(--radius-pill);
 		color: var(--color-text-primary, #111827);
-		font-size: 0.8125rem;
-		font-weight: 500;
+		font-size: 0.74rem;
+		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition:
+			background-color var(--motion-fast) var(--motion-ease),
+			border-color var(--motion-fast) var(--motion-ease);
 	}
 
 	.view-mode-toggle:hover {
-		background: var(--color-bg-tertiary, #f3f4f6);
+		background: var(--color-bg-secondary, #f3f4f6);
 		border-color: var(--color-border-secondary, #d1d5db);
 	}
 

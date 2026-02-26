@@ -3,15 +3,21 @@
 </script>
 
 <svelte:head>
-	<title>Features - Free Invoice Generator | FreeInvoice.info</title>
+	<title>Features — FreeInvoice</title>
 	<meta
 		name="description"
-		content="Discover all features of FreeInvoice.info: professional templates, PDF export, multi-language support, local storage, and more. No signup required, completely free forever."
+		content="Explore FreeInvoice features: multiple templates, currency support, PDF export, cloud sync, and more."
 	/>
 	<meta
 		name="keywords"
 		content="invoice generator features, free invoicing tool, PDF invoice maker, professional invoice templates, multi-language invoices, offline invoice generator"
 	/>
+	<meta property="og:title" content="Features — FreeInvoice" />
+	<meta
+		property="og:description"
+		content="Explore FreeInvoice features: multiple templates, currency support, PDF export, cloud sync, and more."
+	/>
+	<meta property="og:url" content="https://freeinvoice.info/features" />
 </svelte:head>
 
 <div class="features-page">

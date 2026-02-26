@@ -29,3 +29,6 @@ vite.config.ts.timestamp-*
 playwright-report
 test-results
 .playwright-mcp
+
+# Database
+schema.sql

@@ -1,11 +1,11 @@
 import { writable } from 'svelte/store';
 import {
-	getTemplateOptions,
 	getDefaultTemplateId,
-	templateExists,
 	getTemplate,
+	getTemplateOptions,
 	type TemplateMetadata,
-	type TemplateOption
+	type TemplateOption,
+	templateExists
 } from '$lib/templates/registry.js';
 
 const DEFAULT_TEMPLATE_ID = getDefaultTemplateId();

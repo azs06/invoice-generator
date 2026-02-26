@@ -44,13 +44,17 @@
 	.currency-selector {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.32rem;
+		padding: 0.3rem 0.44rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
 	}
 
 	.currency-icon {
-		width: 1.25rem;
-		height: 1.25rem;
-		color: var(--color-text-primary);
+		width: 0.88rem;
+		height: 0.88rem;
+		color: var(--color-text-secondary);
 	}
 
 	.select-wrapper {
@@ -61,25 +65,20 @@
 
 	select {
 		appearance: none;
-		padding: 0.45rem 2.25rem 0.45rem 0.85rem;
-		border-radius: var(--radius-sm);
-		border: 1px solid var(--color-border-secondary);
-		background: var(--color-bg-secondary);
+		padding: 0.08rem 1.22rem 0.08rem 0.24rem;
+		border-radius: var(--radius-pill);
+		border: none;
+		background: transparent;
 		color: var(--color-text-primary);
-		font-size: 0.9rem;
+		font-size: 0.76rem;
 		font-weight: 500;
 		line-height: 1.2;
 		cursor: pointer;
-		transition:
-			border-color 0.2s ease,
-			box-shadow 0.2s ease,
-			background 0.2s ease;
 	}
 
 	select:focus-visible {
 		outline: none;
-		border-color: var(--color-accent-blue);
-		box-shadow: var(--shadow-focus);
+		box-shadow: none;
 	}
 
 	select option {
@@ -90,12 +89,12 @@
 	.select-wrapper::after {
 		content: '';
 		position: absolute;
-		right: 0.9rem;
+		right: 0.25rem;
 		top: 50%;
-		width: 0.5rem;
-		height: 0.5rem;
-		border-right: 2px solid var(--color-text-secondary);
-		border-bottom: 2px solid var(--color-text-secondary);
+		width: 0.36rem;
+		height: 0.36rem;
+		border-right: 1.5px solid var(--color-text-secondary);
+		border-bottom: 1.5px solid var(--color-text-secondary);
 		transform: translateY(-50%) rotate(45deg);
 		pointer-events: none;
 		transition: border-color 0.2s ease;
@@ -112,15 +111,14 @@
 		}
 		.currency-selector {
 			gap: 0;
+			padding-inline: 0.36rem;
 		}
 		select {
-			padding: 0.35rem 1.75rem 0.35rem 0.5rem;
-			font-size: 0.8rem;
+			padding: 0.08rem 1rem 0.08rem 0.2rem;
+			font-size: 0.74rem;
 		}
 		.select-wrapper::after {
-			right: 0.6rem;
-			width: 0.4rem;
-			height: 0.4rem;
+			right: 0.2rem;
 		}
 	}
 </style>

@@ -1,5 +1,5 @@
 import { derived, type Readable } from 'svelte/store';
-import { currency, currencies } from './stores/currency.js';
+import { currencies, currency } from './stores/currency.js';
 
 export const currentCurrencyInfo = derived(currency, ($currency) => {
 	return currencies[$currency as keyof typeof currencies] || currencies.USD;

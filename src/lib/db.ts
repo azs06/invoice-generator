@@ -97,12 +97,73 @@ export async function getInvoiceUsage(): Promise<{ count: number; limit: number 
 	if (response.ok) {
 		const data = await response.json();
 		if (!Array.isArray(data)) {
-			return { count: data.count || 0, limit: data.limit || 12 };
+			return { count: data.count || 0, limit: data.limit || 10 };
 		}
 	}
-	return { count: 0, limit: 12 };
+	return { count: 0, limit: 10 };
 }
 
 export async function clearAllInvoices(): Promise<void> {
 	await fetch(API_BASE, { method: 'DELETE' });
+}
+
+/**
+ * Sync a local invoice to the cloud.
+ * Returns the cloud ID on success, or null if the limit is reached.
+ */
+export async function syncInvoiceToCloud(
+	id: string,
+	invoiceData: import('./types').InvoiceData
+): Promise<{ success: boolean; error?: string }> {
+	let processedLogo: string | null = null;
+	let logoFilename: string | null = invoiceData.logoFilename;
+
+	if (invoiceData.logo instanceof File) {
+		try {
+			processedLogo = await fileToDataURL(invoiceData.logo);
+			logoFilename = invoiceData.logo.name;
+		} catch (error) {
+			console.error('Failed to convert logo to data URL:', error);
+			processedLogo = null;
+			logoFilename = null;
+		}
+	} else if (typeof invoiceData.logo === 'string') {
+		processedLogo = invoiceData.logo;
+	}
+
+	const objectToSerialize = {
+		...invoiceData,
+		logo: processedLogo,
+		logoFilename: logoFilename,
+		templateId: invoiceData.templateId || 'modern'
+	};
+
+	const plainInvoiceObject = JSON.parse(JSON.stringify(objectToSerialize));
+
+	const response = await fetch(`${API_BASE}/${id}`, {
+		method: 'PUT',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(plainInvoiceObject)
+	});
+
+	if (!response.ok) {
+		const data = await response.json().catch(() => ({}));
+		return { success: false, error: data.error || 'Failed to sync invoice' };
+	}
+
+	return { success: true };
+}
+
+/**
+ * Remove an invoice from the cloud (unsync) without deleting locally.
+ */
+export async function unsyncInvoiceFromCloud(id: string): Promise<{ success: boolean; error?: string }> {
+	const response = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+
+	if (!response.ok) {
+		const data = await response.json().catch(() => ({}));
+		return { success: false, error: data.error || 'Failed to remove from cloud' };
+	}
+
+	return { success: true };
 }
