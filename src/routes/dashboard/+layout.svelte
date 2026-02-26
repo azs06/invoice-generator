@@ -30,10 +30,9 @@
 		</div>
 		<nav class="sidebar-nav">
 			<a
-				href="/dashboard"
+				href="/history"
 				class="nav-item"
-				class:active={$page.url.pathname === '/dashboard'}
-				onclick={(event) => navigate(event, '/dashboard')}
+				onclick={(event) => navigate(event, '/history')}
 			>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="nav-icon">
 					<path

@@ -30,7 +30,7 @@
 						: $page.url.pathname.startsWith('/admin')
 							? 'Admin Console'
 							: $page.url.pathname.startsWith('/history')
-								? 'Guest Invoice History'
+								? 'Invoice History'
 								: 'FreeInvoice'
 	);
 
@@ -149,13 +149,7 @@
 			</a>
 
 			<nav class="desktop-nav" aria-label="Primary">
-				{#if $session.data}
-					<a
-						href="/dashboard"
-						class="header-nav-link"
-						onclick={(event) => navigate(event, '/dashboard')}>{$_('nav.dashboard')}</a
-					>
-				{:else if !$session.isPending}
+				{#if !$session.isPending}
 					<a
 						href="/history"
 						class="header-nav-link"
@@ -209,11 +203,11 @@
 							</div>
 							<div class="dropdown-section">
 								<a
-									href="/dashboard"
+									href="/history"
 									class="dropdown-item"
-									onclick={(event) => navigate(event, '/dashboard', closeProfileMenu)}
+									onclick={(event) => navigate(event, '/history', closeProfileMenu)}
 								>
-									{$_('nav.dashboard')}
+									{$_('nav.history')}
 								</a>
 								{#if isAdmin}
 									<a
@@ -242,14 +236,7 @@
 				<LanguageSelector />
 			</div>
 			<nav class="mobile-nav-links" aria-label="Mobile navigation">
-				{#if $session.data}
-					<a
-						href="/dashboard"
-						class="mobile-nav-link"
-						onclick={(event) => navigate(event, '/dashboard', closeMobileMenu)}
-						>{$_('nav.dashboard')}</a
-					>
-				{:else if !$session.isPending}
+				{#if !$session.isPending}
 					<a
 						href="/history"
 						class="mobile-nav-link"

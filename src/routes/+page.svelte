@@ -20,11 +20,11 @@
 		deleteInvoice as deleteStoredInvoice
 	} from '$lib/db.js';
 	import {
-		saveGuestInvoice,
-		getAllGuestInvoices,
-		getGuestInvoice,
-		deleteGuestInvoice
-	} from '$lib/guestDb.js';
+		saveLocalInvoice,
+		getAllLocalInvoices,
+		getLocalInvoiceData,
+		deleteLocalInvoice
+	} from '$lib/localDb.js';
 	import { DEFAULT_LOGO_PATH } from '$lib/index.js';
 	import { v4 as uuidv4 } from 'uuid';
 	import { totalAmounts } from '$lib/InvoiceCalculator.js';
@@ -72,7 +72,7 @@
 	let showSaveDraftModal = $state<boolean>(false);
 	let draftName = $state<string>('');
 
-	let usage = $state<{ count: number; limit: number }>({ count: 0, limit: 12 });
+	let usage = $state<{ count: number; limit: number }>({ count: 0, limit: 10 });
 	let showLimitWarning = $state<boolean>(false);
 	let showSignUpPrompt = $state<boolean>(false);
 	let showShareModal = $state<boolean>(false);
@@ -97,6 +97,7 @@
 	// Toolbar scroll-fade state (mobile)
 	let toolbarEl = $state<HTMLElement | null>(null);
 	let toolbarScrollState = $state<'start' | 'middle' | 'end' | 'none'>('none');
+	let isSnapping = $state<boolean>(false);
 
 	function handleToolbarScroll() {
 		if (!toolbarEl) return;
@@ -114,6 +115,65 @@
 		if (toolbarEl) {
 			requestAnimationFrame(() => handleToolbarScroll());
 		}
+	});
+
+	// Rubber-band snap-back: if toolbar is partially hidden on mobile, snap page back
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const el = toolbarEl;
+		if (!el) return;
+
+		const mql = window.matchMedia('(max-width: 768px)');
+
+		function smoothSnapTo(targetY: number, duration = 200) {
+			const startY = window.scrollY;
+			const distance = targetY - startY;
+			const startTime = performance.now();
+
+			function step(now: number) {
+				const elapsed = now - startTime;
+				const t = Math.min(elapsed / duration, 1);
+				const ease = 1 - (1 - t) * (1 - t); // ease-out quad
+				window.scrollTo(0, startY + distance * ease);
+				if (t < 1) {
+					requestAnimationFrame(step);
+				} else {
+					isSnapping = false;
+				}
+			}
+			requestAnimationFrame(step);
+		}
+
+		function handleScrollEnd() {
+			if (isSnapping || !mql.matches || !el) return;
+
+			const rect = el.getBoundingClientRect();
+			const isPartiallyHidden = rect.top < 0 && rect.bottom > 0;
+			const mostlyVisible = rect.top > -(rect.height * 0.75);
+
+			if (isPartiallyHidden && mostlyVisible) {
+				isSnapping = true;
+				smoothSnapTo(window.scrollY + rect.top);
+			}
+		}
+
+		let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+		function handleScroll() {
+			if (scrollTimer !== null) clearTimeout(scrollTimer);
+			scrollTimer = setTimeout(handleScrollEnd, 150);
+		}
+
+		const supportsScrollEnd = 'onscrollend' in window;
+		if (supportsScrollEnd) {
+			window.addEventListener('scrollend', handleScrollEnd, { passive: true });
+		}
+		window.addEventListener('scroll', handleScroll, { passive: true });
+
+		return () => {
+			if (supportsScrollEnd) window.removeEventListener('scrollend', handleScrollEnd);
+			window.removeEventListener('scroll', handleScroll);
+			if (scrollTimer !== null) clearTimeout(scrollTimer);
+		};
 	});
 
 	// Coachmark state
@@ -194,7 +254,7 @@
 		return number ? `${label} ${number}` : label;
 	};
 
-	const mapRecordsToSidebarItems = (records: SavedInvoiceRecord[]): SidebarInvoiceItem[] => {
+	const mapRecordsToSidebarItems = (records: { id: string; invoice: InvoiceData }[]): SidebarInvoiceItem[] => {
 		return records
 			.filter((record) => Boolean(record?.id) && Boolean(record?.invoice))
 			.map((record) => ({
@@ -220,11 +280,11 @@
 		sidebarInvoices = [nextItem, ...previousItems.filter((item) => item.id !== id)];
 	};
 
-	const loadSidebarInvoices = async (useServerSource: boolean): Promise<void> => {
+	const loadSidebarInvoices = async (): Promise<void> => {
 		isSidebarLoading = true;
 
 		try {
-			const records = useServerSource ? await getAllInvoices() : await getAllGuestInvoices();
+			const records = await getAllLocalInvoices();
 			sidebarInvoices = mapRecordsToSidebarItems(records);
 		} catch (error) {
 			console.warn('Failed to load sidebar invoices:', error);
@@ -260,10 +320,8 @@
 			return true;
 		}
 
-		let loadedInvoice = $session.data ? await getInvoice(invoiceId) : null;
-		if (!loadedInvoice) {
-			loadedInvoice = await getGuestInvoice(invoiceId);
-		}
+		// Always load from local IndexedDB (source of truth)
+		let loadedInvoice = await getLocalInvoiceData(invoiceId);
 		if (!loadedInvoice) {
 			return false;
 		}
@@ -296,11 +354,11 @@
 		const nextInvoiceId = untrack(() => sidebarInvoices.find((item) => item.id !== deletingId)?.id);
 
 		try {
+			// Also remove from cloud if it was synced
 			if ($session.data) {
-				await deleteStoredInvoice(deletingId);
-			} else {
-				await deleteGuestInvoice(deletingId);
+				await deleteStoredInvoice(deletingId).catch(() => {});
 			}
+			await deleteLocalInvoice(deletingId);
 
 			sidebarInvoices = untrack(() => sidebarInvoices.filter((item) => item.id !== deletingId));
 
@@ -342,11 +400,11 @@
 		);
 
 		try {
+			// Also remove from cloud if it was synced
 			if ($session.data) {
-				await deleteStoredInvoice(deletingId);
-			} else {
-				await deleteGuestInvoice(deletingId);
+				await deleteStoredInvoice(deletingId).catch(() => {});
 			}
+			await deleteLocalInvoice(deletingId);
 
 			sidebarInvoices = untrack(() => sidebarInvoices.filter((item) => item.id !== deletingId));
 
@@ -489,7 +547,7 @@
 
 	const navigateToDashboard = async (): Promise<void> => {
 		closeHeaderMenus();
-		await goto('/dashboard');
+		await goto('/history');
 	};
 
 	const runFileMenuAction = async (action: () => void | Promise<void>): Promise<void> => {
@@ -718,7 +776,7 @@
 
 			// Always start with guest storage - it's local and fast
 			// We'll load from API only after session is confirmed
-			const invoicesFromDb = await getAllGuestInvoices();
+			const invoicesFromDb = await getAllLocalInvoices();
 			sidebarInvoices = mapRecordsToSidebarItems(invoicesFromDb);
 
 			let loadedInvoice = /** @type {InvoiceData | null} */ (null);
@@ -729,7 +787,7 @@
 
 				if (invoiceIdFromQuery) {
 					// Get invoice from guest storage first (fast)
-					const storedInvoice = await getGuestInvoice(invoiceIdFromQuery);
+					const storedInvoice = await getLocalInvoiceData(invoiceIdFromQuery);
 					if (storedInvoice) {
 						if (!storedInvoice.id) {
 							storedInvoice.id = invoiceIdFromQuery;
@@ -822,7 +880,7 @@
 						}
 					}
 
-					await loadSidebarInvoices(true);
+					await loadSidebarInvoices();
 				} catch (e) {
 					console.warn('Failed to fetch user data:', e);
 				}
@@ -832,7 +890,7 @@
 
 	$effect(() => {
 		if (!$session.isPending && !$session.data) {
-			void loadSidebarInvoices(false);
+			void loadSidebarInvoices();
 		}
 	});
 
@@ -840,17 +898,8 @@
 		if (invoice && invoice.id) {
 			upsertSidebarInvoice(invoice);
 
-			// Only save when session is resolved (not pending)
-			if ($session.isPending) return;
-
-			// Conditionally save based on authentication status
-			if ($session.data) {
-				// Logged-in user: save to server API
-				saveInvoice(invoice.id, invoice);
-			} else {
-				// Guest: save to IndexedDB
-				saveGuestInvoice(invoice.id, invoice);
-			}
+			// Always save to local IndexedDB regardless of auth state
+			saveLocalInvoice(invoice.id, invoice);
 		}
 		if (invoice && invoice.items) {
 			invoice.subTotal = invoice.items.reduce(

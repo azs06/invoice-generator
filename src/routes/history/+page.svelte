@@ -3,28 +3,49 @@
 	import { _ } from 'svelte-i18n';
 	import { goto } from '$app/navigation';
 	import {
-		getAllGuestInvoices,
-		deleteGuestInvoice,
-		clearAllGuestInvoices,
-		saveGuestInvoice,
-		getGuestInvoice
-	} from '$lib/guestDb.js';
+		getAllLocalInvoices,
+		deleteLocalInvoice,
+		clearAllLocalInvoices,
+		saveLocalInvoice,
+		getLocalInvoiceData,
+		updateLocalInvoiceSyncStatus
+	} from '$lib/localDb.js';
+	import {
+		syncInvoiceToCloud,
+		unsyncInvoiceFromCloud,
+		getInvoiceUsage,
+		getAllInvoices as getAllCloudInvoices,
+		deleteInvoice as deleteCloudInvoice
+	} from '$lib/db.js';
 	import { toUSCurrency } from '$lib/currency.js';
 	import { exportSingleInvoice } from '$lib/invoiceExport.js';
 	import { selectionHelpers, exportHelpers, importHelpers } from '$lib/useSelection.svelte';
-	import CloudModeBanner from '$components/CloudModeBanner.svelte';
-	import type { SavedInvoiceRecord, SavedInvoicesFilterMode, InvoiceData } from '$lib/types';
+	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
+	import SendEmailModal from '$components/SendEmailModal.svelte';
+	import { authClient } from '$lib/auth';
+	import type { LocalInvoiceRecord, SavedInvoicesFilterMode, InvoiceData } from '$lib/types';
 
-	let allInvoices = $state<SavedInvoiceRecord[]>([]);
-	let savedInvoices = $state<SavedInvoiceRecord[]>([]);
+	const CLOUD_LIMIT = 10;
+
+	const session = authClient.useSession();
+	let isLoggedIn = $derived(!$session.isPending && !!$session.data);
+
+	let allInvoices = $state<LocalInvoiceRecord[]>([]);
+	let filteredInvoices = $state<LocalInvoiceRecord[]>([]);
 	let search = $state<string>('');
 	let showInvoiceDeleteModal = $state<boolean>(false);
 	let showDeleteAllModal = $state<boolean>(false);
 	let invoiceToDelete = $state<string | null>(null);
 	let showArchived = $state<boolean>(false);
 	let filterMode = $state<SavedInvoicesFilterMode>('all');
+	let sourceFilter = $state<'all' | 'cloud' | 'local'>('all');
 	let isLoading = $state<boolean>(true);
 	let formatCurrencyFn = $state<(value: number) => string>(() => '');
+
+	// Cloud sync state
+	let cloudUsage = $state<{ count: number; limit: number }>({ count: 0, limit: CLOUD_LIMIT });
+	let syncingId = $state<string | null>(null);
+	let syncError = $state<string | null>(null);
 
 	// Selection state for bulk export
 	let selectedInvoices = $state<Set<string>>(new Set());
@@ -36,9 +57,16 @@
 	let showImportResultModal = $state<boolean>(false);
 	let importResult = $state<{ imported: number; skipped: number; errors: string[] } | null>(null);
 
+	// Share/Email modals
+	let shareInvoiceId = $state<string | null>(null);
+	let shareInvoiceData = $state<InvoiceData | null>(null);
+	let emailInvoiceId = $state<string | null>(null);
+
 	$effect(() => {
 		formatCurrencyFn = $toUSCurrency;
 	});
+
+	const cloudSyncedCount = $derived(allInvoices.filter((r) => r.cloudSynced).length);
 
 	const parseDate = (value: string | null | undefined): number => {
 		if (!value) return 0;
@@ -90,6 +118,15 @@
 			return true;
 		});
 
+		// Source filter (logged-in only)
+		if (isLoggedIn && sourceFilter !== 'all') {
+			filtered = filtered.filter((record) => {
+				if (sourceFilter === 'cloud') return record.cloudSynced;
+				if (sourceFilter === 'local') return !record.cloudSynced;
+				return true;
+			});
+		}
+
 		const term = search.trim().toLowerCase();
 		if (term) {
 			filtered = filtered.filter(({ invoice }) => {
@@ -117,65 +154,130 @@
 			return dateB - dateA;
 		});
 
-		savedInvoices = filtered;
+		filteredInvoices = filtered;
+	};
+
+	// Reactive filter application
+	$effect(() => {
+		void search;
+		void showArchived;
+		void filterMode;
+		void sourceFilter;
+		void allInvoices;
+		applyFilters();
+	});
+
+	const MIGRATION_KEY = 'ig.cloudMigrationDone';
+
+	const migrateCloudToLocal = async (): Promise<void> => {
+		if (typeof window === 'undefined') return;
+		if (localStorage.getItem(MIGRATION_KEY) === 'true') return;
+
+		try {
+			const cloudRecords = await getAllCloudInvoices();
+			if (cloudRecords.length === 0) {
+				localStorage.setItem(MIGRATION_KEY, 'true');
+				return;
+			}
+
+			const localRecords = await getAllLocalInvoices();
+			const localIds = new Set(localRecords.map((r) => r.id));
+
+			for (const record of cloudRecords) {
+				if (!localIds.has(record.id)) {
+					// Backfill cloud invoice into local storage, marked as synced
+					await saveLocalInvoice(record.id, record.invoice, {
+						cloudSynced: true,
+						cloudId: record.id
+					});
+				} else {
+					// Already exists locally — just mark as synced
+					await updateLocalInvoiceSyncStatus(record.id, true, record.id);
+				}
+			}
+
+			localStorage.setItem(MIGRATION_KEY, 'true');
+		} catch (e) {
+			console.warn('Cloud-to-local migration failed (will retry next visit):', e);
+		}
 	};
 
 	const loadInvoices = async (): Promise<void> => {
 		isLoading = true;
-		const invoices = await getAllGuestInvoices();
-		allInvoices = invoices as SavedInvoiceRecord[];
-		applyFilters();
-		isLoading = false;
+		try {
+			// If logged in, run one-time migration from cloud to local
+			if (isLoggedIn) {
+				await migrateCloudToLocal();
+			}
+
+			allInvoices = await getAllLocalInvoices();
+
+			// If logged in, fetch cloud usage
+			if (isLoggedIn) {
+				try {
+					const usage = await getInvoiceUsage();
+					cloudUsage = { count: usage.count, limit: usage.limit };
+				} catch {
+					// Cloud fetch failed; continue with local data
+				}
+			}
+		} finally {
+			isLoading = false;
+		}
 	};
 
 	const onSearchInput = (event: Event): void => {
 		const target = event.currentTarget;
-		if (!(target instanceof HTMLInputElement)) {
-			return;
-		}
+		if (!(target instanceof HTMLInputElement)) return;
 		search = target.value;
-		applyFilters();
 	};
 
 	const setArchivedView = (value: boolean): void => {
 		showArchived = value;
-		applyFilters();
 	};
 
 	const setFilterMode = (mode: SavedInvoicesFilterMode): void => {
 		filterMode = mode;
-		applyFilters();
+	};
+
+	const setSourceFilter = (mode: 'all' | 'cloud' | 'local'): void => {
+		sourceFilter = mode;
 	};
 
 	const removeInvoice = async (id: string | null = invoiceToDelete): Promise<void> => {
 		if (!id) return;
-		await deleteGuestInvoice(id);
+		// If synced, also remove from cloud
+		const record = allInvoices.find((r) => r.id === id);
+		if (record?.cloudSynced && isLoggedIn) {
+			await deleteCloudInvoice(id).catch(() => {});
+		}
+		await deleteLocalInvoice(id);
 		invoiceToDelete = null;
 		showInvoiceDeleteModal = false;
 		await loadInvoices();
 	};
 
 	const clearAllData = async (): Promise<void> => {
-		await clearAllGuestInvoices();
+		await clearAllLocalInvoices();
 		allInvoices = [];
-		savedInvoices = [];
+		filteredInvoices = [];
 		showDeleteAllModal = false;
 	};
 
 	const archiveInvoice = async (id: string): Promise<void> => {
-		const data = await getGuestInvoice(id);
+		const data = await getLocalInvoiceData(id);
 		if (data) {
 			data.archived = true;
-			await saveGuestInvoice(id, data);
+			await saveLocalInvoice(id, data);
 			await loadInvoices();
 		}
 	};
 
 	const unarchiveInvoice = async (id: string): Promise<void> => {
-		const data = await getGuestInvoice(id);
+		const data = await getLocalInvoiceData(id);
 		if (data) {
 			data.archived = false;
-			await saveGuestInvoice(id, data);
+			await saveLocalInvoice(id, data);
 			await loadInvoices();
 		}
 	};
@@ -202,13 +304,87 @@
 		goto(`/?invoice=${id}`);
 	};
 
+	const editInvoice = (id: string): void => {
+		goto(`/?invoice=${id}#edit`);
+	};
+
+	// Cloud sync actions
+	const syncToCloud = async (id: string): Promise<void> => {
+		if (syncingId) return;
+		syncError = null;
+		syncingId = id;
+
+		try {
+			const data = await getLocalInvoiceData(id);
+			if (!data) {
+				syncError = 'Invoice not found locally.';
+				return;
+			}
+
+			const result = await syncInvoiceToCloud(id, data);
+			if (!result.success) {
+				syncError = result.error || 'Failed to sync to cloud.';
+				return;
+			}
+
+			await updateLocalInvoiceSyncStatus(id, true, id);
+			await loadInvoices();
+		} catch {
+			syncError = 'Failed to sync. Please try again.';
+		} finally {
+			syncingId = null;
+		}
+	};
+
+	const removeFromCloud = async (id: string): Promise<void> => {
+		if (syncingId) return;
+		syncError = null;
+		syncingId = id;
+
+		try {
+			const result = await unsyncInvoiceFromCloud(id);
+			if (!result.success) {
+				syncError = result.error || 'Failed to remove from cloud.';
+				return;
+			}
+
+			await updateLocalInvoiceSyncStatus(id, false, null);
+			await loadInvoices();
+		} catch {
+			syncError = 'Failed to remove from cloud. Please try again.';
+		} finally {
+			syncingId = null;
+		}
+	};
+
+	// Share
+	const openShareModal = async (id: string): Promise<void> => {
+		const data = await getLocalInvoiceData(id);
+		shareInvoiceId = id;
+		shareInvoiceData = data ?? null;
+	};
+
+	const closeShareModal = (): void => {
+		shareInvoiceId = null;
+		shareInvoiceData = null;
+	};
+
+	// Email
+	const openEmailModal = (id: string): void => {
+		emailInvoiceId = id;
+	};
+
+	const closeEmailModal = (): void => {
+		emailInvoiceId = null;
+	};
+
 	// Selection functions for bulk operations (using shared helpers)
 	const toggleSelection = (id: string): void => {
 		selectedInvoices = selectionHelpers.toggle(selectedInvoices, id);
 	};
 
 	const selectAll = (): void => {
-		selectedInvoices = selectionHelpers.selectAll(savedInvoices.map((r) => r.id));
+		selectedInvoices = selectionHelpers.selectAll(filteredInvoices.map((r) => r.id));
 	};
 
 	const deselectAll = (): void => {
@@ -222,27 +398,27 @@
 		}
 	};
 
-	// Export functions - excludeLogo for guest mode to reduce file size (using shared helpers)
-	const getInvoicesAsync = async () => allInvoices;
+	// Export functions
+	const getInvoicesForExport = async () =>
+		allInvoices.map((r) => ({ id: r.id, invoice: r.invoice }));
 
 	const exportAllInvoices = async (): Promise<void> => {
 		if (allInvoices.length === 0) return;
-		await exportHelpers.exportAll(getInvoicesAsync, { excludeLogo: true });
+		await exportHelpers.exportAll(getInvoicesForExport);
 	};
 
 	const exportSelectedInvoices = async (): Promise<void> => {
 		if (selectedInvoices.size === 0) return;
-		await exportHelpers.exportSelected(getInvoicesAsync, selectedInvoices, { excludeLogo: true });
-		// Exit selection mode after export
+		await exportHelpers.exportSelected(getInvoicesForExport, selectedInvoices);
 		selectionMode = false;
 		selectedInvoices = selectionHelpers.deselectAll();
 	};
 
 	const exportInvoice = (invoice: InvoiceData): void => {
-		exportSingleInvoice(invoice, { excludeLogo: true });
+		exportSingleInvoice(invoice);
 	};
 
-	// Import functions (using shared helpers)
+	// Import functions
 	const triggerImport = (): void => {
 		importHelpers.triggerFileInput(fileInput);
 	};
@@ -254,13 +430,12 @@
 
 		isImporting = true;
 		try {
-			const result = await importHelpers.handleFileSelect(file, saveGuestInvoice);
+			const result = await importHelpers.handleFileSelect(file, saveLocalInvoice);
 			importResult = result;
 			showImportResultModal = true;
 			await loadInvoices();
 		} finally {
 			isImporting = false;
-			// Reset file input
 			if (target) target.value = '';
 		}
 	};
@@ -275,14 +450,23 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Your Invoices | FreeInvoice</title>
+	<meta name="description" content="View and manage all your invoices" />
+</svelte:head>
+
 <section class="history-page app-container app-page">
 	<div class="page-shell">
-		<CloudModeBanner />
-
 		<header class="page-header">
-			<span class="page-badge">History</span>
+			<span class="page-badge">Your Invoices</span>
 			<h1 class="page-title">Invoice History</h1>
-			<p class="page-subtitle">Your invoices are stored locally in this browser.</p>
+			<p class="page-subtitle">
+				{#if isLoggedIn}
+					All invoices stored locally. Synced invoices accessible from any device.
+				{:else}
+					Your invoices are stored locally in this browser.
+				{/if}
+			</p>
 
 			<div class="search-filter-row">
 				<label class="search-field">
@@ -360,14 +544,65 @@
 							</button>
 						</div>
 					</div>
+
+					{#if isLoggedIn}
+						<div class="filter-group">
+							<span class="filter-label">Source</span>
+							<div class="chip-group">
+								<button
+									type="button"
+									class:active={sourceFilter === 'all'}
+									onclick={() => setSourceFilter('all')}
+									aria-pressed={sourceFilter === 'all'}
+								>
+									All
+								</button>
+								<button
+									type="button"
+									class:active={sourceFilter === 'cloud'}
+									onclick={() => setSourceFilter('cloud')}
+									aria-pressed={sourceFilter === 'cloud'}
+								>
+									Synced
+								</button>
+								<button
+									type="button"
+									class:active={sourceFilter === 'local'}
+									onclick={() => setSourceFilter('local')}
+									aria-pressed={sourceFilter === 'local'}
+								>
+									Local Only
+								</button>
+							</div>
+						</div>
+					{/if}
 				</div>
 			</div>
 		</header>
 
+		<!-- Cloud Sync Info Bar (logged-in only) -->
+		{#if isLoggedIn}
+			<div class="cloud-info-bar">
+				<div class="cloud-info-icon">
+					<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path
+							d="M1 12.5A4.5 4.5 0 0 1 5.5 8H6a5.5 5.5 0 0 1 10.906 1.182A3.5 3.5 0 0 1 16.5 16h-11A4.5 4.5 0 0 1 1 12.5Z"
+						/>
+					</svg>
+				</div>
+				<div class="cloud-info-text">
+					<strong>Cloud sync: {cloudSyncedCount}/{CLOUD_LIMIT} used</strong>
+					<span>Synced invoices are accessible from any device and can be shared.</span>
+				</div>
+				{#if syncError}
+					<div class="cloud-error">{syncError}</div>
+				{/if}
+			</div>
+		{/if}
+
 		<!-- Action Toolbar -->
 		<div class="action-toolbar">
 			<div class="toolbar-actions">
-				<!-- Hidden file input for import -->
 				<input
 					type="file"
 					accept=".json"
@@ -456,7 +691,7 @@
 				<div class="state-spinner" aria-hidden="true"></div>
 				<p>Loading your invoices...</p>
 			</div>
-		{:else if savedInvoices.length === 0}
+		{:else if filteredInvoices.length === 0}
 			<div class="state-card">
 				<h2>No invoices yet</h2>
 				<p>Start creating an invoice and it will automatically save here.</p>
@@ -482,7 +717,7 @@
 					<span class="col-amount">Balance</span>
 					<span class="col-actions">Actions</span>
 				</div>
-				{#each savedInvoices as record (record.id)}
+				{#each filteredInvoices as record (record.id)}
 					{#if record.invoice}
 						<div class="invoice-row" class:selected={selectedInvoices.has(record.id)}>
 							<div class="col-checkbox">
@@ -517,6 +752,13 @@
 								</span>
 								{#if record.invoice.archived}
 									<span class="status-badge status-badge--archived">Archived</span>
+								{/if}
+								{#if isLoggedIn}
+									{#if record.cloudSynced}
+										<span class="status-badge status-badge--synced">Synced</span>
+									{:else}
+										<span class="status-badge status-badge--local">Local</span>
+									{/if}
 								{/if}
 							</div>
 							<div class="col-amount">
@@ -555,6 +797,63 @@
 										/>
 									</svg>
 								</button>
+								{#if isLoggedIn}
+									{#if record.cloudSynced}
+										<button
+											class="action-btn action-btn--cloud"
+											type="button"
+											onclick={() => openShareModal(record.id)}
+											title="Share"
+											aria-label="Share invoice"
+										>
+											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+												<path
+													d="M13 4.5a2.5 2.5 0 1 1 .702 1.737L6.97 9.604a2.518 2.518 0 0 1 0 .799l6.733 3.347A2.5 2.5 0 1 1 13 15.5a2.502 2.502 0 0 1 .168-.862L6.396 11.3a2.5 2.5 0 1 1 0-2.6l6.772-3.338A2.504 2.504 0 0 1 13 4.5Z"
+												/>
+											</svg>
+										</button>
+										<button
+											class="action-btn action-btn--unsync"
+											type="button"
+											onclick={() => removeFromCloud(record.id)}
+											title="Remove from cloud"
+											aria-label="Remove from cloud"
+											disabled={syncingId === record.id}
+										>
+											{#if syncingId === record.id}
+												<span class="action-spinner"></span>
+											{:else}
+												<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+													<path
+														d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
+													/>
+												</svg>
+											{/if}
+										</button>
+									{:else}
+										<button
+											class="action-btn action-btn--sync"
+											type="button"
+											onclick={() => syncToCloud(record.id)}
+											title={cloudSyncedCount >= CLOUD_LIMIT
+												? 'All cloud slots used'
+												: 'Sync to cloud'}
+											aria-label="Sync to cloud"
+											disabled={syncingId === record.id ||
+												cloudSyncedCount >= CLOUD_LIMIT}
+										>
+											{#if syncingId === record.id}
+												<span class="action-spinner"></span>
+											{:else}
+												<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+													<path
+														d="M1 12.5A4.5 4.5 0 0 1 5.5 8H6a5.5 5.5 0 0 1 10.906 1.182A3.5 3.5 0 0 1 16.5 16h-11A4.5 4.5 0 0 1 1 12.5Z"
+													/>
+												</svg>
+											{/if}
+										</button>
+									{/if}
+								{/if}
 								{#if record.invoice.archived}
 									<button
 										class="action-btn action-btn--success"
@@ -609,30 +908,44 @@
 		{/if}
 
 		<footer class="page-footer">
-			<div class="footer-warning">
-				<svg class="warning-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+			{#if !isLoggedIn}
+				<div class="signin-cta">
+					<svg class="cta-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path
+							d="M1 12.5A4.5 4.5 0 0 1 5.5 8H6a5.5 5.5 0 0 1 10.906 1.182A3.5 3.5 0 0 1 16.5 16h-11A4.5 4.5 0 0 1 1 12.5Z"
+						/>
+					</svg>
+					<div class="cta-text">
+						<strong>Sign in to sync invoices to the cloud</strong>
+						<span>Access your invoices from any device and share them with clients.</span>
+					</div>
+					<a href="/api/auth/signin/google" class="cta-button">Sign In</a>
+				</div>
+			{/if}
+
+			<div class="footer-info">
+				<svg class="info-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 					<path
 						fill-rule="evenodd"
-						d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.168-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+						d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z"
 						clip-rule="evenodd"
 					/>
 				</svg>
-				<p>
-					These invoices are stored only in this browser. Clearing your browser data will
-					permanently delete them. <a href="/api/auth/signin/google">Sign up</a> to save your invoices
-					to the cloud.
-				</p>
+				<p>Invoices stored locally in your browser.</p>
 			</div>
-			<button class="ghost-button ghost-button--danger" type="button" onclick={confirmDeleteAll}>
-				<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-					<path
-						fill-rule="evenodd"
-						d="M8.75 3a1.75 1.75 0 0 0-1.744 1.61l-.067.676H4a.75.75 0 0 0 0 1.5h.577l.641 9.137A2.25 2.25 0 0 0 7.463 18h5.074a2.25 2.25 0 0 0 2.245-2.077l.641-9.137H16a.75.75 0 0 0 0-1.5h-2.94l-.067-.676A1.75 1.75 0 0 0 11.25 3h-2.5Zm3.146 3.286-.036-.36A.25.25 0 0 0 11.25 5.5h-2.5a.25.25 0 0 0-.249.226l-.036.36h3.432Zm-3.146 3.964a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5Zm4 0a.75.75 0 0 0-1.5 0v3.5a.75.75 0 0 0 1.5 0v-3.5Z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-				<span>Delete All Invoices</span>
-			</button>
+
+			{#if allInvoices.length > 0}
+				<button class="ghost-button ghost-button--danger" type="button" onclick={confirmDeleteAll}>
+					<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path
+							fill-rule="evenodd"
+							d="M8.75 3a1.75 1.75 0 0 0-1.744 1.61l-.067.676H4a.75.75 0 0 0 0 1.5h.577l.641 9.137A2.25 2.25 0 0 0 7.463 18h5.074a2.25 2.25 0 0 0 2.245-2.077l.641-9.137H16a.75.75 0 0 0 0-1.5h-2.94l-.067-.676A1.75 1.75 0 0 0 11.25 3h-2.5Zm3.146 3.286-.036-.36A.25.25 0 0 0 11.25 5.5h-2.5a.25.25 0 0 0-.249.226l-.036.36h3.432Zm-3.146 3.964a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5Zm4 0a.75.75 0 0 0-1.5 0v3.5a.75.75 0 0 0 1.5 0v-3.5Z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					<span>Delete All Invoices</span>
+				</button>
+			{/if}
 		</footer>
 	</div>
 
@@ -653,8 +966,10 @@
 			>
 				<h2 id="delete-invoice-title">Delete this invoice?</h2>
 				<p>
-					This invoice is only stored in your browser. Deleting it cannot be undone and the data
-					cannot be recovered.
+					This will permanently delete this invoice{allInvoices.find((r) => r.id === invoiceToDelete)
+						?.cloudSynced
+						? ' from both local storage and the cloud'
+						: ' from local storage'}. This action cannot be undone.
 				</p>
 				<div class="modal-actions">
 					<button class="danger-button" type="button" onclick={() => removeInvoice()}>Delete</button
@@ -691,8 +1006,8 @@
 				</div>
 				<h2 id="delete-all-title">Delete All Invoices?</h2>
 				<p>
-					This will permanently delete <strong>all</strong> your locally stored invoices. Since these
-					are only stored in your browser, this action cannot be undone and the data cannot be recovered.
+					This will permanently delete <strong>all</strong> your locally stored invoices. This
+					action cannot be undone.
 				</p>
 				<div class="modal-actions">
 					<button class="danger-button" type="button" onclick={clearAllData}>
@@ -771,6 +1086,26 @@
 				</div>
 			</div>
 		</div>
+	{/if}
+
+	<!-- Share Invoice Modal -->
+	{#if shareInvoiceId}
+		<ShareInvoiceModal
+			invoiceId={shareInvoiceId}
+			invoice={shareInvoiceData}
+			onClose={closeShareModal}
+		/>
+	{/if}
+
+	<!-- Send Email Modal -->
+	{#if emailInvoiceId}
+		{@const emailRecord = allInvoices.find((r) => r.id === emailInvoiceId)}
+		<SendEmailModal
+			invoiceId={emailInvoiceId}
+			invoiceNumber={emailRecord?.invoice?.invoiceNumber}
+			recipientName={emailRecord?.invoice?.invoiceTo}
+			onClose={closeEmailModal}
+		/>
 	{/if}
 </section>
 
@@ -916,6 +1251,53 @@
 		color: var(--color-accent-blue);
 	}
 
+	/* Cloud Info Bar */
+	.cloud-info-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.75rem 1rem;
+		border-radius: var(--radius-md);
+		border: 1px solid rgba(59, 130, 246, 0.25);
+		background: rgba(59, 130, 246, 0.06);
+	}
+
+	.cloud-info-icon {
+		flex-shrink: 0;
+		width: 1.5rem;
+		height: 1.5rem;
+		color: var(--color-accent-blue);
+	}
+
+	.cloud-info-icon svg {
+		width: 100%;
+		height: 100%;
+	}
+
+	.cloud-info-text {
+		flex: 1;
+		font-size: 0.8rem;
+		color: var(--color-text-secondary);
+		line-height: 1.4;
+	}
+
+	.cloud-info-text strong {
+		display: block;
+		color: var(--color-text-primary);
+		font-size: 0.85rem;
+		margin-bottom: 0.1rem;
+	}
+
+	.cloud-error {
+		flex-shrink: 0;
+		padding: 0.25rem 0.6rem;
+		border-radius: var(--radius-sm);
+		background: rgba(239, 68, 68, 0.1);
+		color: var(--color-error, #ef4444);
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
 	/* Action Toolbar */
 	.action-toolbar {
 		display: flex;
@@ -1016,7 +1398,7 @@
 
 	.invoice-list__header {
 		display: grid;
-		grid-template-columns: 40px 1.5fr 1fr 100px 100px 100px 120px;
+		grid-template-columns: 40px 1.5fr 1fr 100px 140px 100px 140px;
 		gap: 0.5rem;
 		padding: 0.6rem 1rem;
 		background: var(--surface-paper-muted);
@@ -1030,7 +1412,7 @@
 
 	.invoice-row {
 		display: grid;
-		grid-template-columns: 40px 1.5fr 1fr 100px 100px 100px 120px;
+		grid-template-columns: 40px 1.5fr 1fr 100px 140px 100px 140px;
 		gap: 0.5rem;
 		padding: 0.6rem 1rem;
 		align-items: center;
@@ -1127,6 +1509,16 @@
 		color: var(--color-text-secondary);
 	}
 
+	.status-badge--synced {
+		background: rgba(59, 130, 246, 0.15);
+		color: #2563eb;
+	}
+
+	.status-badge--local {
+		background: rgba(148, 163, 184, 0.15);
+		color: var(--color-text-secondary);
+	}
+
 	.col-amount {
 		font-size: 0.875rem;
 		font-weight: 600;
@@ -1165,6 +1557,11 @@
 		border-color: var(--color-accent-blue);
 	}
 
+	.action-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
 	.action-btn svg {
 		width: 0.875rem;
 		height: 0.875rem;
@@ -1180,6 +1577,34 @@
 		border-color: var(--color-success, #10b981);
 		color: color-mix(in srgb, var(--color-success, #10b981) 70%, black);
 		background: color-mix(in srgb, var(--color-success, #10b981) 8%, transparent);
+	}
+
+	.action-btn--sync:hover {
+		border-color: var(--color-accent-blue);
+		color: var(--color-accent-blue);
+		background: rgba(59, 130, 246, 0.08);
+	}
+
+	.action-btn--unsync:hover {
+		border-color: #d97706;
+		color: #d97706;
+		background: rgba(217, 119, 6, 0.08);
+	}
+
+	.action-btn--cloud:hover {
+		border-color: #059669;
+		color: #059669;
+		background: rgba(5, 150, 105, 0.08);
+	}
+
+	.action-spinner {
+		display: block;
+		width: 0.75rem;
+		height: 0.75rem;
+		border: 2px solid var(--surface-paper-border);
+		border-top-color: var(--color-accent-blue);
+		border-radius: 999px;
+		animation: spin 0.75s linear infinite;
 	}
 
 	/* Row Checkbox */
@@ -1219,6 +1644,80 @@
 		border-width: 0 2px 2px 0;
 		transform: rotate(45deg);
 		margin: 0.1rem auto;
+	}
+
+	/* Sign-in CTA */
+	.signin-cta {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 1rem 1.25rem;
+		border-radius: var(--radius-md);
+		border: 1px solid rgba(59, 130, 246, 0.25);
+		background: rgba(59, 130, 246, 0.06);
+	}
+
+	.cta-icon {
+		flex-shrink: 0;
+		width: 1.5rem;
+		height: 1.5rem;
+		color: var(--color-accent-blue);
+	}
+
+	.cta-text {
+		flex: 1;
+		font-size: 0.85rem;
+		color: var(--color-text-secondary);
+		line-height: 1.4;
+	}
+
+	.cta-text strong {
+		display: block;
+		color: var(--color-text-primary);
+		margin-bottom: 0.1rem;
+	}
+
+	.cta-button {
+		flex-shrink: 0;
+		padding: 0.45rem 1rem;
+		border-radius: var(--radius-md);
+		background: var(--color-accent-blue);
+		color: #ffffff;
+		font-size: 0.82rem;
+		font-weight: 600;
+		text-decoration: none;
+		transition: background 0.15s;
+	}
+
+	.cta-button:hover {
+		background: color-mix(in srgb, var(--color-accent-blue) 85%, black);
+	}
+
+	/* Footer */
+	.page-footer {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		align-items: flex-start;
+	}
+
+	.footer-info {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.8rem;
+		color: var(--color-text-secondary);
+	}
+
+	.footer-info p {
+		margin: 0;
+	}
+
+	.info-icon {
+		flex-shrink: 0;
+		width: 1rem;
+		height: 1rem;
+		color: var(--color-text-secondary);
 	}
 
 	/* Ghost button for footer */
@@ -1278,90 +1777,67 @@
 		background: color-mix(in srgb, var(--color-accent-blue) 85%, black);
 	}
 
-	.primary-button svg,
 	.button-icon {
-		width: 0.9rem;
-		height: 0.9rem;
+		width: 1rem;
+		height: 1rem;
 	}
 
+	.danger-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		border-radius: var(--radius-md);
+		border: none;
+		background: var(--color-error, #ef4444);
+		color: #ffffff;
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+
+	.danger-button:hover {
+		background: color-mix(in srgb, var(--color-error, #ef4444) 85%, black);
+	}
+
+	/* State cards */
 	.state-card {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1rem;
-		padding: 2.5rem 2rem;
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--surface-paper-border);
-		background: var(--surface-paper);
-		box-shadow: var(--shadow-soft);
+		justify-content: center;
+		gap: 0.75rem;
+		padding: 3rem;
 		text-align: center;
+		border: 1px dashed var(--surface-paper-border);
+		border-radius: var(--radius-lg);
+		background: var(--surface-paper);
 	}
 
 	.state-card h2 {
 		margin: 0;
-		font-size: 1.3rem;
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
 	}
 
 	.state-card p {
 		margin: 0;
+		font-size: 0.875rem;
 		color: var(--color-text-secondary);
-		max-width: 420px;
 	}
 
 	.state-spinner {
-		width: 2.2rem;
-		height: 2.2rem;
-		border-radius: 50%;
-		border: 3px solid rgba(148, 163, 184, 0.35);
+		width: 2rem;
+		height: 2rem;
+		border: 3px solid var(--surface-paper-border);
 		border-top-color: var(--color-accent-blue);
-		animation: spin 1s linear infinite;
+		border-radius: 999px;
+		animation: spin 0.75s linear infinite;
 	}
 
-	.page-footer {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 1.5rem;
-		padding: 1.5rem;
-		border-radius: var(--radius-lg);
-		background: var(--surface-paper-muted);
-		border: 1px solid var(--surface-paper-border);
-	}
-
-	.footer-warning {
-		display: flex;
-		align-items: flex-start;
-		gap: 0.75rem;
-		flex: 1;
-		min-width: 280px;
-	}
-
-	.warning-icon {
-		width: 1.25rem;
-		height: 1.25rem;
-		color: #d97706;
-		flex-shrink: 0;
-		margin-top: 0.125rem;
-	}
-
-	.footer-warning p {
-		margin: 0;
-		color: var(--color-text-secondary);
-		font-size: 0.9rem;
-		line-height: 1.5;
-	}
-
-	.footer-warning a {
-		color: var(--color-accent-blue);
-		font-weight: 600;
-		text-decoration: none;
-	}
-
-	.footer-warning a:hover {
-		text-decoration: underline;
-	}
-
+	/* Modals */
 	.modal-backdrop {
 		position: fixed;
 		inset: 0;
@@ -1370,36 +1846,57 @@
 		justify-content: center;
 		background: rgba(0, 0, 0, 0.5);
 		z-index: 100;
-		padding: 1.5rem;
 	}
 
 	.modal {
-		background: var(--surface-paper);
-		padding: 2rem;
+		background: var(--color-bg-primary);
+		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-lg);
-		border: 1px solid var(--surface-paper-border);
-		box-shadow: var(--shadow-medium);
+		padding: 1.5rem;
 		max-width: 420px;
-		width: 100%;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
+		width: 90%;
 	}
 
-	.modal--warning {
-		text-align: center;
+	.modal h2 {
+		margin: 0 0 0.75rem;
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.modal p {
+		margin: 0 0 1.25rem;
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+		line-height: 1.5;
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: flex-end;
 	}
 
 	.modal-icon {
-		width: 3rem;
-		height: 3rem;
-		margin: 0 auto 0.5rem;
-		background: color-mix(in srgb, var(--color-error, #ef4444) 10%, transparent);
-		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--color-error, #dc2626);
+		width: 3rem;
+		height: 3rem;
+		border-radius: var(--radius-md);
+		margin-bottom: 1rem;
+		background: rgba(251, 146, 60, 0.15);
+		color: #d97706;
+	}
+
+	.modal-icon.success {
+		background: rgba(16, 185, 129, 0.15);
+		color: #059669;
+	}
+
+	.modal-icon.error {
+		background: rgba(239, 68, 68, 0.15);
+		color: #dc2626;
 	}
 
 	.modal-icon svg {
@@ -1407,100 +1904,30 @@
 		height: 1.5rem;
 	}
 
-	.modal h2 {
-		margin: 0;
-		font-size: 1.2rem;
-		color: var(--color-text-primary);
-	}
-
-	.modal p {
-		margin: 0;
-		color: var(--color-text-secondary);
-		line-height: 1.5;
-	}
-
-	.modal-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.75rem;
-		margin-top: 0.5rem;
-	}
-
-	.modal--warning .modal-actions {
-		justify-content: center;
-	}
-
-	.modal-icon.success {
-		background: color-mix(in srgb, var(--color-success, #10b981) 10%, transparent);
-		color: var(--color-success, #10b981);
-	}
-
-	.modal-icon.error {
-		background: color-mix(in srgb, var(--color-error, #ef4444) 10%, transparent);
-		color: var(--color-error, #ef4444);
-	}
-
 	.import-result-details {
-		text-align: left;
+		margin-bottom: 1rem;
 	}
 
 	.result-success {
-		color: var(--color-success, #10b981);
+		color: #059669;
 		font-weight: 500;
-		margin: 0.5rem 0;
+		margin: 0 0 0.25rem;
 	}
 
 	.result-warning {
-		color: var(--color-warning, #f59e0b);
+		color: #d97706;
 		font-weight: 500;
-		margin: 0.5rem 0;
+		margin: 0 0 0.25rem;
 	}
 
 	.result-errors {
-		margin-top: 0.75rem;
-		padding: 0.75rem;
-		background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent);
-		border-radius: var(--radius-sm);
+		margin-top: 0.5rem;
 	}
 
 	.result-error {
-		color: var(--color-error, #ef4444);
-		font-size: 0.875rem;
-		margin: 0.25rem 0;
-	}
-
-	.danger-button {
-		border: none;
-		border-radius: var(--radius-pill);
-		background: var(--color-error, #ef4444);
-		color: #ffffff;
-		padding: 0.55rem 1.2rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition:
-			background-color 0.2s ease,
-			transform 0.2s ease;
-	}
-
-	.danger-button:hover {
-		background: color-mix(in srgb, var(--color-error, #ef4444) 85%, black);
-		transform: translateY(-1px);
-	}
-
-	.danger-button:active {
-		transform: translateY(0);
-	}
-
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
+		color: #dc2626;
+		font-size: 0.8rem;
+		margin: 0 0 0.15rem;
 	}
 
 	@keyframes spin {
@@ -1509,131 +1936,72 @@
 		}
 	}
 
-	/* Responsive: Tablet */
+	/* Mobile */
 	@media (max-width: 900px) {
-		.invoice-list__header,
-		.invoice-row {
-			grid-template-columns: 32px 1.5fr 1fr 90px 90px 90px 100px;
-		}
-	}
-
-	/* Responsive: Mobile */
-	@media (max-width: 768px) {
-		.search-filter-row {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 0.75rem;
-		}
-
-		.search-field {
-			flex: 1 1 auto;
-		}
-
-		.filter-groups {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 0.5rem;
-		}
-
-		.toolbar-actions {
-			flex-wrap: wrap;
-		}
-
-		.toolbar-btn {
-			flex: 1 1 auto;
-			justify-content: center;
-		}
-
-		.selection-controls {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 0.5rem;
-		}
-
-		.selection-controls .toolbar-btn--primary {
-			width: 100%;
-			justify-content: center;
-		}
-
-		/* Hide table header on mobile */
 		.invoice-list__header {
 			display: none;
 		}
 
-		/* Mobile row layout - stacked */
 		.invoice-row {
 			display: flex;
 			flex-wrap: wrap;
 			gap: 0.5rem;
 			padding: 0.75rem 1rem;
-			position: relative;
 		}
 
-		.invoice-row .col-checkbox {
-			position: absolute;
-			top: 0.75rem;
-			right: 1rem;
+		.col-checkbox {
+			order: -1;
 		}
 
-		.invoice-row .col-title {
-			flex: 1 1 100%;
-			padding-right: 2.5rem;
+		.col-title {
+			flex: 1;
+			min-width: 140px;
 		}
 
-		.invoice-row .col-client {
-			flex: 1 1 50%;
+		.col-client {
+			flex-basis: 100%;
 		}
 
-		.invoice-row .col-client::before {
-			content: 'Client: ';
-			font-size: 0.7rem;
-			color: var(--color-text-secondary);
+		.col-date,
+		.col-amount {
+			font-size: 0.75rem;
 		}
 
-		.invoice-row .col-date {
-			flex: 1 1 40%;
+		.col-status {
+			flex-basis: 100%;
 		}
 
-		.invoice-row .col-date::before {
-			content: 'Date: ';
-			font-size: 0.7rem;
-			color: var(--color-text-secondary);
-		}
-
-		.invoice-row .col-status {
-			flex: 0 0 auto;
-		}
-
-		.invoice-row .col-amount {
-			flex: 1 1 auto;
-		}
-
-		.invoice-row .col-amount::before {
-			content: 'Balance: ';
-			font-size: 0.7rem;
-			color: var(--color-text-secondary);
-			font-family: inherit;
-			font-weight: normal;
-		}
-
-		.invoice-row .col-actions {
-			flex: 1 1 100%;
+		.col-actions {
+			flex-basis: 100%;
 			justify-content: flex-start;
-			padding-top: 0.5rem;
-			border-top: 1px solid var(--color-border-primary);
-			margin-top: 0.25rem;
 		}
 
-		.page-footer {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 1rem;
+		.cloud-info-bar {
+			flex-wrap: wrap;
+		}
+
+		.signin-cta {
+			flex-wrap: wrap;
+		}
+
+		.cta-button {
+			width: 100%;
+			text-align: center;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.page-header {
 			padding: 1rem;
 		}
 
-		.page-footer .ghost-button--danger {
-			width: 100%;
-			justify-content: center;
+		.filter-groups {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.search-field {
+			max-width: 100%;
 		}
 	}
 </style>

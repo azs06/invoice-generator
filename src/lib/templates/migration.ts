@@ -3,7 +3,7 @@
  * Handles migration of existing invoices to include template IDs
  */
 
-import { getAllGuestInvoices, saveGuestInvoice } from '$lib/guestDb.js';
+import { getAllGuestInvoices, saveGuestInvoice } from '$lib/localDb.js';
 import { getDefaultTemplateId } from '$lib/templates/registry.js';
 
 export interface MigrationResult {

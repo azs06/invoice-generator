@@ -62,6 +62,14 @@ export interface SavedInvoiceRecord {
 	invoice: InvoiceData;
 }
 
+export interface LocalInvoiceRecord {
+	id: string;
+	invoice: InvoiceData;
+	cloudSynced: boolean;
+	cloudId: string | null;
+	updatedAt: string;
+}
+
 export type PageSizeId = 'a4' | 'letter' | 'legal' | 'a5';
 
 export interface PageDimensions {
