@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
-import { requireDB, requireAdmin, isSuperAdmin, requirePlatform } from '$lib/server/session';
-import { drizzle } from 'drizzle-orm/d1';
-import { user, invoices } from '$lib/server/schema';
 import { count, eq, isNotNull } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/d1';
+import { invoices, user } from '$lib/server/schema';
+import { isSuperAdmin, requireAdmin, requireDB, requirePlatform } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 
 export interface DeletedUser {

@@ -1,8 +1,8 @@
-import { json, error } from '@sveltejs/kit';
-import { requireDB, requireAdmin, isSuperAdmin, requirePlatform } from '$lib/server/session';
-import { drizzle } from 'drizzle-orm/d1';
-import { user, session as sessionTable } from '$lib/server/schema';
+import { error, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/d1';
+import { session as sessionTable, user } from '$lib/server/schema';
+import { isSuperAdmin, requireAdmin, requireDB, requirePlatform } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 
 /**

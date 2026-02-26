@@ -1,10 +1,10 @@
-import { json, error } from '@sveltejs/kit';
-import { createAuth } from './auth';
-import type { RequestEvent } from '@sveltejs/kit';
-import type { Session, User } from 'better-auth';
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
-import { drizzle } from 'drizzle-orm/d1';
+import type { RequestEvent } from '@sveltejs/kit';
+import { error, json } from '@sveltejs/kit';
+import type { Session, User } from 'better-auth';
 import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/d1';
+import { createAuth } from './auth';
 import { user } from './schema';
 
 export interface AuthSession {

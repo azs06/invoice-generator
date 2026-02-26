@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
 const switchToPreview = async (page: Page): Promise<void> => {
 	const previewTab = page.locator('[data-testid="preview-tab"]');

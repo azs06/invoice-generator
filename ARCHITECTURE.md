@@ -111,4 +111,3 @@ Cloudflare R2
 - `src/lib/server/` server-only auth/db/session helpers
 - `src/stores/` Svelte stores for UI state
 - `tests/` Playwright specs
-

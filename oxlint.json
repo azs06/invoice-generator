@@ -1,0 +1,8 @@
+{
+	"$schema": "https://raw.githubusercontent.com/oxc-project/oxc/refs/heads/main/crates/oxc_linter/schemas/oxlintrc.json",
+	"ignorePatterns": ["**/*.svelte", "package-lock.json"],
+	"rules": {
+		"typescript/no-explicit-any": "off",
+		"typescript/no-non-null-assertion": "off"
+	}
+}

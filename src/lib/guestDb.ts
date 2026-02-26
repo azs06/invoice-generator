@@ -4,7 +4,7 @@
  * This is used for guests who aren't logged in - their invoices are stored locally in the browser
  */
 
-import { get as idbGet, set as idbSet, del as idbDel, keys as idbKeys } from 'idb-keyval';
+import { del as idbDel, get as idbGet, keys as idbKeys, set as idbSet } from 'idb-keyval';
 import type { InvoiceData, SavedInvoiceRecord } from './types';
 
 const INVOICE_PREFIX = 'ig.guest.invoice.';

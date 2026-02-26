@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
-import { getAllInvoices, getInvoiceCount } from '$lib/server/db';
-import { requireDB } from '$lib/server/session';
-import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/d1';
+import { getAllInvoices, getInvoiceCount } from '$lib/server/db';
 import { invoices } from '$lib/server/schema';
+import { requireDB } from '$lib/server/session';
 import type { PageServerLoad } from './$types';
 
 export interface DashboardInvoice {

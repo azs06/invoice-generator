@@ -3,8 +3,8 @@
  * Handles exporting invoices to JSON and importing from JSON files
  */
 
-import type { InvoiceData, SavedInvoiceRecord } from './types';
 import { v4 as uuidv4 } from 'uuid';
+import type { InvoiceData, SavedInvoiceRecord } from './types';
 
 // Export file format version for future compatibility
 const EXPORT_FORMAT_VERSION = '1.0';

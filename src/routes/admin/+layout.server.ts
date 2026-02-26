@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { requireDB, isUserAdmin, requirePlatform } from '$lib/server/session';
+import { isUserAdmin, requireDB, requirePlatform } from '$lib/server/session';
 import type { LayoutServerLoad } from './$types';
 
 /**

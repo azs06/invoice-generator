@@ -2,7 +2,7 @@ import puppeteer, { type PaperFormat } from '@cloudflare/puppeteer';
 import { error } from '@sveltejs/kit';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
 import { updateInvoicePdfKey } from '$lib/server/db';
-import { requirePlatform, getBucket } from '$lib/server/session';
+import { getBucket, requirePlatform } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 
 // Map page sizes to Puppeteer format

@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { requireDB } from '$lib/server/session';
 import { getUserSettings, upsertUserSettings } from '$lib/server/db';
+import { requireDB } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 
 const VALID_CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'BDT', 'CAD', 'AUD'];

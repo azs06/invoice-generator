@@ -22,7 +22,15 @@ export interface TemplateOption {
 	premium: boolean;
 }
 
-export type TemplateId = 'modern' | 'simple' | 'standard' | 'classic' | 'minimal' | 'atlantic' | 'compact' | 'executive';
+export type TemplateId =
+	| 'modern'
+	| 'simple'
+	| 'standard'
+	| 'classic'
+	| 'minimal'
+	| 'atlantic'
+	| 'compact'
+	| 'executive';
 
 export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 	modern: {

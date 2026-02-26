@@ -1,9 +1,9 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import { eq, and, desc, asc, count, sql, inArray } from 'drizzle-orm';
-import { invoices, sharedLinks, linkViews, userSettings } from './schema';
-import type { InvoiceData, SavedInvoiceRecord } from '$lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import type { InvoiceData, SavedInvoiceRecord } from '$lib/types';
+import { invoices, linkViews, sharedLinks, userSettings } from './schema';
 
 const INVOICE_LIMIT = 12;
 const SHARE_LINK_DEFAULT_DAYS = 30;
@@ -90,15 +90,13 @@ export async function saveInvoice(
 		}
 	}
 
-	await d1
-		.insert(invoices)
-		.values({
-			id,
-			data,
-			userId,
-			createdAt: now,
-			updatedAt: now
-		});
+	await d1.insert(invoices).values({
+		id,
+		data,
+		userId,
+		createdAt: now,
+		updatedAt: now
+	});
 
 	return true;
 }

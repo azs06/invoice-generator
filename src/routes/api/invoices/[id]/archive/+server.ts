@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
-import { requireDB } from '$lib/server/session';
 import { getInvoice, saveInvoice } from '$lib/server/db';
+import { requireDB } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 
 export const PUT: RequestHandler = async (event) => {

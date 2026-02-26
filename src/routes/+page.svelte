@@ -1115,8 +1115,6 @@
 					</div>
 				</div>
 				<div class="docs-header-controls" onpointerdown={(event) => event.stopPropagation()}>
-					<CurrencySelector />
-					<LanguageSelector />
 					<ThemeToggle />
 					{#if $session.isPending}
 						<div class="docs-auth-loading" aria-label="Loading session">
@@ -1199,6 +1197,11 @@
 						</svg>
 						<span class="docs-tool-label">Clear</span>
 					</button>
+				</div>
+				<span class="docs-toolbar-divider" aria-hidden="true"></span>
+				<div class="docs-toolbar-group">
+					<CurrencySelector />
+					<LanguageSelector />
 				</div>
 				<div class="docs-toolbar-spacer"></div>
 				<div class="docs-toolbar-group">
@@ -1536,7 +1539,8 @@
 
 	.docs-title-row {
 		display: flex;
-		align-items: flex-start;
+		flex-direction: row;
+		align-items: center;
 		justify-content: space-between;
 		gap: 0.75rem;
 		padding: 0.52rem 0.8rem;
@@ -1549,6 +1553,7 @@
 		align-items: center;
 		gap: 0.62rem;
 		min-width: 0;
+		flex: 1;
 	}
 
 	.docs-file-badge {
@@ -1681,8 +1686,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.45rem;
-		flex-wrap: wrap;
-		justify-content: flex-end;
+		flex-shrink: 0;
 	}
 
 	.docs-auth-button {
@@ -1835,7 +1839,7 @@
 	}
 
 	.docs-toolbar-spacer {
-		flex: 1;
+		width: 0.5rem;
 	}
 
 	.docs-tool-button {
