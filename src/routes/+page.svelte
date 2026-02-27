@@ -1360,13 +1360,9 @@
 				</div>
 				<span class="docs-toolbar-divider" aria-hidden="true"></span>
 				<div class="docs-toolbar-group docs-toolbar-group--controls">
-					{#if activeTab === 'preview' || $viewMode === 'page'}
-						<TemplateSelector />
-						<PageSettingsSelector />
-					{:else}
-						<TemplateSelector />
-						<ViewModeToggle />
-					{/if}
+					<TemplateSelector />
+					<PageSettingsSelector />
+					<ViewModeToggle />
 				</div>
 				<div class="docs-toolbar-spacer"></div>
 				<div class="docs-toolbar-group">
