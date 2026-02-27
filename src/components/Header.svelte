@@ -5,6 +5,7 @@
 	import ThemeToggle from './ThemeToggle.svelte';
 	import LanguageSelector from './LanguageSelector.svelte';
 	import CurrencySelector from './CurrencySelector.svelte';
+	import MobileBottomSheet from './mobile/MobileBottomSheet.svelte';
 	import { authClient } from '$lib/auth';
 
 	interface Props {
@@ -16,7 +17,8 @@
 	const session = authClient.useSession();
 	let imageError = $state(false);
 	let showProfileMenu = $state(false);
-	let showMobileMenu = $state(false);
+	let showMobileActionsSheet = $state(false);
+	let showMobileSettingsSheet = $state(false);
 
 	const routeTitle = $derived(
 		$page.url.pathname === '/'
@@ -34,15 +36,35 @@
 								: 'FreeInvoice'
 	);
 
-	const toggleMobileMenu = () => {
-		showMobileMenu = !showMobileMenu;
-		if (showMobileMenu) {
+	const toggleMobileActionsSheet = () => {
+		showMobileActionsSheet = !showMobileActionsSheet;
+		if (showMobileActionsSheet) {
 			showProfileMenu = false;
+			showMobileSettingsSheet = false;
 		}
 	};
 
-	const closeMobileMenu = () => {
-		showMobileMenu = false;
+	const closeMobileActionsSheet = () => {
+		showMobileActionsSheet = false;
+	};
+
+	const openMobileSettingsSheet = () => {
+		showMobileSettingsSheet = true;
+		showMobileActionsSheet = false;
+		showProfileMenu = false;
+	};
+
+	const closeMobileSettingsSheet = () => {
+		showMobileSettingsSheet = false;
+	};
+
+	const closeMobileSheets = () => {
+		closeMobileActionsSheet();
+		closeMobileSettingsSheet();
+	};
+
+	const runMobileNavigation = async (event: MouseEvent, href: string): Promise<void> => {
+		navigate(event, href, closeMobileSheets);
 	};
 
 	const signIn = async () => {
@@ -64,7 +86,7 @@
 	const toggleProfileMenu = () => {
 		showProfileMenu = !showProfileMenu;
 		if (showProfileMenu) {
-			showMobileMenu = false;
+			closeMobileSheets();
 		}
 	};
 
@@ -92,7 +114,7 @@
 
 	const closeMenus = () => {
 		closeProfileMenu();
-		closeMobileMenu();
+		closeMobileSheets();
 	};
 
 	const handleGlobalKeydown = (event: KeyboardEvent): void => {
@@ -116,33 +138,6 @@
 <header class="app-header">
 	<div class="header-inner app-container" onpointerdown={(event) => event.stopPropagation()}>
 		<div class="header-left">
-			<button
-				type="button"
-				class="mobile-menu-button"
-				onclick={(event) => {
-					event.stopPropagation();
-					toggleMobileMenu();
-				}}
-				aria-label="Open navigation"
-				aria-expanded={showMobileMenu}
-			>
-				<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-					{#if showMobileMenu}
-						<path
-							fill-rule="evenodd"
-							d="M4.22 4.22a.75.75 0 0 1 1.06 0L10 8.94l4.72-4.72a.75.75 0 0 1 1.06 1.06L11.06 10l4.72 4.72a.75.75 0 1 1-1.06 1.06L10 11.06l-4.72 4.72a.75.75 0 0 1-1.06-1.06L8.94 10 4.22 5.28a.75.75 0 0 1 0-1.06Z"
-							clip-rule="evenodd"
-						/>
-					{:else}
-						<path
-							fill-rule="evenodd"
-							d="M3.5 5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25A.75.75 0 0 1 3.5 5Zm0 5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25A.75.75 0 0 1 3.5 10Zm0 5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25A.75.75 0 0 1 3.5 15Z"
-							clip-rule="evenodd"
-						/>
-					{/if}
-				</svg>
-			</button>
-
 			<a href="/" class="brand-link">
 				<span class="brand-main">{$_('app.title')}</span>
 				<span class="brand-sub">{routeTitle}</span>
@@ -161,11 +156,31 @@
 		</div>
 
 		<div class="header-right">
+			<button
+				type="button"
+				class="mobile-menu-button"
+				onclick={(event) => {
+					event.stopPropagation();
+					toggleMobileActionsSheet();
+				}}
+				aria-label="Open navigation"
+				aria-expanded={showMobileActionsSheet}
+			>
+				<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path
+						fill-rule="evenodd"
+						d="M3.5 5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25A.75.75 0 0 1 3.5 5Zm0 5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25A.75.75 0 0 1 3.5 10Zm0 5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25A.75.75 0 0 1 3.5 15Z"
+						clip-rule="evenodd"
+					/>
+				</svg>
+			</button>
 			<div class="desktop-selectors">
 				<CurrencySelector />
 				<LanguageSelector />
 			</div>
-			<ThemeToggle />
+			<div class="desktop-theme-toggle">
+				<ThemeToggle />
+			</div>
 
 			{#if $session.isPending}
 				<div class="auth-loading" aria-label="Loading session">
@@ -231,24 +246,52 @@
 		</div>
 	</div>
 
-	{#if showMobileMenu}
-		<div class="mobile-nav-panel" onpointerdown={(event) => event.stopPropagation()}>
-			<div class="mobile-selectors">
-				<CurrencySelector />
-				<LanguageSelector />
-			</div>
-			<nav class="mobile-nav-links" aria-label="Mobile navigation">
-				{#if !$session.isPending}
-					<a
-						href="/history"
-						class="mobile-nav-link"
-						aria-current={$page.url.pathname.startsWith('/history') ? 'page' : undefined}
-						onclick={(event) => navigate(event, '/history', closeMobileMenu)}>{$_('nav.history')}</a
-					>
-				{/if}
-			</nav>
+	<MobileBottomSheet
+		open={showMobileActionsSheet}
+		title="Navigation"
+		ariaLabel="Mobile navigation"
+		size="compact"
+		onClose={closeMobileActionsSheet}
+		testId="mobile-actions-sheet"
+	>
+		<div class="mobile-sheet-links">
+			<a href="/" class="mobile-sheet-link" onclick={(event) => void runMobileNavigation(event, '/')}
+				>Editor</a
+			>
+			<a
+				href="/history"
+				class="mobile-sheet-link"
+				aria-current={$page.url.pathname.startsWith('/history') ? 'page' : undefined}
+				onclick={(event) => void runMobileNavigation(event, '/history')}>{$_('nav.history')}</a
+			>
+			{#if isAdmin}
+				<a
+					href="/admin"
+					class="mobile-sheet-link"
+					aria-current={$page.url.pathname.startsWith('/admin') ? 'page' : undefined}
+					onclick={(event) => void runMobileNavigation(event, '/admin')}
+				>
+					Admin Panel
+				</a>
+			{/if}
+			<button type="button" class="mobile-sheet-link" onclick={openMobileSettingsSheet}>Settings</button>
 		</div>
-	{/if}
+	</MobileBottomSheet>
+
+	<MobileBottomSheet
+		open={showMobileSettingsSheet}
+		title="Settings"
+		ariaLabel="Mobile settings"
+		size="tall"
+		onClose={closeMobileSettingsSheet}
+		testId="mobile-settings-sheet"
+	>
+		<div class="mobile-sheet-settings">
+			<CurrencySelector />
+			<LanguageSelector />
+			<ThemeToggle />
+		</div>
+	</MobileBottomSheet>
 </header>
 
 <style>
@@ -357,6 +400,10 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
+	}
+
+	.desktop-theme-toggle {
+		display: inline-flex;
 	}
 
 	.auth-button {
@@ -485,28 +532,17 @@
 		color: var(--color-error);
 	}
 
-	.mobile-nav-panel {
-		display: none;
-		padding: 0 0.75rem 0.75rem;
-		border-top: 1px solid var(--color-border-primary);
-		background: var(--surface-paper);
-	}
-
-	.mobile-selectors {
-		display: flex;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-		padding-top: 0.75rem;
-	}
-
-	.mobile-nav-links {
+	.mobile-sheet-links {
 		display: grid;
-		gap: 0.4rem;
-		padding-top: 0.6rem;
+		gap: 0.45rem;
 	}
 
-	.mobile-nav-link {
-		display: block;
+	.mobile-sheet-link {
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		width: 100%;
+		min-height: var(--mobile-touch-target);
 		padding: 0.58rem 0.72rem;
 		border-radius: var(--radius-sm);
 		border: 1px solid var(--color-border-primary);
@@ -515,16 +551,19 @@
 		font-weight: 600;
 		color: var(--color-text-primary);
 		background: var(--color-bg-primary);
+		cursor: pointer;
 	}
 
-	.mobile-nav-link:hover {
-		background: var(--color-bg-secondary);
-	}
-
-	.mobile-nav-link[aria-current='page'] {
+	.mobile-sheet-link[aria-current='page'] {
 		color: var(--color-accent-blue);
 		border-color: color-mix(in srgb, var(--color-accent-blue) 40%, transparent);
 		background: color-mix(in srgb, var(--color-accent-blue) 8%, transparent);
+	}
+
+	.mobile-sheet-settings {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
 	}
 
 	@keyframes spin {
@@ -539,12 +578,9 @@
 		}
 
 		.desktop-nav,
-		.desktop-selectors {
+		.desktop-selectors,
+		.desktop-theme-toggle {
 			display: none;
-		}
-
-		.mobile-nav-panel {
-			display: block;
 		}
 
 		.brand-sub {
@@ -552,7 +588,17 @@
 		}
 
 		.header-inner {
-			padding-block: 0.45rem;
+			padding-block: 0.4rem;
+			min-height: var(--mobile-app-bar-height);
+		}
+
+		.header-right {
+			gap: 0.35rem;
+		}
+
+		.auth-button {
+			height: var(--mobile-touch-target);
+			padding: 0 0.75rem;
 		}
 	}
 </style>
