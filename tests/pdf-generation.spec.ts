@@ -4,6 +4,20 @@ const switchToPreview = async (page: Page): Promise<void> => {
 	const previewTab = page.locator('[data-testid="preview-tab"]');
 	if (await previewTab.isVisible()) {
 		await previewTab.click();
+	} else {
+		const mobilePreviewButton = page.locator('[data-testid="mobile-preview-button"]');
+		if (await mobilePreviewButton.isVisible()) {
+			await mobilePreviewButton.click();
+		} else {
+			const workspaceToggle = page.locator('[data-testid="workspace-toggle"]');
+			if (await workspaceToggle.isVisible()) {
+				await workspaceToggle.click();
+				const viewingOption = page.locator('.docs-mode-option', { hasText: 'Viewing' });
+				if (await viewingOption.isVisible()) {
+					await viewingOption.click();
+				}
+			}
+		}
 	}
 	await page.waitForSelector('.invoice-preview');
 };
@@ -172,7 +186,10 @@ test.describe('PDF Download', () => {
 
 		// Click download - for guest users this may show a signup prompt
 		// We just verify the button is clickable
-		const downloadButton = page.locator('[data-testid="download-pdf"]');
-		await expect(downloadButton).toBeEnabled();
+		const visibleDownloadButtons = page.locator(
+			'[data-testid="download-pdf-desktop"]:visible, [data-testid="download-pdf"]:visible'
+		);
+		await expect(visibleDownloadButtons).toHaveCount(1);
+		await expect(visibleDownloadButtons.first()).toBeEnabled();
 	});
 });

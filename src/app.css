@@ -70,6 +70,14 @@
 	--motion-base: 220ms;
 	--motion-ease: cubic-bezier(0.2, 0, 0, 1);
 
+	/* Mobile chrome */
+	--mobile-app-bar-height: 3.1rem;
+	--mobile-touch-target: 2.25rem;
+	--mobile-sheet-radius: 1rem;
+	--mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+	--mobile-sheet-motion: 180ms;
+	--mobile-sheet-shadow: 0 -12px 32px rgba(0, 0, 0, 0.26);
+
 	/* Compatibility aliases for existing component CSS */
 	--color-bg-primary: var(--color-surface);
 	--color-bg-secondary: var(--color-surface-muted);

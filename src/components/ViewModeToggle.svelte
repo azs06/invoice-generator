@@ -2,8 +2,17 @@
 	import { browser } from '$app/environment';
 	import { viewMode, toggleViewMode, currentPageDimensions } from '../stores/pageSettingsStore.js';
 
+	interface Props {
+		onToggle?: () => void;
+	}
+
+	let { onToggle }: Props = $props();
+
 	// Only show on mobile
 	let isMobile = $state(false);
+	let isResponsive = $state(true);
+	let currentModeLabel = $state('Fit');
+	let nextModeLabel = $state('A4');
 	const MOBILE_BREAKPOINT = 768;
 
 	$effect(() => {
@@ -21,17 +30,46 @@
 			};
 		}
 	});
+
+	$effect(() => {
+		isResponsive = $viewMode === 'responsive';
+		currentModeLabel = isResponsive ? 'Fit' : $currentPageDimensions.label;
+		nextModeLabel = isResponsive ? $currentPageDimensions.label : 'Fit';
+	});
+
+	const handleToggleClick = (): void => {
+		toggleViewMode();
+		onToggle?.();
+	};
 </script>
 
 {#if isMobile}
 	<button
+		type="button"
 		class="view-mode-toggle"
-		onclick={toggleViewMode}
-		title={$viewMode === 'responsive'
-			? `Preview ${$currentPageDimensions.label} page`
-			: 'Switch to responsive view'}
+		onclick={handleToggleClick}
+		title={`Switch to ${nextModeLabel} view`}
+		aria-label={`Current view ${currentModeLabel}. Switch to ${nextModeLabel} view`}
+		data-testid="mobile-view-mode-toggle"
 	>
-		{#if $viewMode === 'responsive'}
+		{#if isResponsive}
+			<!-- Mobile/responsive icon -->
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="18"
+				height="18"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+				<line x1="12" y1="18" x2="12.01" y2="18" />
+			</svg>
+			<span class="toggle-label">{currentModeLabel}</span>
+		{:else}
 			<!-- Document/Page icon -->
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -50,24 +88,7 @@
 				<line x1="16" y1="17" x2="8" y2="17" />
 				<line x1="10" y1="9" x2="8" y2="9" />
 			</svg>
-			<span class="toggle-label">{$currentPageDimensions.label}</span>
-		{:else}
-			<!-- Mobile/responsive icon -->
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="18"
-				height="18"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-				<line x1="12" y1="18" x2="12.01" y2="18" />
-			</svg>
-			<span class="toggle-label">Fit</span>
+			<span class="toggle-label">{currentModeLabel}</span>
 		{/if}
 	</button>
 {/if}

@@ -12,6 +12,7 @@
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
 	import CurrencySelector from '$components/CurrencySelector.svelte';
 	import LanguageSelector from '$components/LanguageSelector.svelte';
+	import MobileBottomSheet from '$components/mobile/MobileBottomSheet.svelte';
 	import {
 		saveInvoice,
 		getInvoice,
@@ -78,6 +79,8 @@
 	let showShareModal = $state<boolean>(false);
 	let showFileMenu = $state<boolean>(false);
 	let showProfileMenu = $state<boolean>(false);
+	let showMobileActionsSheet = $state<boolean>(false);
+	let showMobileSettingsSheet = $state<boolean>(false);
 	let userInvoicePrefix = $state<string>('INV-');
 	let imageError = $state(false);
 	let fileMenuTrigger = $state<HTMLButtonElement | null>(null);
@@ -462,6 +465,24 @@
 		});
 	};
 
+	const toggleActiveTab = (): void => {
+		setActiveTab(activeTab === 'edit' ? 'preview' : 'edit');
+	};
+
+	const handleMobileViewModeToggle = (): void => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		if (!window.matchMedia('(max-width: 768px)').matches) {
+			return;
+		}
+
+		if (activeTab === 'edit') {
+			setActiveTab('preview');
+		}
+	};
+
 	const session = authClient.useSession();
 
 	const signIn = async (): Promise<void> => {
@@ -505,6 +526,44 @@
 		showModeMenu = false;
 	};
 
+	const closeMobileActionsSheet = (): void => {
+		showMobileActionsSheet = false;
+	};
+
+	const closeMobileSettingsSheet = (): void => {
+		showMobileSettingsSheet = false;
+	};
+
+	const closeMobileSheets = (): void => {
+		closeMobileActionsSheet();
+		closeMobileSettingsSheet();
+	};
+
+	const toggleMobileActionsSheet = (): void => {
+		showMobileActionsSheet = !showMobileActionsSheet;
+		if (showMobileActionsSheet) {
+			showMobileSettingsSheet = false;
+			closeFileMenu();
+			closeProfileMenu();
+			closeModeMenu();
+		}
+	};
+
+	const toggleMobileSettingsSheet = (): void => {
+		showMobileSettingsSheet = !showMobileSettingsSheet;
+		if (showMobileSettingsSheet) {
+			showMobileActionsSheet = false;
+			closeFileMenu();
+			closeProfileMenu();
+			closeModeMenu();
+		}
+	};
+
+	const runMobileAction = async (action: () => void | Promise<void>): Promise<void> => {
+		closeMobileSheets();
+		await action();
+	};
+
 	const toggleModeMenu = (): void => {
 		showModeMenu = !showModeMenu;
 		if (showModeMenu) {
@@ -529,6 +588,7 @@
 		closeFileMenu();
 		closeProfileMenu();
 		closeModeMenu();
+		closeMobileSheets();
 	};
 
 	const toggleFileMenu = (): void => {
@@ -556,10 +616,25 @@
 	};
 
 	const handleGlobalKeydown = (event: KeyboardEvent): void => {
+		if (event.defaultPrevented) {
+			return;
+		}
+
 		if (event.key === 'Escape') {
+			if (showMobileSettingsSheet) {
+				closeFileMenu(true);
+				closeProfileMenu();
+				closeModeMenu();
+				return;
+			}
+
+			if (typeof document !== 'undefined' && document.querySelector('[data-testid="mobile-margin-dialog"]')) {
+				return;
+			}
 			closeFileMenu(true);
 			closeProfileMenu();
 			closeModeMenu();
+			closeMobileSheets();
 		}
 	};
 
@@ -1150,6 +1225,70 @@
 
 {#if invoice}
 	<div class="workspace-shell editor-workspace app-page">
+		<div class="mobile-editor-bar docs-surface" onpointerdown={(event) => event.stopPropagation()}>
+			<div class="mobile-editor-bar__title">
+				<div class="docs-file-badge" aria-hidden="true">
+					<svg class="docs-file-icon" viewBox="0 0 20 20" fill="currentColor">
+						<path d="M5 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7.5L11.5 2H5Z" />
+						<path d="M11 2.5V8h5.5L11 2.5Z" opacity="0.6" />
+					</svg>
+				</div>
+				<span class="mobile-editor-bar__title-text">{documentTitle || 'Untitled invoice'}</span>
+			</div>
+			<div class="mobile-editor-bar__actions">
+				<button
+					type="button"
+					class="mobile-editor-quick"
+					onclick={openSaveDraftModal}
+					data-testid="mobile-save-button"
+				>
+					Save
+				</button>
+				<button
+					type="button"
+					class="mobile-editor-quick mobile-editor-quick--accent"
+					onclick={toggleActiveTab}
+					data-testid="mobile-preview-button"
+					aria-label={activeTab === 'edit' ? 'Switch to preview' : 'Switch to editing'}
+				>
+					{activeTab === 'edit' ? 'Preview' : 'Edit'}
+				</button>
+				<button
+					type="button"
+					class="mobile-editor-icon-button mobile-editor-icon-button--more"
+					class:mobile-editor-icon-button--active={showMobileActionsSheet}
+					aria-label="More actions"
+					aria-expanded={showMobileActionsSheet}
+					onclick={toggleMobileActionsSheet}
+					data-testid="mobile-actions-button"
+					title="More actions"
+				>
+					<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<circle cx="10" cy="4" r="1.4" />
+						<circle cx="10" cy="10" r="1.4" />
+						<circle cx="10" cy="16" r="1.4" />
+					</svg>
+				</button>
+				<button
+					type="button"
+					class="mobile-editor-icon-button"
+					class:mobile-editor-icon-button--active={showMobileSettingsSheet}
+					aria-label="Open settings"
+					aria-expanded={showMobileSettingsSheet}
+					onclick={toggleMobileSettingsSheet}
+					data-testid="mobile-settings-button"
+				>
+					<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path
+							fill-rule="evenodd"
+							d="M7.84 1.804a1.75 1.75 0 0 1 4.32 0l.104.465a1.25 1.25 0 0 0 1.74.88l.43-.224a1.75 1.75 0 0 1 2.16.6 1.75 1.75 0 0 1-.273 2.225l-.345.328a1.25 1.25 0 0 0 .274 2.02l.436.224a1.75 1.75 0 0 1 0 3.116l-.436.224a1.25 1.25 0 0 0-.274 2.02l.345.328a1.75 1.75 0 0 1 .273 2.225 1.75 1.75 0 0 1-2.16.6l-.43-.224a1.25 1.25 0 0 0-1.74.88l-.104.465a1.75 1.75 0 0 1-4.32 0l-.104-.465a1.25 1.25 0 0 0-1.74-.88l-.43.224a1.75 1.75 0 0 1-2.16-.6 1.75 1.75 0 0 1 .273-2.225l.345-.328a1.25 1.25 0 0 0-.274-2.02l-.436-.224a1.75 1.75 0 0 1 0-3.116l.436-.224a1.25 1.25 0 0 0 .274-2.02l-.345-.328a1.75 1.75 0 0 1-.273-2.225 1.75 1.75 0 0 1 2.16-.6l.43.224a1.25 1.25 0 0 0 1.74-.88l.104-.465ZM10 12.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+				</button>
+			</div>
+		</div>
+
 		<div class="desktop-docs-chrome">
 			<div class="docs-title-row docs-surface" onpointerdown={(event) => event.stopPropagation()}>
 				<div class="docs-title-cluster">
@@ -1362,7 +1501,7 @@
 				<div class="docs-toolbar-group docs-toolbar-group--controls">
 					<TemplateSelector />
 					<PageSettingsSelector />
-					<ViewModeToggle />
+					<ViewModeToggle onToggle={handleMobileViewModeToggle} />
 				</div>
 				<div class="docs-toolbar-spacer"></div>
 				<div class="docs-toolbar-group">
@@ -1572,6 +1711,122 @@
 			{/if}
 		</div>
 
+		<MobileBottomSheet
+			open={showMobileActionsSheet}
+			title="Actions"
+			ariaLabel="Editor actions"
+			size="tall"
+			onClose={closeMobileActionsSheet}
+			testId="mobile-actions-sheet"
+		>
+			<div class="mobile-sheet-group">
+				<button
+					type="button"
+					class="mobile-sheet-action"
+					onclick={() => void runMobileAction(() => startNewInvoice())}
+				>
+					New invoice
+				</button>
+				<button
+					type="button"
+					class="mobile-sheet-action"
+					data-testid="mobile-actions-save-draft"
+					onclick={() => void runMobileAction(() => openSaveDraftModal())}
+				>
+					Save draft
+				</button>
+				<button
+					type="button"
+					class="mobile-sheet-action"
+					onclick={() => void runMobileAction(() => clearInvoice())}
+				>
+					Clear invoice
+				</button>
+				<button
+					type="button"
+					class="mobile-sheet-action mobile-sheet-action--danger"
+					onclick={() => void runMobileAction(() => deleteCurrentInvoice())}
+				>
+					Delete invoice
+				</button>
+				<button
+					type="button"
+					class="mobile-sheet-action"
+					onclick={() => void runMobileAction(() => navigateToDashboard())}
+				>
+					History
+				</button>
+				<button
+					type="button"
+					class="mobile-sheet-action"
+					disabled={isGeneratingPDF}
+					onclick={() => void runMobileAction(() => printPDF())}
+				>
+					Print
+				</button>
+				<button
+					type="button"
+					class="mobile-sheet-action"
+					disabled={isGeneratingPDF}
+					data-testid="download-pdf"
+					onclick={() => void runMobileAction(() => saveAsPDF())}
+				>
+					Download PDF
+				</button>
+				<button
+					type="button"
+					class="mobile-sheet-action"
+					disabled={!$session.data || !isShareable}
+					onclick={() =>
+						void runMobileAction(() => {
+							showShareModal = true;
+						})}
+				>
+					Share
+				</button>
+			</div>
+		</MobileBottomSheet>
+
+		<MobileBottomSheet
+			open={showMobileSettingsSheet}
+			title="Settings"
+			ariaLabel="Editor settings"
+			size="tall"
+			onClose={closeMobileSettingsSheet}
+			testId="mobile-settings-sheet"
+		>
+			<div class="mobile-sheet-group">
+				<div class="mobile-sheet-control-row">
+					<CurrencySelector />
+					<LanguageSelector />
+					<ThemeToggle />
+				</div>
+				<div class="mobile-sheet-control-stack">
+					<TemplateSelector />
+					<PageSettingsSelector mobileInlinePanel={true} />
+					<ViewModeToggle onToggle={handleMobileViewModeToggle} />
+				</div>
+				<div class="mobile-sheet-mode-switch" role="group" aria-label="Workspace mode">
+					<button
+						type="button"
+						class="mobile-sheet-mode-button"
+						class:mobile-sheet-mode-button--active={activeTab === 'edit'}
+						onclick={() => setActiveTab('edit')}
+					>
+						Editing
+					</button>
+					<button
+						type="button"
+						class="mobile-sheet-mode-button"
+						class:mobile-sheet-mode-button--active={activeTab === 'preview'}
+						onclick={() => setActiveTab('preview')}
+					>
+						Viewing
+					</button>
+				</div>
+			</div>
+		</MobileBottomSheet>
+
 		<div class="workspace-main">
 			<aside class="invoice-sidebar docs-surface" aria-label="Saved invoices">
 				<div class="invoice-sidebar__header">
@@ -1777,6 +2032,159 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0;
+	}
+
+	.mobile-editor-bar {
+		display: none;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		min-height: var(--mobile-app-bar-height);
+		padding: 0.42rem 0.55rem;
+	}
+
+	.mobile-editor-bar__title {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.mobile-editor-bar__title-text {
+		font-size: 0.8rem;
+		font-weight: 600;
+		line-height: 1.2;
+		color: var(--color-text-primary);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.mobile-editor-bar__actions {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.mobile-editor-quick {
+		height: var(--mobile-touch-target);
+		padding: 0 0.62rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.mobile-editor-quick--accent {
+		border-color: transparent;
+		background: var(--color-accent-blue);
+		color: #fff;
+	}
+
+	.mobile-editor-icon-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		min-width: 44px;
+		min-height: 44px;
+		border-radius: var(--radius-pill);
+		border: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
+		color: var(--color-text-secondary);
+		cursor: pointer;
+		transition:
+			background-color var(--motion-fast) var(--motion-ease),
+			border-color var(--motion-fast) var(--motion-ease),
+			color var(--motion-fast) var(--motion-ease),
+			transform var(--motion-fast) var(--motion-ease);
+	}
+
+	.mobile-editor-icon-button svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.mobile-editor-icon-button:hover {
+		background: var(--color-bg-secondary);
+	}
+
+	.mobile-editor-icon-button:active {
+		transform: scale(0.97);
+	}
+
+	.mobile-editor-icon-button--active {
+		color: var(--color-accent-blue);
+		border-color: color-mix(in srgb, var(--color-accent-blue) 40%, transparent);
+		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
+	}
+
+	.mobile-sheet-group {
+		display: grid;
+		gap: 0.45rem;
+	}
+
+	.mobile-sheet-action {
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		width: 100%;
+		min-height: var(--mobile-touch-target);
+		padding: 0.58rem 0.75rem;
+		border: 1px solid var(--color-border-primary);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-primary);
+		color: var(--color-text-primary);
+		font-size: 0.84rem;
+		font-weight: 550;
+		text-align: left;
+	}
+
+	.mobile-sheet-action:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.mobile-sheet-action--danger {
+		color: var(--color-error);
+	}
+
+	.mobile-sheet-control-row {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.mobile-sheet-control-stack {
+		display: grid;
+		gap: 0.5rem;
+	}
+
+	.mobile-sheet-mode-switch {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.4rem;
+	}
+
+	.mobile-sheet-mode-button {
+		min-height: var(--mobile-touch-target);
+		padding: 0.45rem 0.6rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid var(--color-border-primary);
+		background: var(--color-bg-primary);
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.mobile-sheet-mode-button--active {
+		color: var(--color-accent-blue);
+		border-color: color-mix(in srgb, var(--color-accent-blue) 40%, transparent);
+		background: color-mix(in srgb, var(--color-accent-blue) 8%, transparent);
 	}
 
 	.docs-title-row {
@@ -2635,6 +3043,14 @@
 	@media (max-width: 768px) {
 		.workspace-shell {
 			--workspace-inline-padding: var(--layout-gutter-mobile);
+		}
+
+		.mobile-editor-bar {
+			display: flex;
+		}
+
+		.desktop-docs-chrome {
+			display: none;
 		}
 
 		.workspace-main {

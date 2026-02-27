@@ -124,8 +124,10 @@
 			mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
 			isMobile = mediaQuery.matches;
 
-			// Auto-set view mode based on screen size (only on initial load)
-			setViewMode(isMobile ? 'responsive' : 'page');
+			// Keep the user's current mobile choice; only force desktop default page mode.
+			if (!isMobile && $viewMode === 'responsive') {
+				setViewMode('page');
+			}
 
 			// Listen for screen size changes
 			mediaQueryHandler = (e: MediaQueryListEvent) => {

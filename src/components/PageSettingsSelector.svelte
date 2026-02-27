@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import {
 		pageSettings,
 		PAGE_SIZE_OPTIONS,
@@ -7,7 +8,14 @@
 	} from '../stores/pageSettingsStore.js';
 	import type { PageSizeId } from '$lib/types';
 
+	interface Props {
+		mobileInlinePanel?: boolean;
+	}
+
+	let { mobileInlinePanel = false }: Props = $props();
+
 	let showMarginPanel = $state(false);
+	let marginCloseButton = $state<HTMLButtonElement | null>(null);
 
 	const handlePageSizeChange = (event: Event): void => {
 		const target = event.currentTarget;
@@ -29,7 +37,46 @@
 	const toggleMarginPanel = (): void => {
 		showMarginPanel = !showMarginPanel;
 	};
+
+	const closeMarginPanel = (): void => {
+		showMarginPanel = false;
+	};
+
+	const handleBackdropKeydown = (event: KeyboardEvent): void => {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			closeMarginPanel();
+		}
+	};
+
+	const handleWindowKeydown = (event: KeyboardEvent): void => {
+		if (event.key === 'Escape' && showMarginPanel) {
+			event.preventDefault();
+			event.stopPropagation();
+			closeMarginPanel();
+		}
+	};
+
+	const handleDialogKeydown = (event: KeyboardEvent): void => {
+		if (event.key === 'Escape' && showMarginPanel) {
+			event.preventDefault();
+			event.stopPropagation();
+			closeMarginPanel();
+		}
+	};
+
+	$effect(() => {
+		if (!showMarginPanel || !mobileInlinePanel) {
+			return;
+		}
+
+		void tick().then(() => {
+			marginCloseButton?.focus();
+		});
+	});
 </script>
+
+<svelte:window onkeydown={handleWindowKeydown} />
 
 <div class="page-settings">
 	<div class="page-size-selector">
@@ -80,61 +127,154 @@
 		</button>
 
 		{#if showMarginPanel}
-			<div id="margin-panel" class="margin-panel">
-				<div class="margin-header">
-					<span class="margin-title">Margins (mm)</span>
+			{#if mobileInlinePanel}
+				<div
+					class="margin-panel-overlay"
+					role="button"
+					tabindex="0"
+					aria-label="Close margins dialog"
+					onpointerdown={closeMarginPanel}
+					onkeydown={handleBackdropKeydown}
+					data-testid="mobile-margin-overlay"
+				>
+					<div
+						id="margin-panel"
+						class="margin-panel margin-panel--inline"
+						role="dialog"
+						aria-label="Margins dialog"
+						tabindex="-1"
+						onkeydown={handleDialogKeydown}
+						onpointerdown={(event) => event.stopPropagation()}
+						data-testid="mobile-margin-dialog"
+					>
+						<div class="margin-header margin-header--dialog">
+							<span class="margin-title">Margins (mm)</span>
+							<button
+								type="button"
+								class="margin-close-btn"
+								onclick={closeMarginPanel}
+								aria-label="Close margins dialog"
+								data-testid="mobile-margin-close"
+								bind:this={marginCloseButton}
+							>
+								<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path
+										fill-rule="evenodd"
+										d="M4.22 4.22a.75.75 0 0 1 1.06 0L10 8.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L11.06 10l4.72 4.72a.75.75 0 1 1-1.06 1.06L10 11.06l-4.72 4.72a.75.75 0 0 1-1.06-1.06L8.94 10 4.22 5.28a.75.75 0 0 1 0-1.06Z"
+										clip-rule="evenodd"
+									/>
+								</svg>
+							</button>
+						</div>
+						<div class="margin-grid">
+							<div class="margin-input-group">
+								<label for="margin-top">Top</label>
+								<input
+									id="margin-top"
+									type="number"
+									min="0"
+									max="50"
+									step="1"
+									value={$pageSettings.margins.top}
+									oninput={(e) => handleMarginChange('top', e)}
+								/>
+							</div>
+							<div class="margin-input-group">
+								<label for="margin-right">Right</label>
+								<input
+									id="margin-right"
+									type="number"
+									min="0"
+									max="50"
+									step="1"
+									value={$pageSettings.margins.right}
+									oninput={(e) => handleMarginChange('right', e)}
+								/>
+							</div>
+							<div class="margin-input-group">
+								<label for="margin-bottom">Bottom</label>
+								<input
+									id="margin-bottom"
+									type="number"
+									min="0"
+									max="50"
+									step="1"
+									value={$pageSettings.margins.bottom}
+									oninput={(e) => handleMarginChange('bottom', e)}
+								/>
+							</div>
+							<div class="margin-input-group">
+								<label for="margin-left">Left</label>
+								<input
+									id="margin-left"
+									type="number"
+									min="0"
+									max="50"
+									step="1"
+									value={$pageSettings.margins.left}
+									oninput={(e) => handleMarginChange('left', e)}
+								/>
+							</div>
+						</div>
+					</div>
 				</div>
-				<div class="margin-grid">
-					<div class="margin-input-group">
-						<label for="margin-top">Top</label>
-						<input
-							id="margin-top"
-							type="number"
-							min="0"
-							max="50"
-							step="1"
-							value={$pageSettings.margins.top}
-							oninput={(e) => handleMarginChange('top', e)}
-						/>
+			{:else}
+				<div id="margin-panel" class="margin-panel">
+					<div class="margin-header">
+						<span class="margin-title">Margins (mm)</span>
 					</div>
-					<div class="margin-input-group">
-						<label for="margin-right">Right</label>
-						<input
-							id="margin-right"
-							type="number"
-							min="0"
-							max="50"
-							step="1"
-							value={$pageSettings.margins.right}
-							oninput={(e) => handleMarginChange('right', e)}
-						/>
-					</div>
-					<div class="margin-input-group">
-						<label for="margin-bottom">Bottom</label>
-						<input
-							id="margin-bottom"
-							type="number"
-							min="0"
-							max="50"
-							step="1"
-							value={$pageSettings.margins.bottom}
-							oninput={(e) => handleMarginChange('bottom', e)}
-						/>
-					</div>
-					<div class="margin-input-group">
-						<label for="margin-left">Left</label>
-						<input
-							id="margin-left"
-							type="number"
-							min="0"
-							max="50"
-							step="1"
-							value={$pageSettings.margins.left}
-							oninput={(e) => handleMarginChange('left', e)}
-						/>
+					<div class="margin-grid">
+						<div class="margin-input-group">
+							<label for="margin-top">Top</label>
+							<input
+								id="margin-top"
+								type="number"
+								min="0"
+								max="50"
+								step="1"
+								value={$pageSettings.margins.top}
+								oninput={(e) => handleMarginChange('top', e)}
+							/>
+						</div>
+						<div class="margin-input-group">
+							<label for="margin-right">Right</label>
+							<input
+								id="margin-right"
+								type="number"
+								min="0"
+								max="50"
+								step="1"
+								value={$pageSettings.margins.right}
+								oninput={(e) => handleMarginChange('right', e)}
+							/>
+						</div>
+						<div class="margin-input-group">
+							<label for="margin-bottom">Bottom</label>
+							<input
+								id="margin-bottom"
+								type="number"
+								min="0"
+								max="50"
+								step="1"
+								value={$pageSettings.margins.bottom}
+								oninput={(e) => handleMarginChange('bottom', e)}
+							/>
+						</div>
+						<div class="margin-input-group">
+							<label for="margin-left">Left</label>
+							<input
+								id="margin-left"
+								type="number"
+								min="0"
+								max="50"
+								step="1"
+								value={$pageSettings.margins.left}
+								oninput={(e) => handleMarginChange('left', e)}
+							/>
+						</div>
 					</div>
 				</div>
-			</div>
+			{/if}
 		{/if}
 	</div>
 </div>
@@ -242,6 +382,51 @@
 		box-shadow: var(--shadow-medium);
 	}
 
+	.margin-panel--inline {
+		position: relative;
+		width: min(320px, calc(100vw - 2rem));
+		max-height: min(70vh, 420px);
+		padding: 0.72rem;
+		overflow: auto;
+		z-index: 75;
+	}
+
+	.margin-panel-overlay {
+		position: fixed;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		padding: 1rem;
+		background: rgba(16, 24, 40, 0.24);
+		z-index: 74;
+	}
+
+	.margin-header--dialog {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-bottom: 0.55rem;
+	}
+
+	.margin-close-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		border: 1px solid var(--color-border-primary);
+		border-radius: 999px;
+		background: var(--color-bg-primary);
+		color: var(--color-text-secondary);
+		cursor: pointer;
+	}
+
+	.margin-close-btn svg {
+		width: 0.9rem;
+		height: 0.9rem;
+	}
+
 	.margin-header {
 		margin-bottom: 0.625rem;
 		padding-bottom: 0.5rem;
@@ -338,6 +523,10 @@
 			min-width: 200px;
 			max-width: calc(100vw - 2rem);
 			z-index: 50;
+		}
+
+		.margin-panel--inline {
+			width: min(320px, calc(100vw - 2rem));
 		}
 	}
 </style>
