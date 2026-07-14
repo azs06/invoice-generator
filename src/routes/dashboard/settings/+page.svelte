@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
+	import { page } from '$app/stores';
 	import type { PageData } from './$types';
 	import { currencies, type CurrencyCode } from '$lib/stores/currency';
 
 	let { data }: { data: PageData } = $props();
+
+	let isPro = $derived($page.data.tier === 'pro');
+	let justUpgraded = $derived($page.url.searchParams.get('upgraded') === '1');
 
 	let invoicePrefix = $state<string>(data.settings.invoicePrefix);
 	let preferredCurrency = $state<CurrencyCode>(data.settings.preferredCurrency as CurrencyCode);
@@ -156,20 +160,18 @@
 					</div>
 					<p class="section-description">{$_('settings.billing_description')}</p>
 				</div>
-				<div class="coming-soon-badge">
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<path
-							d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
-						/>
-					</svg>
-					{$_('settings.coming_soon')}
+				{#if justUpgraded}
+					<div class="billing-upgraded">{$_('settings.billing_upgraded')}</div>
+				{/if}
+				<div class="billing-status">
+					<span class="plan-pill" class:pro={isPro}>
+						{isPro ? $_('settings.billing_pro_plan') : $_('settings.billing_free_plan')}
+					</span>
+					{#if isPro}
+						<a class="billing-action" href="/api/billing/portal">{$_('settings.billing_manage')}</a>
+					{:else}
+						<a class="billing-action" href="/pricing">{$_('settings.billing_view_plans')}</a>
+					{/if}
 				</div>
 			</section>
 
@@ -400,19 +402,50 @@
 
 	.billing-section {
 		grid-column: 1 / -1;
-		border-style: dashed;
 	}
 
-	.coming-soon-badge {
+	.billing-upgraded {
+		margin-bottom: 0.75rem;
+		padding: 0.5rem 1rem;
+		border-radius: 0.5rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		background: color-mix(in srgb, var(--color-success, #16a34a) 12%, transparent);
+		color: var(--color-text-primary);
+	}
+
+	.billing-status {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.plan-pill {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 1rem;
-		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
+		padding: 0.4rem 0.9rem;
 		border-radius: 999px;
 		font-size: 0.8125rem;
 		font-weight: 600;
+		background: var(--color-bg-secondary, #f3f4f6);
+		color: var(--color-text-secondary);
+	}
+
+	.plan-pill.pro {
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
 		color: var(--color-accent-blue);
+	}
+
+	.billing-action {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-accent-blue);
+		text-decoration: none;
+	}
+
+	.billing-action:hover {
+		text-decoration: underline;
 	}
 
 	.save-section {

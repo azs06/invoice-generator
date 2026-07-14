@@ -6,6 +6,7 @@
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
 	import PageSettingsSelector from '$components/PageSettingsSelector.svelte';
+	import PaymentDetailsComponent from '$components/PaymentDetailsComponent.svelte';
 	import ViewModeToggle from '$components/ViewModeToggle.svelte';
 	import ThemeToggle from '$components/ThemeToggle.svelte';
 	import SignUpPromptModal from '$components/SignUpPromptModal.svelte';
@@ -37,6 +38,7 @@
 		InvoiceData,
 		InvoiceItem,
 		MonetaryAdjustment,
+		PaymentDetails,
 		SavedInvoiceRecord,
 		ShippingInfo
 	} from '$lib/types';
@@ -1088,6 +1090,11 @@
 		current.shipping = newShipping;
 	};
 
+	const onUpdatePaymentDetails = (value: PaymentDetails): void => {
+		const current = ensureInvoice();
+		current.paymentDetails = value;
+	};
+
 	const onUpdateLogo = (newFile: File | string | null): void => {
 		const current = ensureInvoice();
 		if (newFile instanceof File) {
@@ -1912,6 +1919,10 @@
 								{onInvoiceFromInput}
 								{onInvoiceNumberInput}
 								{onInvoiceLabelInput}
+							/>
+							<PaymentDetailsComponent
+								paymentDetails={invoice.paymentDetails}
+								onUpdate={onUpdatePaymentDetails}
 							/>
 						</div>
 					</section>

@@ -2,6 +2,8 @@ import puppeteer, { type PaperFormat } from '@cloudflare/puppeteer';
 import { error } from '@sveltejs/kit';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
 import { updateInvoicePdfKey } from '$lib/server/db';
+import { requirePro } from '$lib/server/entitlements';
+import { RATE_LIMITS, checkRateLimit } from '$lib/server/rateLimit';
 import { getBucket, requirePlatform } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 
@@ -23,6 +25,15 @@ export const POST: RequestHandler = async (event) => {
 	}
 
 	const env = requirePlatform(event);
+
+	// Server-side PDF is a Pro feature (no-op until MONETIZATION_ENABLED)
+	requirePro(event);
+
+	// Browser Rendering is billed per use - cap generations per user
+	const rateLimit = await checkRateLimit(env.DB, session.user.id, 'pdf', RATE_LIMITS.pdfGeneration);
+	if (!rateLimit.allowed) {
+		throw error(429, 'Too many requests: PDF generation limit reached. Please try again later.');
+	}
 
 	const { html, invoiceId, invoiceTo, pageSize, margins } = (await event.request.json()) as {
 		html: string;

@@ -1,6 +1,14 @@
 import { error, json } from '@sveltejs/kit';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
-import { createShareLink, getInvoice, getShareLinks, revokeShareLink } from '$lib/server/db';
+import {
+	countActiveShareLinks,
+	createShareLink,
+	getInvoice,
+	getShareLinks,
+	revokeShareLink
+} from '$lib/server/db';
+import { FREE_LIMITS, isMonetizationEnabled } from '$lib/server/entitlements';
+import { RATE_LIMITS, checkRateLimit } from '$lib/server/rateLimit';
 import { requireDB, requireSession } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 
@@ -13,6 +21,23 @@ export const POST: RequestHandler = async (event) => {
 	const invoiceId = event.params.id;
 	if (!isValidInvoiceId(invoiceId)) {
 		throw error(400, 'Invalid invoice ID');
+	}
+
+	// Cap share-link creation per user per day
+	const rateLimit = await checkRateLimit(db, session.user.id, 'share', RATE_LIMITS.shareLinkCreate);
+	if (!rateLimit.allowed) {
+		throw error(429, 'Too many requests: share link limit reached. Please try again later.');
+	}
+
+	// Free tier: cap concurrent active share links (no-op until MONETIZATION_ENABLED)
+	if (isMonetizationEnabled(event) && event.locals.tier !== 'pro') {
+		const activeLinks = await countActiveShareLinks(db, session.user.id);
+		if (activeLinks >= FREE_LIMITS.activeShareLinks) {
+			throw error(
+				402,
+				`Free accounts can have up to ${FREE_LIMITS.activeShareLinks} active share links. Upgrade to Pro for unlimited sharing.`
+			);
+		}
 	}
 
 	// Get the invoice to extract due date

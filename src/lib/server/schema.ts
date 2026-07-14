@@ -88,6 +88,22 @@ export const linkViews = sqliteTable('link_views', {
 	userAgent: text('userAgent')
 });
 
+export const subscriptions = sqliteTable('subscriptions', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.unique()
+		.references(() => user.id),
+	provider: text('provider').notNull(), // 'polar' | 'sslcommerz' | 'bkash' | 'manual'
+	providerCustomerId: text('providerCustomerId'),
+	providerSubscriptionId: text('providerSubscriptionId'),
+	plan: text('plan').notNull(), // 'pro_monthly' | 'pro_annual' | 'lifetime'
+	status: text('status').notNull(), // 'active' | 'canceled' | 'past_due' | 'trialing'
+	currentPeriodEnd: integer('currentPeriodEnd', { mode: 'timestamp' }),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
+});
+
 export const userSettings = sqliteTable('user_settings', {
 	id: text('id').primaryKey(),
 	userId: text('userId')

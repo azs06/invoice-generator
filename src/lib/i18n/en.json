@@ -244,5 +244,16 @@
 		"invoices_imported": "invoice(s) imported successfully",
 		"invoices_skipped": "invoice(s) skipped",
 		"done": "Done"
+	},
+	"upgrade": {
+		"pro_badge": "Pro",
+		"title": "Upgrade to FreeInvoice Pro",
+		"template_locked": "This template is available on the Pro plan.",
+		"description": "Unlock everything with Pro:",
+		"benefit_templates": "All premium invoice templates",
+		"benefit_pdf": "High-quality server-side PDFs",
+		"benefit_sharing": "Unlimited active share links",
+		"upgrade_button": "See Pro plans",
+		"maybe_later": "Maybe later"
 	}
 }

@@ -308,6 +308,7 @@
 	}
 
 	.selector-control {
+		-webkit-appearance: none;
 		appearance: none;
 		border: none;
 		background: transparent;
@@ -484,8 +485,9 @@
 	}
 
 	.margin-input-group input[type='number'] {
-		appearance: textfield;
+		-webkit-appearance: textfield;
 		-moz-appearance: textfield;
+		appearance: textfield;
 	}
 
 	.btn-label {
@@ -528,5 +530,9 @@
 		.margin-panel--inline {
 			width: min(320px, calc(100vw - 2rem));
 		}
+	}
+
+	.selector-control::-ms-expand {
+		display: none;
 	}
 </style>

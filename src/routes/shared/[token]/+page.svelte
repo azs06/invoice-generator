@@ -90,12 +90,14 @@
 			<InvoicePreviewComponent {invoice} />
 		</main>
 
-		<footer class="shared-footer">
-			<p>
-				This invoice was shared via <a href="/">FreeInvoice.info</a> - Create professional invoices for
-				free.
-			</p>
-		</footer>
+		{#if !data.hideBadge}
+			<footer class="shared-footer">
+				<p>
+					This invoice was shared via <a href="/">FreeInvoice.info</a> - Create professional invoices
+					for free.
+				</p>
+			</footer>
+		{/if}
 	</div>
 {:else}
 	<div class="error-page">

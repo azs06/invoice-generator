@@ -2,6 +2,7 @@ import type { Handle } from '@sveltejs/kit';
 import { redirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
+import { getTier } from '$lib/server/entitlements';
 import { session as sessionTable } from '$lib/server/schema';
 import {
 	checkUserStatus,
@@ -28,6 +29,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Attempt to get session - will return null if platform bindings unavailable
 	const session = await getSession(event);
 	event.locals.session = session;
+	event.locals.tier =
+		session && event.platform?.env?.DB
+			? await getTier(event.platform.env.DB, session.user.id)
+			: 'free';
 
 	// Check if user is banned or deleted
 	if (session && event.platform?.env?.DB) {

@@ -112,6 +112,10 @@
 		void goto(href);
 	};
 
+	const stopPointer = (event: PointerEvent): void => {
+		event.stopPropagation();
+	};
+
 	const closeMenus = () => {
 		closeProfileMenu();
 		closeMobileSheets();
@@ -136,7 +140,7 @@
 <svelte:window onpointerdown={closeMenus} onkeydown={handleGlobalKeydown} />
 
 <header class="app-header">
-	<div class="header-inner app-container" onpointerdown={(event) => event.stopPropagation()}>
+	<div class="header-inner app-container" role="presentation" onpointerdown={stopPointer}>
 		<div class="header-left">
 			<a href="/" class="brand-link">
 				<span class="brand-main">{$_('app.title')}</span>
@@ -212,7 +216,7 @@
 					</button>
 
 					{#if showProfileMenu}
-						<div class="profile-dropdown" onpointerdown={(event) => event.stopPropagation()}>
+						<div class="profile-dropdown" role="presentation" onpointerdown={stopPointer}>
 							<div class="dropdown-header">
 								<span class="user-name">{$session.data.user.name || 'User'}</span>
 								<span class="user-email">{$session.data.user.email}</span>

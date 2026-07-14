@@ -244,5 +244,16 @@
 		"invoices_imported": "টি ইনভয়েস সফলভাবে ইমপোর্ট হয়েছে",
 		"invoices_skipped": "টি ইনভয়েস বাদ দেওয়া হয়েছে",
 		"done": "সম্পন্ন"
+	},
+	"upgrade": {
+		"pro_badge": "প্রো",
+		"title": "FreeInvoice প্রো-তে আপগ্রেড করুন",
+		"template_locked": "এই টেমপ্লেটটি প্রো প্ল্যানে উপলব্ধ।",
+		"description": "প্রো দিয়ে সবকিছু আনলক করুন:",
+		"benefit_templates": "সব প্রিমিয়াম ইনভয়েস টেমপ্লেট",
+		"benefit_pdf": "উচ্চ মানের সার্ভার-সাইড পিডিএফ",
+		"benefit_sharing": "সীমাহীন সক্রিয় শেয়ার লিঙ্ক",
+		"upgrade_button": "প্রো প্ল্যান দেখুন",
+		"maybe_later": "পরে দেখব"
 	}
 }

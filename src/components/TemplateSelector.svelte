@@ -1,10 +1,25 @@
 <script lang="ts">
+	import { page } from '$app/stores';
+	import { _ } from 'svelte-i18n';
+	import UpgradePromptModal from './UpgradePromptModal.svelte';
 	import { TEMPLATE_OPTIONS, selectedTemplateId, setTemplateId } from '../stores/templateStore.js';
 	let availableTemplates = $derived(TEMPLATE_OPTIONS);
+
+	let gatingActive = $derived(
+		$page.data.monetizationEnabled === true && $page.data.tier !== 'pro'
+	);
+	let showUpgradeModal = $state(false);
 
 	const handleChange = (event: Event): void => {
 		const target = event.currentTarget;
 		if (!(target instanceof HTMLSelectElement)) {
+			return;
+		}
+		const option = TEMPLATE_OPTIONS.find((t) => t.id === target.value);
+		if (gatingActive && option?.premium) {
+			// Revert selection and prompt to upgrade instead
+			target.value = $selectedTemplateId;
+			showUpgradeModal = true;
 			return;
 		}
 		setTemplateId(target.value);
@@ -22,11 +37,17 @@
 	>
 		{#each availableTemplates as option}
 			<option value={option.id}>
-				{option.label}
+				{option.label}{gatingActive && option.premium ? ` — ${$_('upgrade.pro_badge')}` : ''}
 			</option>
 		{/each}
 	</select>
 </div>
+
+<UpgradePromptModal
+	open={showUpgradeModal}
+	message={$_('upgrade.template_locked')}
+	onClose={() => (showUpgradeModal = false)}
+/>
 
 <style>
 	.template-selector {

@@ -1,9 +1,9 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
-import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { v4 as uuidv4 } from 'uuid';
 import type { InvoiceData, SavedInvoiceRecord } from '$lib/types';
-import { invoices, linkViews, sharedLinks, userSettings } from './schema';
+import { invoices, linkViews, sharedLinks, subscriptions, userSettings } from './schema';
 
 const INVOICE_LIMIT = 10;
 const SHARE_LINK_DEFAULT_DAYS = 30;
@@ -388,6 +388,97 @@ export async function getShareLinks(
 }
 
 /**
+ * Count a user's active (non-revoked, non-expired) share links across all invoices
+ */
+export async function countActiveShareLinks(db: D1Database, userId: string): Promise<number> {
+	const d1 = drizzle(db);
+
+	const result = await d1
+		.select({ count: count() })
+		.from(sharedLinks)
+		.innerJoin(invoices, eq(sharedLinks.invoiceId, invoices.id))
+		.where(
+			and(
+				eq(invoices.userId, userId),
+				eq(sharedLinks.revoked, false),
+				gt(sharedLinks.expiresAt, new Date())
+			)
+		)
+		.get();
+
+	return result?.count ?? 0;
+}
+
+export interface SubscriptionUpsert {
+	userId: string;
+	provider: string;
+	providerCustomerId: string | null;
+	providerSubscriptionId: string | null;
+	plan: string;
+	status: string;
+	currentPeriodEnd: Date | null;
+}
+
+/**
+ * Insert or update a user's subscription (unique per userId).
+ *
+ * A user has at most one subscription row. Lifetime purchases are terminal:
+ * once a user holds an active lifetime plan, later subscription.* events
+ * (e.g. an old monthly sub being revoked) must not overwrite it and demote
+ * the user, so we short-circuit before touching the row.
+ */
+export async function upsertSubscription(
+	db: D1Database,
+	data: SubscriptionUpsert
+): Promise<void> {
+	const d1 = drizzle(db);
+	const now = new Date();
+
+	const existing = await d1
+		.select({ plan: subscriptions.plan, status: subscriptions.status })
+		.from(subscriptions)
+		.where(eq(subscriptions.userId, data.userId))
+		.get();
+
+	// Never downgrade an active lifetime entitlement.
+	if (
+		existing &&
+		existing.plan === 'lifetime' &&
+		existing.status === 'active' &&
+		data.plan !== 'lifetime'
+	) {
+		return;
+	}
+
+	await d1
+		.insert(subscriptions)
+		.values({
+			id: uuidv4(),
+			userId: data.userId,
+			provider: data.provider,
+			providerCustomerId: data.providerCustomerId,
+			providerSubscriptionId: data.providerSubscriptionId,
+			plan: data.plan,
+			status: data.status,
+			currentPeriodEnd: data.currentPeriodEnd,
+			createdAt: now,
+			updatedAt: now
+		})
+		.onConflictDoUpdate({
+			target: subscriptions.userId,
+			set: {
+				provider: data.provider,
+				providerCustomerId: data.providerCustomerId,
+				providerSubscriptionId: data.providerSubscriptionId,
+				plan: data.plan,
+				status: data.status,
+				currentPeriodEnd: data.currentPeriodEnd,
+				updatedAt: now
+			}
+		});
+}
+
+/**
  * Revoke a share link
  */
 export async function revokeShareLink(
@@ -433,7 +524,7 @@ export async function revokeShareLink(
 export async function getInvoiceByShareToken(
 	db: D1Database,
 	token: string
-): Promise<{ invoice: InvoiceData; linkId: string } | null> {
+): Promise<{ invoice: InvoiceData; linkId: string; ownerId: string } | null> {
 	const d1 = drizzle(db);
 
 	const link = await d1.select().from(sharedLinks).where(eq(sharedLinks.token, token)).get();
@@ -460,7 +551,8 @@ export async function getInvoiceByShareToken(
 
 	return {
 		invoice: JSON.parse(invoice.data) as InvoiceData,
-		linkId: link.id
+		linkId: link.id,
+		ownerId: invoice.userId
 	};
 }
 

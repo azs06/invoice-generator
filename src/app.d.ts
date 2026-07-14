@@ -8,6 +8,7 @@ declare global {
 		// interface Error {}
 		interface Locals {
 			session: { session: Session; user: User } | null;
+			tier: 'pro' | 'free';
 		}
 		// interface PageData {}
 		// interface PageState {}
@@ -33,9 +34,18 @@ declare global {
 		BROWSER: Fetcher;
 		// Environment variables (set in wrangler.toml [vars])
 		SUPER_ADMIN_EMAILS: string;
+		// Pro gating feature flag ("true" | "false"); see docs/MONETIZATION.md
+		MONETIZATION_ENABLED: string;
 		// Auth secrets (set via wrangler secret put)
 		GOOGLE_CLIENT_ID: string;
 		GOOGLE_CLIENT_SECRET: string;
 		BETTER_AUTH_SECRET: string;
+		// Polar billing (set via wrangler secret put); inert until provisioned
+		POLAR_ACCESS_TOKEN?: string;
+		POLAR_WEBHOOK_SECRET?: string;
+		POLAR_SERVER?: string; // 'sandbox' | 'production'
+		POLAR_PRODUCT_PRO_MONTHLY?: string;
+		POLAR_PRODUCT_PRO_ANNUAL?: string;
+		POLAR_PRODUCT_LIFETIME?: string;
 	}
 }

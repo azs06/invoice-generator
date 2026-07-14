@@ -51,8 +51,21 @@ export interface InvoiceData {
 	subTotal: number;
 	balanceDue: number;
 	templateId: string;
+	paymentDetails?: PaymentDetails;
 	draft?: boolean;
 	draftName?: string;
+}
+
+/**
+ * User-provided "pay this invoice" details shown on the shared invoice page.
+ * v1 is zero-liability: `payUrl` is any payment link the user already has
+ * (Stripe Payment Link, PayPal.me, Wise, bKash, bank portal, etc.) —
+ * FreeInvoice only renders the link and never processes the payment.
+ */
+export interface PaymentDetails {
+	enabled: boolean;
+	payUrl: string;
+	instructions: string;
 }
 
 export type SavedInvoicesFilterMode = 'all' | 'draft' | 'finalized';

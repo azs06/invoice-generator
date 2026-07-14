@@ -22,6 +22,8 @@ binding = "BROWSER"
 
 [vars]
 SUPER_ADMIN_EMAILS = "atik.aiub@gmail.com"
+# Pro gating feature flag - keep "false" until Polar billing launches
+MONETIZATION_ENABLED = "false"
 
 # Secrets (set via: wrangler secret put <SECRET_NAME>):
 # - GOOGLE_CLIENT_ID
