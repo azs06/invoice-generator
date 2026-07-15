@@ -166,24 +166,24 @@ Add a `paymentDetails` field to the invoice object: users paste their own Stripe
 
 ### Phase 0 — Prerequisites (do before charging anyone) — ~1 week
 
-- [ ] Fix `npm run check` (dashboard comma-operator error) and the a11y warnings; make CI green a hard rule
-- [ ] Add rate limiting/quotas on `/api/pdf`, `/api/invoices/[id]/share`, and R2 writes (Cloudflare rate limiting rules or a D1/DO counter) — cost protection is needed *today*, independent of monetization
+- [x] Fix `npm run check` — passes with 0 errors / 0 warnings
+- [x] Rate limiting/quotas — D1-counter based (`src/lib/server/rateLimit.ts`): PDF 20/hr, share links 30/day, invoice saves 100/hr, email 20/day, AI fill 30/day, per user
 - [x] Add privacy-friendly analytics — **Cloudflare Web Analytics** beacon (page-level, already in `src/app.html`) + **Workers Analytics Engine** for custom funnel events (Web Analytics cannot record custom events). Events are written via `env.METRICS.writeDataPoint` through the fail-open helper `src/lib/server/analytics.ts` (`trackEvent`) to the `analytics_engine_datasets` binding `METRICS` → dataset **`invoice_events`** (see wrangler.toml). Server-side events fire at the endpoints (signup, invoice_created, pdf_generated/downloaded, share_created, email_sent [source user vs cron], recurring_created, reminder_created/sent, client_created, ai_fill_used, checkout_started, and the highest-signal **gate_blocked** in `entitlements.ts`); guest-side browser events (guest_invoice_created, guest_pdf_downloaded, signup_prompt_shown, upgrade_prompt_shown) beacon through `POST /api/track` via `src/lib/analytics.ts`. **No PII** — no user ids, emails, IPs, or invoice content; per-user questions are answered at cohort level from aggregate counts. See CLAUDE.md → Analytics for the full event taxonomy and how to query. Analytics is **not** gated by `MONETIZATION_ENABLED` — it records for everyone.
-- [ ] Update CLAUDE.md/AGENTS.md to describe the real architecture; archive PLAN.md
-- [ ] **Create a Polar.sh account (sandbox + production) and verify payout eligibility from Bangladesh**; only pursue a US LLC / entity if payouts are blocked — the entity is otherwise only needed for Stripe Connect in Phase 4
+- [x] Update CLAUDE.md/AGENTS.md to describe the real architecture; PLAN.md archived to `docs/archive/`
+- [x] **Polar.sh account created and Bangladesh payout eligibility CONFIRMED working** — the plan's #1 risk is resolved; no US LLC needed for Pro billing
 
 ### Phase 1 — Entitlements + first paid gate — ~1–2 weeks
 
-- [ ] `subscriptions` table + `locals.tier` + `requirePro()` helper
+- [x] `subscriptions` table + `locals.tier` (derived in `hooks.server.ts` via `getTier`) + `requirePro()` in `src/lib/server/entitlements.ts` — all gates no-op while `MONETIZATION_ENABLED="false"` (dark launch)
 - ~~Enforce template premium flags~~ — **dropped 2026-07-14**: all templates stay free (they don't sell Pro; workflow features do)
-- [ ] Gate server-side PDF and share-link limits; add "Made with FreeInvoice" badge to shared pages (Pro removes it)
-- [ ] Grandfather all existing users' saved invoices (never lock away existing data)
+- [x] Server-side PDF gated; free tier limited to 3 active share links; "Made with FreeInvoice" badge on shared pages (Pro removes it)
+- [x] Grandfathering: cloud-invoice quota applies to creates only, and the payment-link gate blocks only *newly enabling* — existing data is never locked (see `enforceInvoiceSaveGates`)
 
 ### Phase 2 — Billing (Polar) — ~1–2 weeks
 
 - [ ] Polar products (Pro Monthly, Pro Annual, Lifetime) in sandbox, then production
-- [ ] Integrate `@polar-sh/better-auth` plugin (or hand-rolled `/api/billing/*` routes with `@polar-sh/sdk`): checkout, webhook → `subscriptions` upsert, hosted customer portal
-- [ ] Billing UI in settings; pricing page; upgrade modals at every gate
+- [x] `/api/billing/{checkout,portal,webhook}` routes: checkout, webhook → `subscriptions` upsert (never downgrades an active lifetime plan), hosted customer portal — activation-blocked until `POLAR_ACCESS_TOKEN`/`POLAR_WEBHOOK_SECRET` + product ids are set (see `docs/POLAR_SETUP.md`)
+- [x] Billing section in settings; pricing page; `UpgradePromptModal` at the gates
 - [ ] Launch lifetime deal + annual plan; announce
 
 ### Phase 3 — The features people pay for — ~4–6 weeks
