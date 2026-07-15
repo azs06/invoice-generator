@@ -30,10 +30,20 @@ export const POST: RequestHandler = async (event) => {
 	// Server-side PDF is a Pro feature (no-op until MONETIZATION_ENABLED)
 	requirePro(event);
 
-	// Browser Rendering is billed per use - cap generations per user
+	// Browser Rendering is billed per use - cap generations per user,
+	// hourly (burst) and monthly (cost-exposure ceiling, see COST_ANALYSIS.md)
 	const rateLimit = await checkRateLimit(env.DB, session.user.id, 'pdf', RATE_LIMITS.pdfGeneration);
 	if (!rateLimit.allowed) {
 		throw error(429, 'Too many requests: PDF generation limit reached. Please try again later.');
+	}
+	const monthlyLimit = await checkRateLimit(
+		env.DB,
+		session.user.id,
+		'pdf_month',
+		RATE_LIMITS.pdfGenerationMonthly
+	);
+	if (!monthlyLimit.allowed) {
+		throw error(429, 'Monthly PDF generation limit reached. Please try again next month.');
 	}
 
 	const { html, invoiceId, invoiceTo, pageSize, margins } = (await event.request.json()) as {
