@@ -62,6 +62,9 @@ declare global {
 		BUCKET: R2Bucket;
 		// Browser Rendering for PDF generation
 		BROWSER: Fetcher;
+		// Workers AI (POST /api/ai/invoice-from-text); absent in plain dev.
+		// `Ai` is a global from @cloudflare/workers-types.
+		AI: Ai;
 		// Cloudflare Email Sending (send_email binding); absent in plain dev
 		EMAIL?: EmailSendBinding;
 		// Environment variables (set in wrangler.toml [vars])

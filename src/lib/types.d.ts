@@ -68,6 +68,25 @@ export interface PaymentDetails {
 	instructions: string;
 }
 
+/**
+ * Structured invoice fields extracted from free-form text by the "AI invoice
+ * from text" endpoint (POST /api/ai/invoice-from-text). Server-validated before
+ * it reaches the client; the editor merges only the parts that are present.
+ */
+export interface ExtractedInvoiceItem {
+	description: string;
+	quantity: number;
+	rate: number;
+}
+
+export interface ExtractedInvoice {
+	clientName: string;
+	clientDetails: string;
+	items: ExtractedInvoiceItem[];
+	dueDate: string | null;
+	notes: string;
+}
+
 export type SavedInvoicesFilterMode = 'all' | 'draft' | 'finalized';
 
 export interface SavedInvoiceRecord {

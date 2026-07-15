@@ -11,6 +11,8 @@
 	import ThemeToggle from '$components/ThemeToggle.svelte';
 	import SignUpPromptModal from '$components/SignUpPromptModal.svelte';
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
+	import AiFillModal from '$components/AiFillModal.svelte';
+	import UpgradePromptModal from '$components/UpgradePromptModal.svelte';
 	import CurrencySelector from '$components/CurrencySelector.svelte';
 	import LanguageSelector from '$components/LanguageSelector.svelte';
 	import MobileBottomSheet from '$components/mobile/MobileBottomSheet.svelte';
@@ -35,6 +37,7 @@
 	import { pageSettings, currentPageDimensions, viewMode } from '../stores/pageSettingsStore.js';
 	import { getTemplate } from '$lib/templates/registry';
 	import type {
+		ExtractedInvoice,
 		InvoiceData,
 		InvoiceItem,
 		MonetaryAdjustment,
@@ -79,6 +82,8 @@
 	let showLimitWarning = $state<boolean>(false);
 	let showSignUpPrompt = $state<boolean>(false);
 	let showShareModal = $state<boolean>(false);
+	let showAiFillModal = $state<boolean>(false);
+	let showUpgradePrompt = $state<boolean>(false);
 	let showFileMenu = $state<boolean>(false);
 	let showProfileMenu = $state<boolean>(false);
 	let showMobileActionsSheet = $state<boolean>(false);
@@ -1095,6 +1100,44 @@
 		current.paymentDetails = value;
 	};
 
+	// AI invoice-from-text: merge the server-validated extraction into the
+	// current invoice. Only fields the extraction actually found are applied;
+	// sender info, template, logo, numbering, tax/discount, etc. are untouched.
+	const applyAiExtraction = (result: ExtractedInvoice): void => {
+		const current = ensureInvoice();
+
+		// Bill-to: combine name + detail lines into the single invoiceTo field.
+		const billToLines = [result.clientName, result.clientDetails]
+			.map((line) => line.trim())
+			.filter(Boolean);
+		if (billToLines.length > 0) {
+			current.invoiceTo = billToLines.join('\n');
+		}
+
+		// Line items: replace only when the AI extracted at least one.
+		if (result.items.length > 0) {
+			current.items = result.items.map((item) => ({
+				name: item.description,
+				quantity: item.quantity,
+				price: item.rate,
+				amount: item.quantity * item.rate
+			}));
+		}
+
+		if (result.dueDate) {
+			current.dueDate = result.dueDate;
+			userEditedDueDate = true;
+		}
+
+		if (result.notes.trim()) {
+			current.notes = result.notes.trim();
+		}
+	};
+
+	const openAiFillModal = (): void => {
+		showAiFillModal = true;
+	};
+
 	const onUpdateLogo = (newFile: File | string | null): void => {
 		const current = ensureInvoice();
 		if (newFile instanceof File) {
@@ -1351,6 +1394,14 @@
 											onclick={() => void runFileMenuAction(() => startNewInvoice())}
 										>
 											New invoice
+										</button>
+										<button
+											type="button"
+											class="docs-menu-option"
+											role="menuitem"
+											onclick={() => void runFileMenuAction(() => openAiFillModal())}
+										>
+											{$_('ai.menu_label')}
 										</button>
 										<button
 											type="button"
@@ -1962,6 +2013,24 @@
 {#if showShareModal && invoice}
 	<ShareInvoiceModal invoiceId={invoice.id} {invoice} onClose={() => (showShareModal = false)} />
 {/if}
+
+<!-- AI invoice-from-text Modal -->
+{#if showAiFillModal}
+	<AiFillModal
+		isSignedIn={Boolean($session.data)}
+		onApply={applyAiExtraction}
+		onClose={() => (showAiFillModal = false)}
+		onSignIn={() => void signIn()}
+		onUpgrade={() => (showUpgradePrompt = true)}
+	/>
+{/if}
+
+<!-- Upgrade Prompt Modal (triggered by Pro-gated AI extraction) -->
+<UpgradePromptModal
+	open={showUpgradePrompt}
+	message={$_('ai.error_upgrade')}
+	onClose={() => (showUpgradePrompt = false)}
+/>
 
 <!-- Save Draft Modal -->
 

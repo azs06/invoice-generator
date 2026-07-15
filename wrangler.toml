@@ -28,6 +28,12 @@ preview_bucket_name = "invoice-bucket-preview"
 [browser]
 binding = "BROWSER"
 
+# Workers AI - "AI invoice from text" (POST /api/ai/invoice-from-text).
+# Metered per inference; the endpoint is Pro-gated and rate-limited. Absent in
+# plain `npm run dev`, so the endpoint returns 503 there (use `npm run dev:cf`).
+[ai]
+binding = "AI"
+
 # Cloudflare Email Sending - invoice emails (POST /api/invoices/[id]/email).
 # Destination is intentionally unrestricted (users email arbitrary clients).
 # Requires one-time onboarding of the sender domain freeinvoice.info via

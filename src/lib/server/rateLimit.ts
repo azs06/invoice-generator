@@ -21,7 +21,9 @@ export const RATE_LIMITS = {
 	/** Invoice saves write to D1 (and R2 for logos) - cap per user per hour. */
 	invoiceSave: { limit: 100, windowSeconds: 60 * 60 } satisfies RateLimitConfig,
 	/** Email delivery is metered (Cloudflare Email Sending) - cap per user per day. */
-	emailSend: { limit: 20, windowSeconds: 24 * 60 * 60 } satisfies RateLimitConfig
+	emailSend: { limit: 20, windowSeconds: 24 * 60 * 60 } satisfies RateLimitConfig,
+	/** Workers AI inference is metered - cap "AI invoice from text" per user per day. */
+	aiInvoice: { limit: 30, windowSeconds: 24 * 60 * 60 } satisfies RateLimitConfig
 } as const;
 
 /**

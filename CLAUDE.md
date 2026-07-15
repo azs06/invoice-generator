@@ -17,7 +17,7 @@ FreeInvoice.info — a SvelteKit 2.x invoice generator using Svelte 5 runes, dep
 - **Client PDF**: html2pdf.js (guest/local fallback, `src/lib/pdfGenerator.ts`)
 - **Local storage**: IndexedDB via `idb-keyval` (`src/lib/localDb.ts`; `src/lib/guestDb.ts` is a deprecated re-export)
 - **i18n**: svelte-i18n, English (`en.json`) + Bengali (`bn.json`) in `src/lib/i18n/`
-- **Deployment**: `@sveltejs/adapter-cloudflare` → Cloudflare Workers, config in `wrangler.toml` (bindings: `DB` = D1, `BUCKET` = R2, `BROWSER` = Browser Rendering, `EMAIL` = Email Sending (`send_email`), `ASSETS`; secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`; var: `SUPER_ADMIN_EMAILS`)
+- **Deployment**: `@sveltejs/adapter-cloudflare` → Cloudflare Workers, config in `wrangler.toml` (bindings: `DB` = D1, `BUCKET` = R2, `BROWSER` = Browser Rendering, `EMAIL` = Email Sending (`send_email`), `AI` = Workers AI (`[ai]`), `ASSETS`; secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`; var: `SUPER_ADMIN_EMAILS`)
 
 ## Development Commands
 
@@ -76,6 +76,7 @@ API endpoints (`src/routes/api/`):
 - `api/auth/[...all]` — Better Auth handler
 - `api/invoices` (GET/POST), `api/invoices/[id]` (GET/PUT/DELETE), `api/invoices/[id]/archive`, `api/invoices/[id]/download` (PDF from R2), `api/invoices/[id]/share` (share link management), `api/invoices/[id]/email` (POST — send invoice via Cloudflare Email Sending; Pro-gated, rate-limited, attaches R2 PDF if present; returns 503 without the `EMAIL` binding)
 - `api/pdf` — server-side PDF generation (auth required)
+- `api/ai/invoice-from-text` (POST — body `{ text }`, 20–4000 chars) — extract structured invoice fields (bill-to, items, due date, notes) from free-form text via Cloudflare Workers AI (`env.AI.run`, model `@cf/google/gemma-4-26b-a4b-it`); Pro-gated, rate-limited 30/day, returns 503 without the `AI` binding. Output is prompted-JSON, parsed + schema-validated server-side (`src/lib/server/aiInvoice.ts`) — raw model text is never returned; the editor merges the result via a preview/apply step (`AiFillModal.svelte`)
 - `api/recurring` (GET list / POST create — Pro-gated create), `api/recurring/[id]` (PUT update / DELETE) — recurring invoice schedules; validates `frequency` + `recipientEmail`
 - `api/reminders` (GET list / POST create — Pro-gated create), `api/reminders/[id]` (PUT update / DELETE) — overdue-invoice reminders; ownership-checked, validates `recipientEmail` + `remindAfterDays` (1–90), one config per invoice
 - `api/clients` (GET list / POST create — Pro-gated create), `api/clients/[id]` (PUT update / DELETE) — client address book; ownership-checked, validates `name` + optional `email`
