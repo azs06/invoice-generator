@@ -17,26 +17,52 @@
 	);
 	let isSending = $state<boolean>(false);
 	let error = $state<string | null>(null);
+	let successMessage = $state<string | null>(null);
 
 	const validateEmail = (email: string): boolean => {
 		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 	};
 
+	const messageForStatus = (status: number): string => {
+		if (status === 401) return $_('email_modal.error_auth');
+		if (status === 402) return $_('email_modal.error_upgrade');
+		if (status === 429) return $_('email_modal.error_rate_limit');
+		if (status === 503) return $_('email_modal.error_unavailable');
+		return $_('email_modal.error_generic');
+	};
+
 	const handleSend = async () => {
-		if (!validateEmail(recipientEmail)) {
-			error = 'Please enter a valid email address';
+		const to = recipientEmail.trim();
+		if (!validateEmail(to)) {
+			error = $_('email_modal.error_invalid_email');
 			return;
 		}
 
 		isSending = true;
 		error = null;
 
-		// Simulate sending - actual implementation will come later
-		await new Promise((resolve) => setTimeout(resolve, 1000));
+		try {
+			const res = await fetch(`/api/invoices/${invoiceId}/email`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ to, subject: subject.trim(), message: message.trim() })
+			});
 
-		isSending = false;
-		alert($_('email_modal.not_implemented') || 'Email sending will be available in a future update.');
-		onClose();
+			if (!res.ok) {
+				error = messageForStatus(res.status);
+				return;
+			}
+
+			const data = (await res.json().catch(() => ({}))) as { attached?: boolean };
+			successMessage = $_(
+				data.attached ? 'email_modal.success_with_pdf' : 'email_modal.success_no_pdf',
+				{ values: { email: to } }
+			);
+		} catch {
+			error = $_('email_modal.error_generic');
+		} finally {
+			isSending = false;
+		}
 	};
 
 	const handleBackdropClick = (event: MouseEvent): void => {
@@ -77,76 +103,86 @@
 		</header>
 
 		<div class="modal-body">
-			{#if error}
-				<div class="error-message">{error}</div>
-			{/if}
+			{#if successMessage}
+				<div class="success-state">
+					<div class="success-icon" aria-hidden="true">
+						<svg viewBox="0 0 20 20" fill="currentColor">
+							<path
+								fill-rule="evenodd"
+								d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</div>
+					<h3>{$_('email_modal.success_title')}</h3>
+					<p>{successMessage}</p>
+				</div>
+			{:else}
+				{#if error}
+					<div class="error-message">{error}</div>
+				{/if}
 
-			<div class="form-group">
-				<label for="recipient-email">{$_('email_modal.recipient_email') || 'Recipient Email'}</label>
-				<input
-					id="recipient-email"
-					type="email"
-					bind:value={recipientEmail}
-					placeholder={$_('email_modal.recipient_email_placeholder') || 'client@example.com'}
-					class="form-input"
-					class:error={error && !validateEmail(recipientEmail)}
-				/>
-			</div>
-
-			<div class="form-group">
-				<label for="email-subject">{$_('email_modal.subject') || 'Subject'}</label>
-				<input
-					id="email-subject"
-					type="text"
-					bind:value={subject}
-					placeholder={$_('email_modal.subject_placeholder') || 'Invoice #123'}
-					class="form-input"
-				/>
-			</div>
-
-			<div class="form-group">
-				<label for="email-message">{$_('email_modal.message') || 'Message (optional)'}</label>
-				<textarea
-					id="email-message"
-					bind:value={message}
-					placeholder={$_('email_modal.message_placeholder') || 'Add a personal message...'}
-					class="form-textarea"
-					rows="5"
-				></textarea>
-			</div>
-
-			<div class="coming-soon-notice">
-				<svg viewBox="0 0 20 20" fill="currentColor">
-					<path
-						fill-rule="evenodd"
-						d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z"
-						clip-rule="evenodd"
+				<div class="form-group">
+					<label for="recipient-email">{$_('email_modal.recipient_email') || 'Recipient Email'}</label>
+					<input
+						id="recipient-email"
+						type="email"
+						bind:value={recipientEmail}
+						placeholder={$_('email_modal.recipient_email_placeholder') || 'client@example.com'}
+						class="form-input"
 					/>
-				</svg>
-				<span>{$_('email_modal.not_implemented') || 'Email sending will be available in a future update.'}</span>
-			</div>
+				</div>
+
+				<div class="form-group">
+					<label for="email-subject">{$_('email_modal.subject') || 'Subject'}</label>
+					<input
+						id="email-subject"
+						type="text"
+						bind:value={subject}
+						placeholder={$_('email_modal.subject_placeholder') || 'Invoice #123'}
+						class="form-input"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="email-message">{$_('email_modal.message') || 'Message (optional)'}</label>
+					<textarea
+						id="email-message"
+						bind:value={message}
+						placeholder={$_('email_modal.message_placeholder') || 'Add a personal message...'}
+						class="form-textarea"
+						rows="5"
+					></textarea>
+				</div>
+			{/if}
 		</div>
 
 		<footer class="modal-footer">
-			<button class="cancel-button" onclick={onClose} disabled={isSending}>
-				{$_('email_modal.cancel') || 'Cancel'}
-			</button>
-			<button
-				class="send-button"
-				onclick={handleSend}
-				disabled={isSending || !recipientEmail}
-			>
-				{#if isSending}
-					<span class="spinner"></span>
-					{$_('email_modal.sending') || 'Sending...'}
-				{:else}
-					<svg viewBox="0 0 20 20" fill="currentColor">
-						<path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z" />
-						<path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z" />
-					</svg>
-					{$_('email_modal.send') || 'Send Email'}
-				{/if}
-			</button>
+			{#if successMessage}
+				<button class="send-button" onclick={onClose}>
+					{$_('email_modal.close') || 'Close'}
+				</button>
+			{:else}
+				<button class="cancel-button" onclick={onClose} disabled={isSending}>
+					{$_('email_modal.cancel') || 'Cancel'}
+				</button>
+				<button
+					class="send-button"
+					onclick={handleSend}
+					disabled={isSending || !recipientEmail}
+				>
+					{#if isSending}
+						<span class="spinner"></span>
+						{$_('email_modal.sending') || 'Sending...'}
+					{:else}
+						<svg viewBox="0 0 20 20" fill="currentColor">
+							<path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z" />
+							<path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z" />
+						</svg>
+						{$_('email_modal.send') || 'Send Email'}
+					{/if}
+				</button>
+			{/if}
 		</footer>
 	</div>
 </div>
@@ -284,34 +320,49 @@
 		border-color: var(--color-accent-blue);
 	}
 
-	.form-input.error {
-		border-color: #ef4444;
-	}
-
 	.form-textarea {
 		resize: vertical;
 		min-height: 100px;
 		font-family: inherit;
 	}
 
-	.coming-soon-notice {
+	.success-state {
 		display: flex;
-		align-items: flex-start;
-		gap: 0.625rem;
-		padding: 0.875rem 1rem;
-		background: rgba(59, 130, 246, 0.08);
-		border: 1px solid rgba(59, 130, 246, 0.2);
-		border-radius: var(--radius-md);
-		font-size: 0.8125rem;
-		color: var(--color-text-secondary);
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 0.75rem;
+		padding: 1rem 0.5rem;
 	}
 
-	.coming-soon-notice svg {
-		width: 1rem;
-		height: 1rem;
-		flex-shrink: 0;
-		color: #3b82f6;
-		margin-top: 0.125rem;
+	.success-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 3rem;
+		height: 3rem;
+		border-radius: 50%;
+		background: rgba(34, 197, 94, 0.12);
+		color: #22c55e;
+	}
+
+	.success-icon svg {
+		width: 1.75rem;
+		height: 1.75rem;
+	}
+
+	.success-state h3 {
+		margin: 0;
+		font-size: 1.0625rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.success-state p {
+		margin: 0;
+		font-size: 0.9375rem;
+		color: var(--color-text-secondary);
+		line-height: 1.5;
 	}
 
 	.modal-footer {

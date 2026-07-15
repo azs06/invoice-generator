@@ -51,8 +51,40 @@ export interface InvoiceData {
 	subTotal: number;
 	balanceDue: number;
 	templateId: string;
+	paymentDetails?: PaymentDetails;
 	draft?: boolean;
 	draftName?: string;
+}
+
+/**
+ * User-provided "pay this invoice" details shown on the shared invoice page.
+ * v1 is zero-liability: `payUrl` is any payment link the user already has
+ * (Stripe Payment Link, PayPal.me, Wise, bKash, bank portal, etc.) —
+ * FreeInvoice only renders the link and never processes the payment.
+ */
+export interface PaymentDetails {
+	enabled: boolean;
+	payUrl: string;
+	instructions: string;
+}
+
+/**
+ * Structured invoice fields extracted from free-form text by the "AI invoice
+ * from text" endpoint (POST /api/ai/invoice-from-text). Server-validated before
+ * it reaches the client; the editor merges only the parts that are present.
+ */
+export interface ExtractedInvoiceItem {
+	description: string;
+	quantity: number;
+	rate: number;
+}
+
+export interface ExtractedInvoice {
+	clientName: string;
+	clientDetails: string;
+	items: ExtractedInvoiceItem[];
+	dueDate: string | null;
+	notes: string;
 }
 
 export type SavedInvoicesFilterMode = 'all' | 'draft' | 'finalized';

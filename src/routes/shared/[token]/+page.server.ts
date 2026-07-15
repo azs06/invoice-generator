@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { getInvoiceByShareToken, recordLinkView } from '$lib/server/db';
+import { getTier, isMonetizationEnabled } from '$lib/server/entitlements';
 import { requireDB } from '$lib/server/session';
 import type { PageServerLoad } from './$types';
 
@@ -13,6 +14,14 @@ export const load: PageServerLoad = async (event) => {
 		throw error(404, 'This shared invoice link is invalid, expired, or has been revoked.');
 	}
 
+	// Pro invoice owners get the "Made with FreeInvoice" attribution removed from
+	// their shared page. Resolved from the owner's tier only when gating is on, so
+	// public views don't pay for an extra D1 read until launch.
+	let hideBadge = false;
+	if (isMonetizationEnabled(event) && result.ownerId) {
+		hideBadge = (await getTier(db, result.ownerId)) === 'pro';
+	}
+
 	// Record the view (async, don't wait for it)
 	const ipAddress = event.getClientAddress();
 	const userAgent = event.request.headers.get('user-agent');
@@ -23,6 +32,7 @@ export const load: PageServerLoad = async (event) => {
 	});
 
 	return {
-		invoice: result.invoice
+		invoice: result.invoice,
+		hideBadge
 	};
 };

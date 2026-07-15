@@ -1,9 +1,18 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
-import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { v4 as uuidv4 } from 'uuid';
 import type { InvoiceData, SavedInvoiceRecord } from '$lib/types';
-import { invoices, linkViews, sharedLinks, userSettings } from './schema';
+import {
+	clients,
+	invoices,
+	linkViews,
+	recurringSchedules,
+	reminderSettings,
+	sharedLinks,
+	subscriptions,
+	userSettings
+} from './schema';
 
 const INVOICE_LIMIT = 10;
 const SHARE_LINK_DEFAULT_DAYS = 30;
@@ -388,6 +397,97 @@ export async function getShareLinks(
 }
 
 /**
+ * Count a user's active (non-revoked, non-expired) share links across all invoices
+ */
+export async function countActiveShareLinks(db: D1Database, userId: string): Promise<number> {
+	const d1 = drizzle(db);
+
+	const result = await d1
+		.select({ count: count() })
+		.from(sharedLinks)
+		.innerJoin(invoices, eq(sharedLinks.invoiceId, invoices.id))
+		.where(
+			and(
+				eq(invoices.userId, userId),
+				eq(sharedLinks.revoked, false),
+				gt(sharedLinks.expiresAt, new Date())
+			)
+		)
+		.get();
+
+	return result?.count ?? 0;
+}
+
+export interface SubscriptionUpsert {
+	userId: string;
+	provider: string;
+	providerCustomerId: string | null;
+	providerSubscriptionId: string | null;
+	plan: string;
+	status: string;
+	currentPeriodEnd: Date | null;
+}
+
+/**
+ * Insert or update a user's subscription (unique per userId).
+ *
+ * A user has at most one subscription row. Lifetime purchases are terminal:
+ * once a user holds an active lifetime plan, later subscription.* events
+ * (e.g. an old monthly sub being revoked) must not overwrite it and demote
+ * the user, so we short-circuit before touching the row.
+ */
+export async function upsertSubscription(
+	db: D1Database,
+	data: SubscriptionUpsert
+): Promise<void> {
+	const d1 = drizzle(db);
+	const now = new Date();
+
+	const existing = await d1
+		.select({ plan: subscriptions.plan, status: subscriptions.status })
+		.from(subscriptions)
+		.where(eq(subscriptions.userId, data.userId))
+		.get();
+
+	// Never downgrade an active lifetime entitlement.
+	if (
+		existing &&
+		existing.plan === 'lifetime' &&
+		existing.status === 'active' &&
+		data.plan !== 'lifetime'
+	) {
+		return;
+	}
+
+	await d1
+		.insert(subscriptions)
+		.values({
+			id: uuidv4(),
+			userId: data.userId,
+			provider: data.provider,
+			providerCustomerId: data.providerCustomerId,
+			providerSubscriptionId: data.providerSubscriptionId,
+			plan: data.plan,
+			status: data.status,
+			currentPeriodEnd: data.currentPeriodEnd,
+			createdAt: now,
+			updatedAt: now
+		})
+		.onConflictDoUpdate({
+			target: subscriptions.userId,
+			set: {
+				provider: data.provider,
+				providerCustomerId: data.providerCustomerId,
+				providerSubscriptionId: data.providerSubscriptionId,
+				plan: data.plan,
+				status: data.status,
+				currentPeriodEnd: data.currentPeriodEnd,
+				updatedAt: now
+			}
+		});
+}
+
+/**
  * Revoke a share link
  */
 export async function revokeShareLink(
@@ -433,7 +533,7 @@ export async function revokeShareLink(
 export async function getInvoiceByShareToken(
 	db: D1Database,
 	token: string
-): Promise<{ invoice: InvoiceData; linkId: string } | null> {
+): Promise<{ invoice: InvoiceData; linkId: string; ownerId: string } | null> {
 	const d1 = drizzle(db);
 
 	const link = await d1.select().from(sharedLinks).where(eq(sharedLinks.token, token)).get();
@@ -460,7 +560,8 @@ export async function getInvoiceByShareToken(
 
 	return {
 		invoice: JSON.parse(invoice.data) as InvoiceData,
-		linkId: link.id
+		linkId: link.id,
+		ownerId: invoice.userId
 	};
 }
 
@@ -493,6 +594,510 @@ export async function recordLinkView(
 			lastViewedAt: now
 		})
 		.where(eq(sharedLinks.id, linkId));
+}
+
+// =====================================================
+// Recurring Schedule Functions (Pro)
+// =====================================================
+
+export interface RecurringScheduleRecord {
+	id: string;
+	sourceInvoiceId: string;
+	sourceInvoiceNumber: string | null;
+	frequency: string;
+	nextRunAt: Date;
+	lastRunAt: Date | null;
+	recipientEmail: string;
+	active: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface CreateRecurringScheduleInput {
+	sourceInvoiceId: string;
+	frequency: string;
+	nextRunAt: Date;
+	recipientEmail: string;
+}
+
+/**
+ * List a user's recurring schedules (newest first), each annotated with the
+ * source invoice's number for display.
+ */
+export async function getRecurringSchedules(
+	db: D1Database,
+	userId: string
+): Promise<RecurringScheduleRecord[]> {
+	const d1 = drizzle(db);
+
+	const rows = await d1
+		.select({
+			id: recurringSchedules.id,
+			sourceInvoiceId: recurringSchedules.sourceInvoiceId,
+			frequency: recurringSchedules.frequency,
+			nextRunAt: recurringSchedules.nextRunAt,
+			lastRunAt: recurringSchedules.lastRunAt,
+			recipientEmail: recurringSchedules.recipientEmail,
+			active: recurringSchedules.active,
+			createdAt: recurringSchedules.createdAt,
+			updatedAt: recurringSchedules.updatedAt,
+			invoiceData: invoices.data
+		})
+		.from(recurringSchedules)
+		.leftJoin(invoices, eq(invoices.id, recurringSchedules.sourceInvoiceId))
+		.where(eq(recurringSchedules.userId, userId))
+		.orderBy(desc(recurringSchedules.createdAt));
+
+	return rows.map((row) => {
+		let sourceInvoiceNumber: string | null = null;
+		if (row.invoiceData) {
+			try {
+				sourceInvoiceNumber =
+					(JSON.parse(row.invoiceData) as InvoiceData).invoiceNumber || null;
+			} catch {
+				sourceInvoiceNumber = null;
+			}
+		}
+		return {
+			id: row.id,
+			sourceInvoiceId: row.sourceInvoiceId,
+			sourceInvoiceNumber,
+			frequency: row.frequency,
+			nextRunAt: row.nextRunAt,
+			lastRunAt: row.lastRunAt ?? null,
+			recipientEmail: row.recipientEmail,
+			active: row.active ?? true,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt
+		};
+	});
+}
+
+/**
+ * Create a recurring schedule. Returns the new id, or null when the source
+ * invoice does not exist or is not owned by the user.
+ */
+export async function createRecurringSchedule(
+	db: D1Database,
+	userId: string,
+	input: CreateRecurringScheduleInput
+): Promise<string | null> {
+	const d1 = drizzle(db);
+
+	// Verify the source invoice belongs to the user.
+	const invoice = await d1
+		.select({ id: invoices.id })
+		.from(invoices)
+		.where(and(eq(invoices.id, input.sourceInvoiceId), eq(invoices.userId, userId)))
+		.get();
+
+	if (!invoice) {
+		return null;
+	}
+
+	const id = uuidv4();
+	const now = new Date();
+	await d1.insert(recurringSchedules).values({
+		id,
+		userId,
+		sourceInvoiceId: input.sourceInvoiceId,
+		frequency: input.frequency,
+		nextRunAt: input.nextRunAt,
+		lastRunAt: null,
+		recipientEmail: input.recipientEmail,
+		active: true,
+		createdAt: now,
+		updatedAt: now
+	});
+
+	return id;
+}
+
+/**
+ * Update mutable fields of a schedule (ownership enforced). Returns false when
+ * no matching schedule exists for the user.
+ */
+export async function updateRecurringSchedule(
+	db: D1Database,
+	userId: string,
+	id: string,
+	patch: { frequency?: string; recipientEmail?: string; active?: boolean; nextRunAt?: Date }
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: recurringSchedules.id })
+		.from(recurringSchedules)
+		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.update(recurringSchedules)
+		.set({ ...patch, updatedAt: new Date() })
+		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)));
+
+	return true;
+}
+
+/**
+ * Delete a schedule (ownership enforced). Returns false when none matched.
+ */
+export async function deleteRecurringSchedule(
+	db: D1Database,
+	userId: string,
+	id: string
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: recurringSchedules.id })
+		.from(recurringSchedules)
+		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.delete(recurringSchedules)
+		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)));
+
+	return true;
+}
+
+// =====================================================
+// Overdue Reminder Functions (Pro)
+// =====================================================
+
+export interface ReminderRecord {
+	id: string;
+	invoiceId: string;
+	invoiceNumber: string | null;
+	recipientEmail: string;
+	remindAfterDays: number;
+	lastSentAt: Date | null;
+	active: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface CreateReminderInput {
+	invoiceId: string;
+	recipientEmail: string;
+	remindAfterDays: number;
+}
+
+/**
+ * List a user's overdue-reminder configs (newest first), each annotated with
+ * the invoice's number for display.
+ */
+export async function getReminders(db: D1Database, userId: string): Promise<ReminderRecord[]> {
+	const d1 = drizzle(db);
+
+	const rows = await d1
+		.select({
+			id: reminderSettings.id,
+			invoiceId: reminderSettings.invoiceId,
+			recipientEmail: reminderSettings.recipientEmail,
+			remindAfterDays: reminderSettings.remindAfterDays,
+			lastSentAt: reminderSettings.lastSentAt,
+			active: reminderSettings.active,
+			createdAt: reminderSettings.createdAt,
+			updatedAt: reminderSettings.updatedAt,
+			invoiceData: invoices.data
+		})
+		.from(reminderSettings)
+		.leftJoin(invoices, eq(invoices.id, reminderSettings.invoiceId))
+		.where(eq(reminderSettings.userId, userId))
+		.orderBy(desc(reminderSettings.createdAt));
+
+	return rows.map((row) => {
+		let invoiceNumber: string | null = null;
+		if (row.invoiceData) {
+			try {
+				invoiceNumber = (JSON.parse(row.invoiceData) as InvoiceData).invoiceNumber || null;
+			} catch {
+				invoiceNumber = null;
+			}
+		}
+		return {
+			id: row.id,
+			invoiceId: row.invoiceId,
+			invoiceNumber,
+			recipientEmail: row.recipientEmail,
+			remindAfterDays: row.remindAfterDays,
+			lastSentAt: row.lastSentAt ?? null,
+			active: row.active ?? true,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt
+		};
+	});
+}
+
+/**
+ * Create a reminder config. Returns the new id, null when the invoice does not
+ * exist or is not owned by the user, or 'duplicate' when a config already
+ * exists for that invoice (one reminder per invoice per user).
+ */
+export async function createReminder(
+	db: D1Database,
+	userId: string,
+	input: CreateReminderInput
+): Promise<string | null | 'duplicate'> {
+	const d1 = drizzle(db);
+
+	// Verify the invoice belongs to the user.
+	const invoice = await d1
+		.select({ id: invoices.id })
+		.from(invoices)
+		.where(and(eq(invoices.id, input.invoiceId), eq(invoices.userId, userId)))
+		.get();
+
+	if (!invoice) {
+		return null;
+	}
+
+	// Enforce one reminder config per invoice per user.
+	const existing = await d1
+		.select({ id: reminderSettings.id })
+		.from(reminderSettings)
+		.where(and(eq(reminderSettings.invoiceId, input.invoiceId), eq(reminderSettings.userId, userId)))
+		.get();
+
+	if (existing) {
+		return 'duplicate';
+	}
+
+	const id = uuidv4();
+	const now = new Date();
+	await d1.insert(reminderSettings).values({
+		id,
+		userId,
+		invoiceId: input.invoiceId,
+		recipientEmail: input.recipientEmail,
+		remindAfterDays: input.remindAfterDays,
+		lastSentAt: null,
+		active: true,
+		createdAt: now,
+		updatedAt: now
+	});
+
+	return id;
+}
+
+/**
+ * Update mutable fields of a reminder config (ownership enforced). Returns
+ * false when no matching config exists for the user.
+ */
+export async function updateReminder(
+	db: D1Database,
+	userId: string,
+	id: string,
+	patch: { recipientEmail?: string; remindAfterDays?: number; active?: boolean }
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: reminderSettings.id })
+		.from(reminderSettings)
+		.where(and(eq(reminderSettings.id, id), eq(reminderSettings.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.update(reminderSettings)
+		.set({ ...patch, updatedAt: new Date() })
+		.where(and(eq(reminderSettings.id, id), eq(reminderSettings.userId, userId)));
+
+	return true;
+}
+
+/**
+ * Delete a reminder config (ownership enforced). Returns false when none matched.
+ */
+export async function deleteReminder(
+	db: D1Database,
+	userId: string,
+	id: string
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: reminderSettings.id })
+		.from(reminderSettings)
+		.where(and(eq(reminderSettings.id, id), eq(reminderSettings.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.delete(reminderSettings)
+		.where(and(eq(reminderSettings.id, id), eq(reminderSettings.userId, userId)));
+
+	return true;
+}
+
+// =====================================================
+// Client Address Book Functions (Pro)
+// =====================================================
+
+export interface ClientRecord {
+	id: string;
+	name: string;
+	email: string | null;
+	phone: string | null;
+	address: string | null;
+	notes: string | null;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface ClientInput {
+	name: string;
+	email?: string | null;
+	phone?: string | null;
+	address?: string | null;
+	notes?: string | null;
+}
+
+/**
+ * List a user's saved clients (newest first).
+ */
+export async function getClients(db: D1Database, userId: string): Promise<ClientRecord[]> {
+	const d1 = drizzle(db);
+	const rows = await d1
+		.select()
+		.from(clients)
+		.where(eq(clients.userId, userId))
+		.orderBy(desc(clients.createdAt));
+
+	return rows.map((row) => ({
+		id: row.id,
+		name: row.name,
+		email: row.email ?? null,
+		phone: row.phone ?? null,
+		address: row.address ?? null,
+		notes: row.notes ?? null,
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt
+	}));
+}
+
+/**
+ * Get a single client by id (ownership enforced). Returns null when none matched.
+ */
+export async function getClient(
+	db: D1Database,
+	userId: string,
+	id: string
+): Promise<ClientRecord | null> {
+	const d1 = drizzle(db);
+	const row = await d1
+		.select()
+		.from(clients)
+		.where(and(eq(clients.id, id), eq(clients.userId, userId)))
+		.get();
+
+	if (!row) return null;
+	return {
+		id: row.id,
+		name: row.name,
+		email: row.email ?? null,
+		phone: row.phone ?? null,
+		address: row.address ?? null,
+		notes: row.notes ?? null,
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt
+	};
+}
+
+/**
+ * Create a client for the user. Returns the new id.
+ */
+export async function createClient(
+	db: D1Database,
+	userId: string,
+	input: ClientInput
+): Promise<string> {
+	const d1 = drizzle(db);
+	const id = uuidv4();
+	const now = new Date();
+	await d1.insert(clients).values({
+		id,
+		userId,
+		name: input.name,
+		email: input.email ?? null,
+		phone: input.phone ?? null,
+		address: input.address ?? null,
+		notes: input.notes ?? null,
+		createdAt: now,
+		updatedAt: now
+	});
+	return id;
+}
+
+/**
+ * Update a client (ownership enforced). Returns false when none matched.
+ */
+export async function updateClient(
+	db: D1Database,
+	userId: string,
+	id: string,
+	patch: Partial<ClientInput>
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: clients.id })
+		.from(clients)
+		.where(and(eq(clients.id, id), eq(clients.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.update(clients)
+		.set({ ...patch, updatedAt: new Date() })
+		.where(and(eq(clients.id, id), eq(clients.userId, userId)));
+
+	return true;
+}
+
+/**
+ * Delete a client (ownership enforced). Returns false when none matched.
+ */
+export async function deleteClient(
+	db: D1Database,
+	userId: string,
+	id: string
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: clients.id })
+		.from(clients)
+		.where(and(eq(clients.id, id), eq(clients.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1.delete(clients).where(and(eq(clients.id, id), eq(clients.userId, userId)));
+
+	return true;
 }
 
 // =====================================================

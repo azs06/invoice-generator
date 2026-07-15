@@ -20,8 +20,12 @@
 	import { toUSCurrency } from '$lib/currency.js';
 	import { exportSingleInvoice } from '$lib/invoiceExport.js';
 	import { selectionHelpers, exportHelpers, importHelpers } from '$lib/useSelection.svelte';
+	import { page } from '$app/stores';
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
 	import SendEmailModal from '$components/SendEmailModal.svelte';
+	import RecurringModal from '$components/RecurringModal.svelte';
+	import ReminderModal from '$components/ReminderModal.svelte';
+	import UpgradePromptModal from '$components/UpgradePromptModal.svelte';
 	import { authClient } from '$lib/auth';
 	import type { LocalInvoiceRecord, SavedInvoicesFilterMode, InvoiceData } from '$lib/types';
 
@@ -61,6 +65,27 @@
 	let shareInvoiceId = $state<string | null>(null);
 	let shareInvoiceData = $state<InvoiceData | null>(null);
 	let emailInvoiceId = $state<string | null>(null);
+
+	// Recurring invoices (Pro)
+	let recurringSource = $state<{
+		sourceInvoiceId: string;
+		invoiceNumber: string;
+		recipientEmail: string;
+	} | null>(null);
+	let showRecurringUpgrade = $state<boolean>(false);
+
+	// Overdue reminders (Pro)
+	let reminderSource = $state<{
+		invoiceId: string;
+		invoiceNumber: string;
+		recipientEmail: string;
+	} | null>(null);
+	let showReminderUpgrade = $state<boolean>(false);
+
+	// Client-side Pro gating: mirrors PaymentDetailsComponent.
+	let recurringGated = $derived(
+		$page.data.monetizationEnabled === true && $page.data.tier !== 'pro'
+	);
 
 	$effect(() => {
 		formatCurrencyFn = $toUSCurrency;
@@ -376,6 +401,47 @@
 
 	const closeEmailModal = (): void => {
 		emailInvoiceId = null;
+	};
+
+	// Recurring — extract an email from the invoice's client block if present.
+	const extractEmail = (text: string | null | undefined): string => {
+		const match = (text ?? '').match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
+		return match ? match[0] : '';
+	};
+
+	const openRecurringModal = (record: LocalInvoiceRecord): void => {
+		if (recurringGated) {
+			showRecurringUpgrade = true;
+			return;
+		}
+		if (!record.cloudId) return;
+		recurringSource = {
+			sourceInvoiceId: record.cloudId,
+			invoiceNumber: record.invoice?.invoiceNumber ?? '',
+			recipientEmail: extractEmail(record.invoice?.invoiceTo)
+		};
+	};
+
+	const closeRecurringModal = (): void => {
+		recurringSource = null;
+	};
+
+	// Overdue reminder — reuses the recurring gate (both are Pro).
+	const openReminderModal = (record: LocalInvoiceRecord): void => {
+		if (recurringGated) {
+			showReminderUpgrade = true;
+			return;
+		}
+		if (!record.cloudId) return;
+		reminderSource = {
+			invoiceId: record.cloudId,
+			invoiceNumber: record.invoice?.invoiceNumber ?? '',
+			recipientEmail: extractEmail(record.invoice?.invoiceTo)
+		};
+	};
+
+	const closeReminderModal = (): void => {
+		reminderSource = null;
 	};
 
 	// Selection functions for bulk operations (using shared helpers)
@@ -716,6 +782,36 @@
 											</svg>
 										</button>
 										<button
+											class="action-btn"
+											type="button"
+											onclick={() => openRecurringModal(record)}
+											title={$_('recurring.make_recurring')}
+											aria-label={$_('recurring.make_recurring')}
+										>
+											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+												<path
+													fill-rule="evenodd"
+													d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z"
+													clip-rule="evenodd"
+												/>
+											</svg>
+										</button>
+										<button
+											class="action-btn"
+											type="button"
+											onclick={() => openReminderModal(record)}
+											title={$_('reminders.set_reminder')}
+											aria-label={$_('reminders.set_reminder')}
+										>
+											<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+												<path
+													fill-rule="evenodd"
+													d="M10 2a6 6 0 0 0-6 6c0 1.887-.454 3.665-1.257 5.234a.75.75 0 0 0 .515 1.076 32.9 32.9 0 0 0 3.256.508 3.5 3.5 0 0 0 6.972 0 32.9 32.9 0 0 0 3.256-.508.75.75 0 0 0 .515-1.076A11.448 11.448 0 0 1 16 8a6 6 0 0 0-6-6Zm0 14.5a2 2 0 0 1-1.95-1.557 33.54 33.54 0 0 0 3.9 0A2 2 0 0 1 10 16.5Z"
+													clip-rule="evenodd"
+												/>
+											</svg>
+										</button>
+										<button
 											class="action-btn action-btn--unsync"
 											type="button"
 											onclick={() => removeFromCloud(record.id)}
@@ -999,6 +1095,38 @@
 			onClose={closeEmailModal}
 		/>
 	{/if}
+
+	<!-- Recurring Invoice Modal (Pro) -->
+	{#if recurringSource}
+		<RecurringModal
+			sourceInvoiceId={recurringSource.sourceInvoiceId}
+			invoiceNumber={recurringSource.invoiceNumber}
+			recipientEmail={recurringSource.recipientEmail}
+			onClose={closeRecurringModal}
+		/>
+	{/if}
+
+	<!-- Overdue Reminder Modal (Pro) -->
+	{#if reminderSource}
+		<ReminderModal
+			invoiceId={reminderSource.invoiceId}
+			invoiceNumber={reminderSource.invoiceNumber}
+			recipientEmail={reminderSource.recipientEmail}
+			onClose={closeReminderModal}
+		/>
+	{/if}
+
+	<UpgradePromptModal
+		open={showRecurringUpgrade}
+		message={$_('recurring.error_upgrade')}
+		onClose={() => (showRecurringUpgrade = false)}
+	/>
+
+	<UpgradePromptModal
+		open={showReminderUpgrade}
+		message={$_('reminders.error_upgrade')}
+		onClose={() => (showReminderUpgrade = false)}
+	/>
 </section>
 
 <style>

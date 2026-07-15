@@ -88,6 +88,73 @@ export const linkViews = sqliteTable('link_views', {
 	userAgent: text('userAgent')
 });
 
+export const subscriptions = sqliteTable('subscriptions', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.unique()
+		.references(() => user.id),
+	provider: text('provider').notNull(), // 'polar' | 'sslcommerz' | 'bkash' | 'manual'
+	providerCustomerId: text('providerCustomerId'),
+	providerSubscriptionId: text('providerSubscriptionId'),
+	plan: text('plan').notNull(), // 'pro_monthly' | 'pro_annual' | 'lifetime'
+	status: text('status').notNull(), // 'active' | 'canceled' | 'past_due' | 'trialing'
+	currentPeriodEnd: integer('currentPeriodEnd', { mode: 'timestamp' }),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
+});
+
+export const recurringSchedules = sqliteTable('recurring_schedules', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.references(() => user.id),
+	// Cloud invoice id to clone. Plain text (no FK) so deleting the source
+	// invoice never fails on a schedule constraint; the cron deactivates
+	// schedules whose source invoice has gone away.
+	sourceInvoiceId: text('sourceInvoiceId').notNull(),
+	frequency: text('frequency').notNull(), // 'weekly' | 'monthly' | 'yearly'
+	nextRunAt: integer('nextRunAt', { mode: 'timestamp' }).notNull(),
+	lastRunAt: integer('lastRunAt', { mode: 'timestamp' }),
+	recipientEmail: text('recipientEmail').notNull(),
+	active: integer('active', { mode: 'boolean' }).notNull().default(true),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
+});
+
+export const reminderSettings = sqliteTable('reminder_settings', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.references(() => user.id),
+	// Cloud invoice id to remind on. Plain text (no FK) so deleting the source
+	// invoice never fails on a constraint; the cron deactivates configs whose
+	// invoice has gone away (mirrors recurringSchedules.sourceInvoiceId).
+	invoiceId: text('invoiceId').notNull(),
+	recipientEmail: text('recipientEmail').notNull(),
+	// Days past the invoice due date before the first reminder fires; also the
+	// re-send cadence while the invoice stays overdue and unpaid.
+	remindAfterDays: integer('remindAfterDays').notNull().default(3),
+	lastSentAt: integer('lastSentAt', { mode: 'timestamp' }),
+	active: integer('active', { mode: 'boolean' }).notNull().default(true),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
+});
+
+export const clients = sqliteTable('clients', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.references(() => user.id),
+	name: text('name').notNull(),
+	email: text('email'),
+	phone: text('phone'),
+	address: text('address'),
+	notes: text('notes'),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
+});
+
 export const userSettings = sqliteTable('user_settings', {
 	id: text('id').primaryKey(),
 	userId: text('userId')

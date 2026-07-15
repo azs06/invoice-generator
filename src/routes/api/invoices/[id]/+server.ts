@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
 import { deleteInvoice, getInvoice, saveInvoice } from '$lib/server/db';
+import { enforceInvoiceSaveGates } from '$lib/server/entitlements';
 import { getBucket, requireDB } from '$lib/server/session';
 import type { InvoiceData } from '$lib/types';
 import type { RequestHandler } from './$types';
@@ -41,6 +42,10 @@ export const PUT: RequestHandler = async (event) => {
 	if (invoice.id !== id) {
 		return json({ error: 'Invoice ID mismatch' }, { status: 400 });
 	}
+
+	// Free-tier gates: cloud invoice quota + payment-link (grandfathered; no-op until MONETIZATION_ENABLED)
+	const stored = await getInvoice(db, id, session.user.id);
+	await enforceInvoiceSaveGates(event, db, session.user.id, invoice, stored);
 
 	const saved = await saveInvoice(db, bucket, id, invoice, session.user.id);
 	if (!saved) {

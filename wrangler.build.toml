@@ -1,0 +1,21 @@
+# Build-only Wrangler config, read ONLY by @sveltejs/adapter-cloudflare at build
+# time (see svelte.config.js `config` option). Its sole purpose is to tell the
+# adapter where to emit the generated SvelteKit worker: `main` here points at
+# the adapter's conventional path INSIDE the assets directory
+# (.svelte-kit/cloudflare/_worker.js, which `.assetsignore` excludes from static
+# serving).
+#
+# The real deploy/dev config is wrangler.toml, whose `main = "worker.js"` is our
+# wrapper that imports this emitted _worker.js and adds the Cron `scheduled`
+# handler. Keeping the two `main` values separate is what lets the wrapper exist:
+# the adapter always overwrites (rimrafs) its own `main`, so it must not be the
+# wrapper. Keep `name`, `compatibility_date`, and the `[assets]` block in sync
+# with wrangler.toml.
+name = "invoice-generator"
+main = ".svelte-kit/cloudflare/_worker.js"
+compatibility_date = "2024-11-18"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".svelte-kit/cloudflare"
+binding = "ASSETS"

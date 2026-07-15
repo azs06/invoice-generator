@@ -1,7 +1,15 @@
 name = "invoice-generator"
-main = ".svelte-kit/cloudflare/_worker.js"
+# Custom entry that wraps the adapter-generated worker
+# (.svelte-kit/cloudflare/_worker.js) and adds a `scheduled` handler for the
+# recurring-invoices Cron trigger. See worker.js and [triggers] below.
+main = "worker.js"
 compatibility_date = "2024-11-18"
 compatibility_flags = ["nodejs_compat"]
+
+# Recurring invoices (Pro): run the scheduled handler hourly. It finds due
+# recurring_schedules, clones + emails the next invoice, and advances nextRunAt.
+[triggers]
+crons = ["0 * * * *"]
 
 [assets]
 directory = ".svelte-kit/cloudflare"
@@ -20,8 +28,33 @@ preview_bucket_name = "invoice-bucket-preview"
 [browser]
 binding = "BROWSER"
 
+# Workers AI - "AI invoice from text" (POST /api/ai/invoice-from-text).
+# Metered per inference; the endpoint is Pro-gated and rate-limited. Absent in
+# plain `npm run dev`, so the endpoint returns 503 there (use `npm run dev:cf`).
+[ai]
+binding = "AI"
+
+# Workers Analytics Engine - privacy-friendly funnel/conversion events.
+# Written via env.METRICS.writeDataPoint (src/lib/server/analytics.ts). Free-tier
+# friendly and queryable through the Analytics Engine SQL API. Absent in plain
+# `npm run dev`, where trackEvent() no-ops. Bindings live only here, not in
+# wrangler.build.toml (that config is build-only: name/compat/[assets] sync).
+[[analytics_engine_datasets]]
+binding = "METRICS"
+dataset = "invoice_events"
+
+# Cloudflare Email Sending - invoice emails (POST /api/invoices/[id]/email).
+# Destination is intentionally unrestricted (users email arbitrary clients).
+# Requires one-time onboarding of the sender domain freeinvoice.info via
+# `wrangler email sending enable freeinvoice.info` + the DNS/SPF/DKIM records
+# Cloudflare provides (see docs/MONETIZATION.md / manual steps).
+[[send_email]]
+name = "EMAIL"
+
 [vars]
 SUPER_ADMIN_EMAILS = "atik.aiub@gmail.com"
+# Pro gating feature flag - keep "false" until Polar billing launches
+MONETIZATION_ENABLED = "false"
 
 # Secrets (set via: wrangler secret put <SECRET_NAME>):
 # - GOOGLE_CLIENT_ID

@@ -1,7 +1,10 @@
 import puppeteer, { type PaperFormat } from '@cloudflare/puppeteer';
 import { error } from '@sveltejs/kit';
+import { trackEvent } from '$lib/server/analytics';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
 import { updateInvoicePdfKey } from '$lib/server/db';
+import { requirePro } from '$lib/server/entitlements';
+import { RATE_LIMITS, checkRateLimit } from '$lib/server/rateLimit';
 import { getBucket, requirePlatform } from '$lib/server/session';
 import type { RequestHandler } from './$types';
 
@@ -23,6 +26,28 @@ export const POST: RequestHandler = async (event) => {
 	}
 
 	const env = requirePlatform(event);
+
+	// Server-side PDF is a Pro feature (no-op until MONETIZATION_ENABLED)
+	requirePro(event);
+
+	// Browser Rendering is billed per use - cap generations per user,
+	// hourly (burst) and monthly (cost-exposure ceiling, see COST_ANALYSIS.md)
+	const rateLimit = await checkRateLimit(env.DB, session.user.id, 'pdf', RATE_LIMITS.pdfGeneration);
+	if (!rateLimit.allowed) {
+		throw error(429, 'Too many requests: PDF generation limit reached. Please try again later.');
+	}
+	const monthlyLimit = await checkRateLimit(
+		env.DB,
+		session.user.id,
+		'pdf_month',
+		RATE_LIMITS.pdfGenerationMonthly
+	);
+	if (!monthlyLimit.allowed) {
+		throw error(
+			429,
+			`Monthly PDF generation limit reached (${RATE_LIMITS.pdfGenerationMonthly.limit}/month fair use). It resets with the next 30-day window.`
+		);
+	}
 
 	const { html, invoiceId, invoiceTo, pageSize, margins } = (await event.request.json()) as {
 		html: string;
@@ -128,6 +153,9 @@ export const POST: RequestHandler = async (event) => {
 		const filename = invoiceTo
 			? `invoice-${invoiceTo.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 50)}.pdf`
 			: 'invoice.pdf';
+
+		// Funnel: a server-side (Browser Rendering) PDF was produced.
+		trackEvent(env, 'pdf_generated', { plan: event.locals.tier });
 
 		// Convert Buffer to Uint8Array for Response compatibility
 		return new Response(new Uint8Array(pdfBuffer), {

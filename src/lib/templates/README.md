@@ -117,7 +117,6 @@ export const TEMPLATES = {
 		description: 'A custom invoice template',
 		component: () => import('./components/MyTemplate.svelte'),
 		tags: ['custom', 'modern'],
-		premium: false,
 		preview: '/templates/mytemplate-preview.png'
 	}
 };
@@ -130,7 +129,6 @@ export const TEMPLATES = {
 - `description`: Brief description of the template
 - `component`: Dynamic import function for the Svelte component
 - `tags`: Array of tags for filtering and search
-- `premium`: Boolean indicating if this is a premium template
 - `preview`: Path to preview image (optional)
 
 ## Design Guidelines
@@ -215,10 +213,6 @@ export const TEMPLATES = {
 	}
 </style>
 ```
-
-## Premium Templates
-
-For premium templates, set `premium: true` in the registry. The template selector will automatically show a "PRO" badge and handle access control.
 
 ## Troubleshooting
 

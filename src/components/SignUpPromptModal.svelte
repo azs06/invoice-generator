@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
+	import { track } from '$lib/analytics';
 
 	interface Props {
 		open?: boolean;
@@ -8,6 +9,11 @@
 	}
 
 	let { open = false, onClose, onContinueBasic }: Props = $props();
+
+	// Funnel: count each time the sign-up prompt is shown (upgrade intent).
+	$effect(() => {
+		if (open) track('signup_prompt_shown');
+	});
 
 	const handleSignUp = (): void => {
 		// Redirect to Google OAuth sign-in

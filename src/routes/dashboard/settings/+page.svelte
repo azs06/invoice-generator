@@ -1,9 +1,198 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
+	import { page } from '$app/stores';
 	import type { PageData } from './$types';
 	import { currencies, type CurrencyCode } from '$lib/stores/currency';
+	import ClientFormModal, { type ClientFormValues } from '$components/ClientFormModal.svelte';
 
 	let { data }: { data: PageData } = $props();
+
+	interface RecurringSchedule {
+		id: string;
+		sourceInvoiceId: string;
+		sourceInvoiceNumber: string | null;
+		frequency: string;
+		nextRunAt: string;
+		lastRunAt: string | null;
+		recipientEmail: string;
+		active: boolean;
+	}
+
+	let recurring = $state<RecurringSchedule[]>([]);
+	let recurringLoading = $state<boolean>(true);
+	let recurringBusyId = $state<string | null>(null);
+
+	const loadRecurring = async (): Promise<void> => {
+		recurringLoading = true;
+		try {
+			const res = await fetch('/api/recurring');
+			if (res.ok) {
+				const body = (await res.json()) as { schedules: RecurringSchedule[] };
+				recurring = body.schedules ?? [];
+			}
+		} catch {
+			// Leave the list empty on failure.
+		} finally {
+			recurringLoading = false;
+		}
+	};
+
+	const toggleRecurring = async (schedule: RecurringSchedule): Promise<void> => {
+		recurringBusyId = schedule.id;
+		try {
+			const res = await fetch(`/api/recurring/${schedule.id}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ active: !schedule.active })
+			});
+			if (res.ok) await loadRecurring();
+		} finally {
+			recurringBusyId = null;
+		}
+	};
+
+	const cancelRecurring = async (schedule: RecurringSchedule): Promise<void> => {
+		if (!confirm($_('recurring.cancel_confirm'))) return;
+		recurringBusyId = schedule.id;
+		try {
+			const res = await fetch(`/api/recurring/${schedule.id}`, { method: 'DELETE' });
+			if (res.ok) await loadRecurring();
+		} finally {
+			recurringBusyId = null;
+		}
+	};
+
+	const frequencyLabel = (frequency: string): string => {
+		if (frequency === 'weekly') return $_('recurring.frequency_weekly');
+		if (frequency === 'yearly') return $_('recurring.frequency_yearly');
+		return $_('recurring.frequency_monthly');
+	};
+
+	const formatDateTime = (value: string | null): string => {
+		if (!value) return $_('recurring.never');
+		const ms = Date.parse(value);
+		if (Number.isNaN(ms)) return $_('recurring.never');
+		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(ms);
+	};
+
+	// --- Overdue reminders ---
+	interface Reminder {
+		id: string;
+		invoiceId: string;
+		invoiceNumber: string | null;
+		recipientEmail: string;
+		remindAfterDays: number;
+		lastSentAt: string | null;
+		active: boolean;
+	}
+
+	let reminders = $state<Reminder[]>([]);
+	let remindersLoading = $state<boolean>(true);
+	let reminderBusyId = $state<string | null>(null);
+
+	const loadReminders = async (): Promise<void> => {
+		remindersLoading = true;
+		try {
+			const res = await fetch('/api/reminders');
+			if (res.ok) {
+				const body = (await res.json()) as { reminders: Reminder[] };
+				reminders = body.reminders ?? [];
+			}
+		} catch {
+			// Leave the list empty on failure.
+		} finally {
+			remindersLoading = false;
+		}
+	};
+
+	const toggleReminder = async (reminder: Reminder): Promise<void> => {
+		reminderBusyId = reminder.id;
+		try {
+			const res = await fetch(`/api/reminders/${reminder.id}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ active: !reminder.active })
+			});
+			if (res.ok) await loadReminders();
+		} finally {
+			reminderBusyId = null;
+		}
+	};
+
+	const cancelReminder = async (reminder: Reminder): Promise<void> => {
+		if (!confirm($_('reminders.cancel_confirm'))) return;
+		reminderBusyId = reminder.id;
+		try {
+			const res = await fetch(`/api/reminders/${reminder.id}`, { method: 'DELETE' });
+			if (res.ok) await loadReminders();
+		} finally {
+			reminderBusyId = null;
+		}
+	};
+
+	// --- Client address book ---
+	interface Client {
+		id: string;
+		name: string;
+		email: string | null;
+		phone: string | null;
+		address: string | null;
+		notes: string | null;
+	}
+
+	let clients = $state<Client[]>([]);
+	let clientsLoading = $state<boolean>(true);
+	let clientBusyId = $state<string | null>(null);
+	let clientModalOpen = $state<boolean>(false);
+	let editingClient = $state<Partial<ClientFormValues>>({});
+
+	const loadClients = async (): Promise<void> => {
+		clientsLoading = true;
+		try {
+			const res = await fetch('/api/clients');
+			if (res.ok) {
+				const body = (await res.json()) as { clients: Client[] };
+				clients = body.clients ?? [];
+			}
+		} catch {
+			// Leave the list empty on failure.
+		} finally {
+			clientsLoading = false;
+		}
+	};
+
+	const editClient = (client: Client): void => {
+		editingClient = {
+			id: client.id,
+			name: client.name,
+			email: client.email ?? '',
+			phone: client.phone ?? '',
+			address: client.address ?? '',
+			notes: client.notes ?? ''
+		};
+		clientModalOpen = true;
+	};
+
+	const deleteClient = async (client: Client): Promise<void> => {
+		if (!confirm($_('clients.delete_confirm'))) return;
+		clientBusyId = client.id;
+		try {
+			const res = await fetch(`/api/clients/${client.id}`, { method: 'DELETE' });
+			if (res.ok) await loadClients();
+		} finally {
+			clientBusyId = null;
+		}
+	};
+
+	onMount(() => {
+		loadRecurring();
+		loadReminders();
+		loadClients();
+	});
+
+	let isPro = $derived($page.data.tier === 'pro');
+	let justUpgraded = $derived($page.url.searchParams.get('upgraded') === '1');
 
 	let invoicePrefix = $state<string>(data.settings.invoicePrefix);
 	let preferredCurrency = $state<CurrencyCode>(data.settings.preferredCurrency as CurrencyCode);
@@ -156,21 +345,211 @@
 					</div>
 					<p class="section-description">{$_('settings.billing_description')}</p>
 				</div>
-				<div class="coming-soon-badge">
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<path
-							d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
-						/>
-					</svg>
-					{$_('settings.coming_soon')}
+				{#if justUpgraded}
+					<div class="billing-upgraded">{$_('settings.billing_upgraded')}</div>
+				{/if}
+				<div class="billing-status">
+					<span class="plan-pill" class:pro={isPro}>
+						{isPro ? $_('settings.billing_pro_plan') : $_('settings.billing_free_plan')}
+					</span>
+					{#if isPro}
+						<a class="billing-action" href="/api/billing/portal">{$_('settings.billing_manage')}</a>
+					{:else}
+						<a class="billing-action" href="/pricing">{$_('settings.billing_view_plans')}</a>
+					{/if}
 				</div>
+			</section>
+
+			<section class="settings-section recurring-section">
+				<div class="section-header">
+					<div class="section-title-row">
+						<span class="section-icon icon-recurring" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M4 12a8 8 0 0 1 13.7-5.6L20 8M20 4v4h-4M20 12a8 8 0 0 1-13.7 5.6L4 16M4 20v-4h4"
+								/>
+							</svg>
+						</span>
+						<h2>{$_('recurring.manage_title')}</h2>
+					</div>
+					<p class="section-description">{$_('recurring.manage_description')}</p>
+				</div>
+
+				{#if recurringLoading}
+					<p class="recurring-empty">{$_('recurring.loading')}</p>
+				{:else if recurring.length === 0}
+					<p class="recurring-empty">{$_('recurring.manage_empty')}</p>
+				{:else}
+					<ul class="recurring-list">
+						{#each recurring as schedule (schedule.id)}
+							<li class="recurring-item" class:paused={!schedule.active}>
+								<div class="recurring-info">
+									<div class="recurring-top">
+										<span class="recurring-number"
+											>{schedule.sourceInvoiceNumber || schedule.sourceInvoiceId.slice(0, 8)}</span
+										>
+										<span class="recurring-freq">{frequencyLabel(schedule.frequency)}</span>
+										{#if !schedule.active}
+											<span class="recurring-paused-badge">{$_('recurring.paused')}</span>
+										{/if}
+									</div>
+									<div class="recurring-meta">
+										<span>{$_('recurring.to_label')}: {schedule.recipientEmail}</span>
+										<span>{$_('recurring.next_run')}: {formatDateTime(schedule.nextRunAt)}</span>
+										<span>{$_('recurring.last_run')}: {formatDateTime(schedule.lastRunAt)}</span>
+									</div>
+								</div>
+								<div class="recurring-actions">
+									<button
+										class="recurring-btn"
+										type="button"
+										onclick={() => toggleRecurring(schedule)}
+										disabled={recurringBusyId === schedule.id}
+									>
+										{schedule.active ? $_('recurring.pause') : $_('recurring.resume')}
+									</button>
+									<button
+										class="recurring-btn danger"
+										type="button"
+										onclick={() => cancelRecurring(schedule)}
+										disabled={recurringBusyId === schedule.id}
+									>
+										{$_('recurring.cancel_schedule')}
+									</button>
+								</div>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</section>
+
+			<section class="settings-section reminders-section">
+				<div class="section-header">
+					<div class="section-title-row">
+						<span class="section-icon icon-reminders" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
+								/>
+							</svg>
+						</span>
+						<h2>{$_('reminders.manage_title')}</h2>
+					</div>
+					<p class="section-description">{$_('reminders.manage_description')}</p>
+				</div>
+
+				{#if remindersLoading}
+					<p class="recurring-empty">{$_('reminders.loading')}</p>
+				{:else if reminders.length === 0}
+					<p class="recurring-empty">{$_('reminders.manage_empty')}</p>
+				{:else}
+					<ul class="recurring-list">
+						{#each reminders as reminder (reminder.id)}
+							<li class="recurring-item" class:paused={!reminder.active}>
+								<div class="recurring-info">
+									<div class="recurring-top">
+										<span class="recurring-number"
+											>{reminder.invoiceNumber || reminder.invoiceId.slice(0, 8)}</span
+										>
+										<span class="recurring-freq"
+											>{$_('reminders.days_after_due', {
+												values: { days: reminder.remindAfterDays }
+											})}</span
+										>
+										{#if !reminder.active}
+											<span class="recurring-paused-badge">{$_('reminders.paused')}</span>
+										{/if}
+									</div>
+									<div class="recurring-meta">
+										<span>{$_('reminders.to_label')}: {reminder.recipientEmail}</span>
+										<span>{$_('reminders.last_sent')}: {formatDateTime(reminder.lastSentAt)}</span>
+									</div>
+								</div>
+								<div class="recurring-actions">
+									<button
+										class="recurring-btn"
+										type="button"
+										onclick={() => toggleReminder(reminder)}
+										disabled={reminderBusyId === reminder.id}
+									>
+										{reminder.active ? $_('reminders.pause') : $_('reminders.resume')}
+									</button>
+									<button
+										class="recurring-btn danger"
+										type="button"
+										onclick={() => cancelReminder(reminder)}
+										disabled={reminderBusyId === reminder.id}
+									>
+										{$_('reminders.cancel_schedule')}
+									</button>
+								</div>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</section>
+
+			<section class="settings-section clients-section">
+				<div class="section-header">
+					<div class="section-title-row">
+						<span class="section-icon icon-clients" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+								/>
+							</svg>
+						</span>
+						<h2>{$_('clients.manage_title')}</h2>
+					</div>
+					<p class="section-description">{$_('clients.manage_description')}</p>
+				</div>
+
+				{#if clientsLoading}
+					<p class="recurring-empty">{$_('clients.loading')}</p>
+				{:else if clients.length === 0}
+					<p class="recurring-empty">{$_('clients.manage_empty')}</p>
+				{:else}
+					<ul class="recurring-list">
+						{#each clients as client (client.id)}
+							<li class="recurring-item">
+								<div class="recurring-info">
+									<div class="recurring-top">
+										<span class="recurring-number">{client.name}</span>
+									</div>
+									<div class="recurring-meta">
+										{#if client.email}<span>{client.email}</span>{/if}
+										{#if client.phone}<span>{client.phone}</span>{/if}
+										{#if client.address}<span>{client.address}</span>{/if}
+									</div>
+								</div>
+								<div class="recurring-actions">
+									<button
+										class="recurring-btn"
+										type="button"
+										onclick={() => editClient(client)}
+										disabled={clientBusyId === client.id}
+									>
+										{$_('clients.edit')}
+									</button>
+									<button
+										class="recurring-btn danger"
+										type="button"
+										onclick={() => deleteClient(client)}
+										disabled={clientBusyId === client.id}
+									>
+										{$_('clients.delete')}
+									</button>
+								</div>
+							</li>
+						{/each}
+					</ul>
+				{/if}
 			</section>
 
 			<div class="save-section">
@@ -198,6 +577,14 @@
 		</div>
 	</div>
 </div>
+
+{#if clientModalOpen}
+	<ClientFormModal
+		client={editingClient}
+		onClose={() => (clientModalOpen = false)}
+		onSaved={loadClients}
+	/>
+{/if}
 
 <style>
 	.settings-page {
@@ -400,19 +787,186 @@
 
 	.billing-section {
 		grid-column: 1 / -1;
-		border-style: dashed;
 	}
 
-	.coming-soon-badge {
-		display: inline-flex;
+	.recurring-section {
+		grid-column: 1 / -1;
+	}
+
+	.reminders-section {
+		grid-column: 1 / -1;
+	}
+
+	.clients-section {
+		grid-column: 1 / -1;
+	}
+
+	.icon-recurring {
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		color: var(--color-accent-blue);
+	}
+
+	.icon-reminders {
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		color: var(--color-accent-blue);
+	}
+
+	.icon-clients {
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		color: var(--color-accent-blue);
+	}
+
+	.recurring-empty {
+		font-size: 0.9rem;
+		color: var(--color-text-secondary);
+		margin: 0;
+	}
+
+	.recurring-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.recurring-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+		padding: 0.85rem 1rem;
+		border: 1px solid var(--surface-paper-border);
+		border-radius: var(--radius-md);
+		background: var(--surface-paper);
+	}
+
+	.recurring-item.paused {
+		opacity: 0.7;
+	}
+
+	.recurring-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		min-width: 0;
+	}
+
+	.recurring-top {
+		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.recurring-number {
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.recurring-freq {
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--color-accent-blue);
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		padding: 0.1rem 0.45rem;
+		border-radius: 999px;
+	}
+
+	.recurring-paused-badge {
+		font-size: 0.72rem;
+		font-weight: 600;
+		color: var(--color-text-secondary);
+		background: var(--surface-paper-muted);
+		padding: 0.1rem 0.45rem;
+		border-radius: 999px;
+	}
+
+	.recurring-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem 1rem;
+		font-size: 0.82rem;
+		color: var(--color-text-secondary);
+	}
+
+	.recurring-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-shrink: 0;
+	}
+
+	.recurring-btn {
+		padding: 0.45rem 0.85rem;
+		font-size: 0.82rem;
+		font-weight: 600;
+		border: 1px solid var(--surface-paper-border);
+		border-radius: var(--radius-md);
+		background: var(--surface-paper);
+		color: var(--color-text-primary);
+		cursor: pointer;
+	}
+
+	.recurring-btn:hover:not(:disabled) {
+		background: var(--surface-paper-muted);
+	}
+
+	.recurring-btn.danger {
+		color: #ef4444;
+		border-color: color-mix(in srgb, #ef4444 40%, transparent);
+	}
+
+	.recurring-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.billing-upgraded {
+		margin-bottom: 0.75rem;
 		padding: 0.5rem 1rem;
-		background: color-mix(in srgb, var(--color-accent-blue) 10%, transparent);
+		border-radius: 0.5rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		background: color-mix(in srgb, var(--color-success, #16a34a) 12%, transparent);
+		color: var(--color-text-primary);
+	}
+
+	.billing-status {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.plan-pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.4rem 0.9rem;
 		border-radius: 999px;
 		font-size: 0.8125rem;
 		font-weight: 600;
+		background: var(--color-bg-secondary, #f3f4f6);
+		color: var(--color-text-secondary);
+	}
+
+	.plan-pill.pro {
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
 		color: var(--color-accent-blue);
+	}
+
+	.billing-action {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-accent-blue);
+		text-decoration: none;
+	}
+
+	.billing-action:hover {
+		text-decoration: underline;
 	}
 
 	.save-section {

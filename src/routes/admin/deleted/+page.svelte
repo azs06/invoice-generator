@@ -202,13 +202,20 @@
 
 <!-- Confirmation Modal -->
 {#if confirmModal}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-overlay" onclick={() => (confirmModal = null)}>
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		class="modal-overlay"
+		role="dialog"
+		tabindex="-1"
+		aria-modal="true"
+		aria-labelledby="deleted-confirm-modal-title"
+		onclick={(e) => e.target === e.currentTarget && (confirmModal = null)}
+		onkeydown={(e) => e.key === 'Escape' && (confirmModal = null)}
+	>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<div class="modal" onclick={(e) => e.stopPropagation()}>
-			<h3>
+			<h3 id="deleted-confirm-modal-title">
 				{#if confirmModal.action === 'restore'}
 					Restore User
 				{:else}

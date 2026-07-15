@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { drizzle } from 'drizzle-orm/d1';
+import { trackEvent } from './analytics';
 import { account, session, user, verification } from './schema';
 
 // Only pass auth-related tables to better-auth
@@ -27,6 +28,18 @@ export const createAuth = (env: Env) =>
 			}
 		},
 		secret: env.BETTER_AUTH_SECRET,
+		// Funnel analytics: fire a `signup` event when Better Auth creates a new
+		// user row (the source of truth for guest → signup conversion). No PII is
+		// recorded - only the event name. Fails open via trackEvent().
+		databaseHooks: {
+			user: {
+				create: {
+					after: async () => {
+						trackEvent(env, 'signup', { source: 'user' });
+					}
+				}
+			}
+		},
 		trustedOrigins: [
 			'https://freeinvoice.info',
 			'https://www.freeinvoice.info',

@@ -6,10 +6,13 @@
 	import InvoicePreviewWrapper from '$components/InvoicePreviewWrapper.svelte';
 	import TemplateSelector from '$components/TemplateSelector.svelte';
 	import PageSettingsSelector from '$components/PageSettingsSelector.svelte';
+	import PaymentDetailsComponent from '$components/PaymentDetailsComponent.svelte';
 	import ViewModeToggle from '$components/ViewModeToggle.svelte';
 	import ThemeToggle from '$components/ThemeToggle.svelte';
 	import SignUpPromptModal from '$components/SignUpPromptModal.svelte';
 	import ShareInvoiceModal from '$components/ShareInvoiceModal.svelte';
+	import AiFillModal from '$components/AiFillModal.svelte';
+	import UpgradePromptModal from '$components/UpgradePromptModal.svelte';
 	import CurrencySelector from '$components/CurrencySelector.svelte';
 	import LanguageSelector from '$components/LanguageSelector.svelte';
 	import MobileBottomSheet from '$components/mobile/MobileBottomSheet.svelte';
@@ -34,12 +37,15 @@
 	import { pageSettings, currentPageDimensions, viewMode } from '../stores/pageSettingsStore.js';
 	import { getTemplate } from '$lib/templates/registry';
 	import type {
+		ExtractedInvoice,
 		InvoiceData,
 		InvoiceItem,
 		MonetaryAdjustment,
+		PaymentDetails,
 		SavedInvoiceRecord,
 		ShippingInfo
 	} from '$lib/types';
+	import { track, trackOnce } from '$lib/analytics';
 	import { authClient } from '$lib/auth';
 	import { isInvoiceComplete } from '$lib/invoiceValidation';
 	import {
@@ -77,6 +83,8 @@
 	let showLimitWarning = $state<boolean>(false);
 	let showSignUpPrompt = $state<boolean>(false);
 	let showShareModal = $state<boolean>(false);
+	let showAiFillModal = $state<boolean>(false);
+	let showUpgradePrompt = $state<boolean>(false);
 	let showFileMenu = $state<boolean>(false);
 	let showProfileMenu = $state<boolean>(false);
 	let showMobileActionsSheet = $state<boolean>(false);
@@ -708,6 +716,8 @@
 			} else {
 				// Client-side generation for guests (with fixes applied)
 				await generatePdfClientSide(previewRef, currentInvoice, currentPageSettings);
+				// Funnel: a guest downloaded a client-side PDF.
+				track('guest_pdf_downloaded');
 			}
 		} catch (error) {
 			console.error('Failed to export PDF:', error);
@@ -975,6 +985,13 @@
 
 			// Always save to local IndexedDB regardless of auth state
 			saveLocalInvoice(invoice.id, invoice);
+
+			// Funnel: count a guest working on a local invoice once per invoice id
+			// (this auto-save effect runs on every edit; trackOnce dedupes it).
+			// Signed-in users are counted server-side via invoice_created instead.
+			if (!$session.data) {
+				trackOnce('guest_invoice_created', invoice.id);
+			}
 		}
 		if (invoice && invoice.items) {
 			invoice.subTotal = invoice.items.reduce(
@@ -1088,6 +1105,49 @@
 		current.shipping = newShipping;
 	};
 
+	const onUpdatePaymentDetails = (value: PaymentDetails): void => {
+		const current = ensureInvoice();
+		current.paymentDetails = value;
+	};
+
+	// AI invoice-from-text: merge the server-validated extraction into the
+	// current invoice. Only fields the extraction actually found are applied;
+	// sender info, template, logo, numbering, tax/discount, etc. are untouched.
+	const applyAiExtraction = (result: ExtractedInvoice): void => {
+		const current = ensureInvoice();
+
+		// Bill-to: combine name + detail lines into the single invoiceTo field.
+		const billToLines = [result.clientName, result.clientDetails]
+			.map((line) => line.trim())
+			.filter(Boolean);
+		if (billToLines.length > 0) {
+			current.invoiceTo = billToLines.join('\n');
+		}
+
+		// Line items: replace only when the AI extracted at least one.
+		if (result.items.length > 0) {
+			current.items = result.items.map((item) => ({
+				name: item.description,
+				quantity: item.quantity,
+				price: item.rate,
+				amount: item.quantity * item.rate
+			}));
+		}
+
+		if (result.dueDate) {
+			current.dueDate = result.dueDate;
+			userEditedDueDate = true;
+		}
+
+		if (result.notes.trim()) {
+			current.notes = result.notes.trim();
+		}
+	};
+
+	const openAiFillModal = (): void => {
+		showAiFillModal = true;
+	};
+
 	const onUpdateLogo = (newFile: File | string | null): void => {
 		const current = ensureInvoice();
 		if (newFile instanceof File) {
@@ -1121,6 +1181,12 @@
 			return;
 		}
 		current.invoiceTo = target.value;
+	};
+
+	// Fill the "bill to" field from a saved client (address book).
+	const onFillClient = (value: string): void => {
+		const current = ensureInvoice();
+		current.invoiceTo = value;
 	};
 
 	const onInvoiceFromInput = (event: Event): void => {
@@ -1338,6 +1404,14 @@
 											onclick={() => void runFileMenuAction(() => startNewInvoice())}
 										>
 											New invoice
+										</button>
+										<button
+											type="button"
+											class="docs-menu-option"
+											role="menuitem"
+											onclick={() => void runFileMenuAction(() => openAiFillModal())}
+										>
+											{$_('ai.menu_label')}
 										</button>
 										<button
 											type="button"
@@ -1912,6 +1986,11 @@
 								{onInvoiceFromInput}
 								{onInvoiceNumberInput}
 								{onInvoiceLabelInput}
+								{onFillClient}
+							/>
+							<PaymentDetailsComponent
+								paymentDetails={invoice.paymentDetails}
+								onUpdate={onUpdatePaymentDetails}
 							/>
 						</div>
 					</section>
@@ -1944,6 +2023,24 @@
 {#if showShareModal && invoice}
 	<ShareInvoiceModal invoiceId={invoice.id} {invoice} onClose={() => (showShareModal = false)} />
 {/if}
+
+<!-- AI invoice-from-text Modal -->
+{#if showAiFillModal}
+	<AiFillModal
+		isSignedIn={Boolean($session.data)}
+		onApply={applyAiExtraction}
+		onClose={() => (showAiFillModal = false)}
+		onSignIn={() => void signIn()}
+		onUpgrade={() => (showUpgradePrompt = true)}
+	/>
+{/if}
+
+<!-- Upgrade Prompt Modal (triggered by Pro-gated AI extraction) -->
+<UpgradePromptModal
+	open={showUpgradePrompt}
+	message={$_('ai.error_upgrade')}
+	onClose={() => (showUpgradePrompt = false)}
+/>
 
 <!-- Save Draft Modal -->
 
