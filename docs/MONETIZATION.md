@@ -94,7 +94,7 @@ Rule of thumb: **creation is free, workflow is paid.** Never gate something a us
 | Email invoice to client + reminders | ❌ | ✅ | **Stub — must build** |
 | Recurring invoices | ❌ | ✅ | **Must build** |
 | Client address book | ❌ | ✅ | **Must build** |
-| Reports (revenue, outstanding, per-client) | ❌ | ✅ | **Must build** (dashboard stats are a start) |
+| Reports (revenue, outstanding, per-client) | ❌ | ✅ | **Built** — `/dashboard/reports` |
 | "Pay this invoice" online | ❌ | ✅ | **Must build** (§5B) |
 | Remove "Made with FreeInvoice" badge on shared page | ❌ | ✅ | Trivial; add badge first |
 
@@ -196,7 +196,7 @@ Add a `paymentDetails` field to the invoice object: users paste their own Stripe
 
 ### Phase 4 — Scale revenue — ongoing
 
-- [ ] Reports (revenue, outstanding, per-client)
+- [x] Reports (revenue, outstanding, per-client) — `/dashboard/reports` (Pro-gated server load via `requirePro`; `src/routes/dashboard/reports/+page.server.ts`). Aggregates the user's cloud invoices in JS (D1 stores each invoice as opaque JSON): paid invoices → revenue by issue-month over the last 12 months, unpaid → outstanding split into not-yet-due vs overdue by due date, plus top clients by paid revenue (client = first line of the bill-to field). **All money is grouped per currency and never summed across currencies** — invoices carry no currency field, so each falls back to the user's `preferredCurrency`. Drafts/archived excluded; malformed rows skipped. Pure-CSS bar chart, no chart dependency.
 - [ ] AI assist features (invoice-from-text) as Pro perks, per PLAN.md Phase 10
 - ~~Stripe Connect pay-this-invoice~~ / ~~SSLCommerz/bKash provider + BDT regional pricing~~ — **parked 2026-07-14** (entity requirement; see §5B)
 

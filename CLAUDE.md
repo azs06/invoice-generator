@@ -65,6 +65,7 @@ Pages:
 - `/` — invoice editor (main state in `src/routes/+page.svelte` with `$state`; auto-save via `$effect`)
 - `/dashboard` — cloud invoice list, stats, filters (components in `src/components/dashboard/`)
 - `/dashboard/settings` — user settings (invoice prefix, currency)
+- `/dashboard/reports` — Pro reports (revenue by month, outstanding, top clients; aggregated in JS, grouped per currency)
 - `/admin`, `/admin/deleted` — admin panel (user management, ban, soft/hard delete, roles)
 - `/shared/[token]` — public shared-invoice view (records views)
 - `/invoice/[id]`, `/saved-invoices`, `/history` — invoice viewing/listing

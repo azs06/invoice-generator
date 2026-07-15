@@ -44,6 +44,19 @@
 				{$_('nav.my_invoices') || 'My Invoices'}
 			</a>
 			<a
+				href="/dashboard/reports"
+				class="nav-item"
+				class:active={$page.url.pathname === '/dashboard/reports'}
+				onclick={(event) => navigate(event, '/dashboard/reports')}
+			>
+				<svg viewBox="0 0 20 20" fill="currentColor" class="nav-icon">
+					<path
+						d="M3 3a1 1 0 000 2v10a2 2 0 002 2h12a1 1 0 100-2H5V3a1 1 0 00-2 0zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z"
+					/>
+				</svg>
+				{$_('nav.reports') || 'Reports'}
+			</a>
+			<a
 				href="/dashboard/settings"
 				class="nav-item"
 				class:active={$page.url.pathname === '/dashboard/settings'}
