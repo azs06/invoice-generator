@@ -1130,6 +1130,12 @@
 		current.invoiceTo = target.value;
 	};
 
+	// Fill the "bill to" field from a saved client (address book).
+	const onFillClient = (value: string): void => {
+		const current = ensureInvoice();
+		current.invoiceTo = value;
+	};
+
 	const onInvoiceFromInput = (event: Event): void => {
 		const current = ensureInvoice();
 		const target = event.currentTarget;
@@ -1919,6 +1925,7 @@
 								{onInvoiceFromInput}
 								{onInvoiceNumberInput}
 								{onInvoiceLabelInput}
+								{onFillClient}
 							/>
 							<PaymentDetailsComponent
 								paymentDetails={invoice.paymentDetails}

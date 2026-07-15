@@ -54,6 +54,7 @@ npm run test             # Playwright tests (also test:ui, test:headed)
 - `shared_links`: token, expiry, `revoked`, `viewCount`, `lastViewedAt` per invoice
 - `link_views`: per-view log (linkId, viewedAt, ipAddress, userAgent)
 - `user_settings`: `invoicePrefix`, `preferredCurrency` per user
+- `clients` (Pro): saved address-book contacts (`name` required, `email`, `phone`, `address`, `notes`) per `userId`. Fills an invoice's "bill to" from a saved client; create/edit are Pro-gated, reading/using existing clients is not.
 - `recurring_schedules` (Pro): `sourceInvoiceId` (cloud invoice to clone; plain text, no FK — cron deactivates orphans), `frequency` (`weekly`|`monthly`|`yearly`), `nextRunAt`, `lastRunAt`, `recipientEmail`, `active`, per `userId`. Driven by the Workers Cron trigger (see Deployment).
 
 ### Routes
@@ -74,6 +75,7 @@ API endpoints (`src/routes/api/`):
 - `api/invoices` (GET/POST), `api/invoices/[id]` (GET/PUT/DELETE), `api/invoices/[id]/archive`, `api/invoices/[id]/download` (PDF from R2), `api/invoices/[id]/share` (share link management), `api/invoices/[id]/email` (POST — send invoice via Cloudflare Email Sending; Pro-gated, rate-limited, attaches R2 PDF if present; returns 503 without the `EMAIL` binding)
 - `api/pdf` — server-side PDF generation (auth required)
 - `api/recurring` (GET list / POST create — Pro-gated create), `api/recurring/[id]` (PUT update / DELETE) — recurring invoice schedules; validates `frequency` + `recipientEmail`
+- `api/clients` (GET list / POST create — Pro-gated create), `api/clients/[id]` (PUT update / DELETE) — client address book; ownership-checked, validates `name` + optional `email`
 - `api/user/settings`
 - `api/admin/users`, `api/admin/users/deleted`, `api/admin/users/[id]/{ban,delete,destroy,restore,role}`
 

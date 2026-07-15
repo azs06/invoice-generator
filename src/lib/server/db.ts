@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { v4 as uuidv4 } from 'uuid';
 import type { InvoiceData, SavedInvoiceRecord } from '$lib/types';
 import {
+	clients,
 	invoices,
 	linkViews,
 	recurringSchedules,
@@ -764,6 +765,159 @@ export async function deleteRecurringSchedule(
 	await d1
 		.delete(recurringSchedules)
 		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)));
+
+	return true;
+}
+
+// =====================================================
+// Client Address Book Functions (Pro)
+// =====================================================
+
+export interface ClientRecord {
+	id: string;
+	name: string;
+	email: string | null;
+	phone: string | null;
+	address: string | null;
+	notes: string | null;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface ClientInput {
+	name: string;
+	email?: string | null;
+	phone?: string | null;
+	address?: string | null;
+	notes?: string | null;
+}
+
+/**
+ * List a user's saved clients (newest first).
+ */
+export async function getClients(db: D1Database, userId: string): Promise<ClientRecord[]> {
+	const d1 = drizzle(db);
+	const rows = await d1
+		.select()
+		.from(clients)
+		.where(eq(clients.userId, userId))
+		.orderBy(desc(clients.createdAt));
+
+	return rows.map((row) => ({
+		id: row.id,
+		name: row.name,
+		email: row.email ?? null,
+		phone: row.phone ?? null,
+		address: row.address ?? null,
+		notes: row.notes ?? null,
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt
+	}));
+}
+
+/**
+ * Get a single client by id (ownership enforced). Returns null when none matched.
+ */
+export async function getClient(
+	db: D1Database,
+	userId: string,
+	id: string
+): Promise<ClientRecord | null> {
+	const d1 = drizzle(db);
+	const row = await d1
+		.select()
+		.from(clients)
+		.where(and(eq(clients.id, id), eq(clients.userId, userId)))
+		.get();
+
+	if (!row) return null;
+	return {
+		id: row.id,
+		name: row.name,
+		email: row.email ?? null,
+		phone: row.phone ?? null,
+		address: row.address ?? null,
+		notes: row.notes ?? null,
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt
+	};
+}
+
+/**
+ * Create a client for the user. Returns the new id.
+ */
+export async function createClient(
+	db: D1Database,
+	userId: string,
+	input: ClientInput
+): Promise<string> {
+	const d1 = drizzle(db);
+	const id = uuidv4();
+	const now = new Date();
+	await d1.insert(clients).values({
+		id,
+		userId,
+		name: input.name,
+		email: input.email ?? null,
+		phone: input.phone ?? null,
+		address: input.address ?? null,
+		notes: input.notes ?? null,
+		createdAt: now,
+		updatedAt: now
+	});
+	return id;
+}
+
+/**
+ * Update a client (ownership enforced). Returns false when none matched.
+ */
+export async function updateClient(
+	db: D1Database,
+	userId: string,
+	id: string,
+	patch: Partial<ClientInput>
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: clients.id })
+		.from(clients)
+		.where(and(eq(clients.id, id), eq(clients.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.update(clients)
+		.set({ ...patch, updatedAt: new Date() })
+		.where(and(eq(clients.id, id), eq(clients.userId, userId)));
+
+	return true;
+}
+
+/**
+ * Delete a client (ownership enforced). Returns false when none matched.
+ */
+export async function deleteClient(
+	db: D1Database,
+	userId: string,
+	id: string
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: clients.id })
+		.from(clients)
+		.where(and(eq(clients.id, id), eq(clients.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1.delete(clients).where(and(eq(clients.id, id), eq(clients.userId, userId)));
 
 	return true;
 }

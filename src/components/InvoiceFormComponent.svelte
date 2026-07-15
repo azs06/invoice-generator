@@ -4,6 +4,7 @@
 	import TermsAndNotesComponent from './TermsAndNotesComponent.svelte';
 	import AmountPaidComponent from './AmountPaidComponent.svelte';
 	import TotalComponent from './TotalComponent.svelte';
+	import ClientBookComponent from './ClientBookComponent.svelte';
 	import { DEFAULT_LOGO_PATH, defaultInvoice } from '$lib';
 	import type { InvoiceData, InvoiceItem, MonetaryAdjustment, ShippingInfo } from '$lib/types';
 
@@ -25,6 +26,7 @@
 		onInvoiceFromInput?: (event: Event) => void;
 		onInvoiceNumberInput?: (event: Event) => void;
 		onInvoiceLabelInput?: (event: Event) => void;
+		onFillClient?: (value: string) => void;
 	}
 
 	let {
@@ -44,7 +46,8 @@
 		onInvoiceToInput = () => {},
 		onInvoiceFromInput = () => {},
 		onInvoiceNumberInput = () => {},
-		onInvoiceLabelInput = () => {}
+		onInvoiceLabelInput = () => {},
+		onFillClient = () => {}
 	}: Props = $props();
 
 	const handleFileChange = (event: Event): void => {
@@ -169,6 +172,7 @@
 					placeholder={$_('placeholders.client_name')}
 					data-testid="invoice-to"
 				/>
+				<ClientBookComponent invoiceTo={invoice.invoiceTo} onFill={onFillClient} />
 			</div>
 
 			<div class="field">

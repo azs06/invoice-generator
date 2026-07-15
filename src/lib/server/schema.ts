@@ -122,6 +122,20 @@ export const recurringSchedules = sqliteTable('recurring_schedules', {
 	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
 });
 
+export const clients = sqliteTable('clients', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.references(() => user.id),
+	name: text('name').notNull(),
+	email: text('email'),
+	phone: text('phone'),
+	address: text('address'),
+	notes: text('notes'),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
+});
+
 export const userSettings = sqliteTable('user_settings', {
 	id: text('id').primaryKey(),
 	userId: text('userId')

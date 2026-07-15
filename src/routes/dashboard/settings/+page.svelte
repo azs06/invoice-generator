@@ -4,6 +4,7 @@
 	import { page } from '$app/stores';
 	import type { PageData } from './$types';
 	import { currencies, type CurrencyCode } from '$lib/stores/currency';
+	import ClientFormModal, { type ClientFormValues } from '$components/ClientFormModal.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -75,8 +76,63 @@
 		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(ms);
 	};
 
+	// --- Client address book ---
+	interface Client {
+		id: string;
+		name: string;
+		email: string | null;
+		phone: string | null;
+		address: string | null;
+		notes: string | null;
+	}
+
+	let clients = $state<Client[]>([]);
+	let clientsLoading = $state<boolean>(true);
+	let clientBusyId = $state<string | null>(null);
+	let clientModalOpen = $state<boolean>(false);
+	let editingClient = $state<Partial<ClientFormValues>>({});
+
+	const loadClients = async (): Promise<void> => {
+		clientsLoading = true;
+		try {
+			const res = await fetch('/api/clients');
+			if (res.ok) {
+				const body = (await res.json()) as { clients: Client[] };
+				clients = body.clients ?? [];
+			}
+		} catch {
+			// Leave the list empty on failure.
+		} finally {
+			clientsLoading = false;
+		}
+	};
+
+	const editClient = (client: Client): void => {
+		editingClient = {
+			id: client.id,
+			name: client.name,
+			email: client.email ?? '',
+			phone: client.phone ?? '',
+			address: client.address ?? '',
+			notes: client.notes ?? ''
+		};
+		clientModalOpen = true;
+	};
+
+	const deleteClient = async (client: Client): Promise<void> => {
+		if (!confirm($_('clients.delete_confirm'))) return;
+		clientBusyId = client.id;
+		try {
+			const res = await fetch(`/api/clients/${client.id}`, { method: 'DELETE' });
+			if (res.ok) await loadClients();
+		} finally {
+			clientBusyId = null;
+		}
+	};
+
 	onMount(() => {
 		loadRecurring();
+		loadClients();
 	});
 
 	let isPro = $derived($page.data.tier === 'pro');
@@ -313,6 +369,65 @@
 				{/if}
 			</section>
 
+			<section class="settings-section clients-section">
+				<div class="section-header">
+					<div class="section-title-row">
+						<span class="section-icon icon-clients" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+								/>
+							</svg>
+						</span>
+						<h2>{$_('clients.manage_title')}</h2>
+					</div>
+					<p class="section-description">{$_('clients.manage_description')}</p>
+				</div>
+
+				{#if clientsLoading}
+					<p class="recurring-empty">{$_('clients.loading')}</p>
+				{:else if clients.length === 0}
+					<p class="recurring-empty">{$_('clients.manage_empty')}</p>
+				{:else}
+					<ul class="recurring-list">
+						{#each clients as client (client.id)}
+							<li class="recurring-item">
+								<div class="recurring-info">
+									<div class="recurring-top">
+										<span class="recurring-number">{client.name}</span>
+									</div>
+									<div class="recurring-meta">
+										{#if client.email}<span>{client.email}</span>{/if}
+										{#if client.phone}<span>{client.phone}</span>{/if}
+										{#if client.address}<span>{client.address}</span>{/if}
+									</div>
+								</div>
+								<div class="recurring-actions">
+									<button
+										class="recurring-btn"
+										type="button"
+										onclick={() => editClient(client)}
+										disabled={clientBusyId === client.id}
+									>
+										{$_('clients.edit')}
+									</button>
+									<button
+										class="recurring-btn danger"
+										type="button"
+										onclick={() => deleteClient(client)}
+										disabled={clientBusyId === client.id}
+									>
+										{$_('clients.delete')}
+									</button>
+								</div>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</section>
+
 			<div class="save-section">
 				<div class="save-feedback">
 					{#if saveError}
@@ -338,6 +453,14 @@
 		</div>
 	</div>
 </div>
+
+{#if clientModalOpen}
+	<ClientFormModal
+		client={editingClient}
+		onClose={() => (clientModalOpen = false)}
+		onSaved={loadClients}
+	/>
+{/if}
 
 <style>
 	.settings-page {
@@ -546,7 +669,16 @@
 		grid-column: 1 / -1;
 	}
 
+	.clients-section {
+		grid-column: 1 / -1;
+	}
+
 	.icon-recurring {
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		color: var(--color-accent-blue);
+	}
+
+	.icon-clients {
 		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
 		color: var(--color-accent-blue);
 	}
