@@ -17,12 +17,14 @@ export const RATE_LIMITS = {
 	/** Browser Rendering is billed per use - cap PDF generations per user. */
 	pdfGeneration: { limit: 20, windowSeconds: 60 * 60 } satisfies RateLimitConfig,
 	/**
-	 * Monthly ceiling on top of the hourly PDF cap. The hourly cap alone
-	 * allows 14,400 renders/mo, whose Browser Rendering cost can exceed a
-	 * Pro subscription's net revenue (docs/COST_ANALYSIS.md). 250/mo caps
-	 * worst-case exposure at ~$0.30-0.40 while staying ~10x real usage.
+	 * Anti-abuse ceiling on top of the hourly PDF cap — NOT a plan
+	 * entitlement and deliberately undisclosed on the pricing page (Pro is
+	 * marketed as unlimited; this is ~30x real freelancer usage). The hourly
+	 * cap alone allows 14,400 renders/mo, whose Browser Rendering cost can
+	 * exceed a Pro subscription's net revenue; 1000/mo caps worst-case
+	 * exposure at ~$0.38/user (docs/COST_ANALYSIS.md).
 	 */
-	pdfGenerationMonthly: { limit: 250, windowSeconds: 30 * 24 * 60 * 60 } satisfies RateLimitConfig,
+	pdfGenerationMonthly: { limit: 1000, windowSeconds: 30 * 24 * 60 * 60 } satisfies RateLimitConfig,
 	/** Share-link creation writes to D1 - cap per user per day. */
 	shareLinkCreate: { limit: 30, windowSeconds: 24 * 60 * 60 } satisfies RateLimitConfig,
 	/** Invoice saves write to D1 (and R2 for logos) - cap per user per hour. */

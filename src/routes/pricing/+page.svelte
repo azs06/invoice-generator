@@ -42,7 +42,7 @@
 			cadence: 'per month',
 			blurb: 'The full workflow, billed monthly.',
 			features: [
-				'High-quality server-side PDFs (250/mo fair use)',
+				'Unlimited high-quality server-side PDFs',
 				'Unlimited cloud invoices',
 				'Unlimited share links, no badge',
 				'“Pay this invoice” links'

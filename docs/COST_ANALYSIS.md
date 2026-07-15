@@ -246,9 +246,12 @@ unpriced — the 20/day cap is prudent to keep in place for when Cloudflare pric
 
 ## Recommendations
 
-1. ✅ **APPLIED (2026-07-15):** `pdfGenerationMonthly` = 250/30-day window in
+1. ✅ **APPLIED (2026-07-15):** `pdfGenerationMonthly` = **1000**/30-day window in
    `src/lib/server/rateLimit.ts`, enforced as a second `checkRateLimit` call in
-   `/api/pdf`. Original recommendation follows. — The hourly limit
+   `/api/pdf`. Set above the 200–300 suggested below as a product decision: Pro is
+   marketed "unlimited" and the ceiling is an undisclosed anti-abuse tripwire
+   (worst case $0.38/user at 15 s renders, ~93% margin — see caps table).
+   Original recommendation follows. — The hourly limit
    stops bursts but leaves a 14,400/mo ceiling worth up to ~$5.40. Add a
    `pdfGenerationMonthly` limit of **~200–300/mo for Pro** (window = 30 days in the
    existing D1 counter — no schema change, just another `RATE_LIMITS` entry and a
