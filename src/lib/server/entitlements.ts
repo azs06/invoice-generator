@@ -5,7 +5,6 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { getInvoiceCount } from './db';
 import { subscriptions } from './schema';
-import { getTemplate } from '$lib/templates/registry';
 import type { InvoiceData } from '$lib/types';
 
 export type Tier = 'pro' | 'free';
@@ -70,13 +69,16 @@ export function requirePro(event: RequestEvent): void {
  * Shared by POST /api/invoices and PUT /api/invoices/[id].
  *
  * No-op unless monetization is enabled and the user is on the free tier.
- * Both gates grandfather existing data (see docs/MONETIZATION.md §4):
- *  - Premium templates: block only *newly adopting* a premium template;
- *    persisting one already stored on the invoice is always allowed.
- *  - Cloud invoice quota: applies to creates only; updates never blocked.
+ * The gates grandfather existing data (see docs/MONETIZATION.md §4):
+ * - the cloud invoice quota applies to creates only; updates are never blocked.
+ * - the payment-link gate blocks only when payment details are being *newly*
+ *   enabled; invoices that already had them stay editable/saveable forever.
  *
- * `stored` is the currently persisted invoice for this id (null on create).
- * Pass it in so callers do a single stored-invoice lookup per request.
+ * `incoming` is the invoice payload being saved; `stored` is the currently
+ * persisted invoice for this id (null on create). Pass `stored` in so callers
+ * do a single stored-invoice lookup per request. The grandfather diff is
+ * mandatory: the editor auto-saves constantly, so a stateless gate would lock
+ * free users out of their own already-enabled data.
  */
 export async function enforceInvoiceSaveGates(
 	event: RequestEvent,
@@ -87,14 +89,6 @@ export async function enforceInvoiceSaveGates(
 ): Promise<void> {
 	if (!isMonetizationEnabled(event) || event.locals.tier === 'pro') return;
 
-	// Premium template gate: only when switching *to* a premium template.
-	if (incoming.templateId && incoming.templateId !== stored?.templateId) {
-		const template = getTemplate(incoming.templateId);
-		if (template?.premium) {
-			throw error(402, `The "${template.name}" template requires FreeInvoice Pro.`);
-		}
-	}
-
 	// Cloud invoice quota: only creates count against the limit.
 	if (!stored) {
 		const count = await getInvoiceCount(db, userId);
@@ -104,5 +98,15 @@ export async function enforceInvoiceSaveGates(
 				`Free accounts can store up to ${FREE_LIMITS.cloudInvoices} invoices in the cloud. Upgrade to Pro for unlimited storage.`
 			);
 		}
+	}
+
+	// Payment link (Pro): block only when newly enabling payment details.
+	// Grandfather invoices that already had them enabled so auto-save never
+	// locks a free user out of an invoice they previously turned this on for.
+	if (incoming.paymentDetails?.enabled && !stored?.paymentDetails?.enabled) {
+		throw error(
+			402,
+			'“Pay this invoice” payment links require FreeInvoice Pro. Upgrade to add a payment link to your shared invoices.'
+		);
 	}
 }

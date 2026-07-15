@@ -63,8 +63,8 @@
 
 			<ul class="benefits-list">
 				<li>
-					<span class="benefit-icon">🎨</span>
-					<span>{$_('upgrade.benefit_templates')}</span>
+					<span class="benefit-icon">💳</span>
+					<span>{$_('upgrade.benefit_payments')}</span>
 				</li>
 				<li>
 					<span class="benefit-icon">📄</span>

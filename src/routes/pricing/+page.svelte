@@ -30,7 +30,7 @@
 			features: [
 				'Unlimited invoices (guest or account)',
 				'Client-side PDF export',
-				'5 free templates',
+				'All 8 templates',
 				'Up to 3 active share links',
 				'English & Bengali, dark mode'
 			]
@@ -42,7 +42,6 @@
 			cadence: 'per month',
 			blurb: 'The full workflow, billed monthly.',
 			features: [
-				'All 8 premium templates',
 				'High-quality server-side PDFs',
 				'Unlimited cloud invoices',
 				'Unlimited share links, no badge',
@@ -75,7 +74,7 @@
 	<title>Pricing — FreeInvoice</title>
 	<meta
 		name="description"
-		content="FreeInvoice pricing. The core generator is free forever. Upgrade to Pro for premium templates, server-side PDFs, unlimited cloud sync, and getting paid online."
+		content="FreeInvoice pricing. The core generator is free forever. Upgrade to Pro for server-side PDFs, unlimited cloud sync, and getting paid online."
 	/>
 	<meta property="og:title" content="Pricing — FreeInvoice" />
 </svelte:head>

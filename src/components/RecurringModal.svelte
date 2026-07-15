@@ -2,50 +2,56 @@
 	import { _ } from 'svelte-i18n';
 
 	interface Props {
-		invoiceId: string;
+		sourceInvoiceId: string;
 		invoiceNumber?: string;
-		recipientName?: string;
+		recipientEmail?: string;
 		onClose: () => void;
+		onCreated?: () => void;
 	}
 
-	let { invoiceId, invoiceNumber = '', recipientName = '', onClose }: Props = $props();
+	let {
+		sourceInvoiceId,
+		invoiceNumber = '',
+		recipientEmail = '',
+		onClose,
+		onCreated
+	}: Props = $props();
 
-	let recipientEmail = $state<string>('');
-	let subject = $state<string>(`Invoice ${invoiceNumber}`.trim());
-	let message = $state<string>(
-		`Dear ${recipientName || 'Client'},\n\nPlease find attached the invoice for your reference.\n\nBest regards`
-	);
-	let isSending = $state<boolean>(false);
+	type Frequency = 'weekly' | 'monthly' | 'yearly';
+
+	const today = new Date().toISOString().slice(0, 10);
+
+	let frequency = $state<Frequency>('monthly');
+	let email = $state<string>(recipientEmail);
+	let startDate = $state<string>(today);
+	let isSaving = $state<boolean>(false);
 	let error = $state<string | null>(null);
-	let successMessage = $state<string | null>(null);
+	let success = $state<boolean>(false);
 
-	const validateEmail = (email: string): boolean => {
-		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-	};
+	const validateEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 	const messageForStatus = (status: number): string => {
-		if (status === 401) return $_('email_modal.error_auth');
-		if (status === 402) return $_('email_modal.error_upgrade');
-		if (status === 429) return $_('email_modal.error_rate_limit');
-		if (status === 503) return $_('email_modal.error_unavailable');
-		return $_('email_modal.error_generic');
+		if (status === 401) return $_('recurring.error_auth');
+		if (status === 402) return $_('recurring.error_upgrade');
+		if (status === 404) return $_('recurring.error_not_found');
+		return $_('recurring.error_generic');
 	};
 
-	const handleSend = async () => {
-		const to = recipientEmail.trim();
+	const handleCreate = async () => {
+		const to = email.trim();
 		if (!validateEmail(to)) {
-			error = $_('email_modal.error_invalid_email');
+			error = $_('recurring.error_invalid_email');
 			return;
 		}
 
-		isSending = true;
+		isSaving = true;
 		error = null;
 
 		try {
-			const res = await fetch(`/api/invoices/${invoiceId}/email`, {
+			const res = await fetch('/api/recurring', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ to, subject: subject.trim(), message: message.trim() })
+				body: JSON.stringify({ sourceInvoiceId, frequency, recipientEmail: to, startDate })
 			});
 
 			if (!res.ok) {
@@ -53,28 +59,21 @@
 				return;
 			}
 
-			const data = (await res.json().catch(() => ({}))) as { attached?: boolean };
-			successMessage = $_(
-				data.attached ? 'email_modal.success_with_pdf' : 'email_modal.success_no_pdf',
-				{ values: { email: to } }
-			);
+			success = true;
+			onCreated?.();
 		} catch {
-			error = $_('email_modal.error_generic');
+			error = $_('recurring.error_generic');
 		} finally {
-			isSending = false;
+			isSaving = false;
 		}
 	};
 
 	const handleBackdropClick = (event: MouseEvent): void => {
-		if (event.target === event.currentTarget) {
-			onClose();
-		}
+		if (event.target === event.currentTarget) onClose();
 	};
 
 	const handleBackdropKeydown = (event: KeyboardEvent): void => {
-		if (event.key === 'Escape') {
-			onClose();
-		}
+		if (event.key === 'Escape') onClose();
 	};
 </script>
 
@@ -84,7 +83,7 @@
 	role="dialog"
 	tabindex="-1"
 	aria-modal="true"
-	aria-labelledby="email-modal-title"
+	aria-labelledby="recurring-modal-title"
 	onclick={handleBackdropClick}
 	onkeydown={handleBackdropKeydown}
 >
@@ -92,8 +91,8 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div class="modal-content" onclick={(e) => e.stopPropagation()}>
 		<header class="modal-header">
-			<h2 id="email-modal-title">{$_('email_modal.title') || 'Send Invoice via Email'}</h2>
-			<button class="close-button" onclick={onClose} aria-label="Close modal">
+			<h2 id="recurring-modal-title">{$_('recurring.modal_title')}</h2>
+			<button class="close-button" onclick={onClose} aria-label={$_('recurring.close')}>
 				<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 					<path
 						d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
@@ -103,7 +102,7 @@
 		</header>
 
 		<div class="modal-body">
-			{#if successMessage}
+			{#if success}
 				<div class="success-state">
 					<div class="success-icon" aria-hidden="true">
 						<svg viewBox="0 0 20 20" fill="currentColor">
@@ -114,72 +113,59 @@
 							/>
 						</svg>
 					</div>
-					<h3>{$_('email_modal.success_title')}</h3>
-					<p>{successMessage}</p>
+					<h3>{$_('recurring.success_title')}</h3>
+					<p>{$_('recurring.success_message')}</p>
 				</div>
 			{:else}
+				<p class="modal-intro">{$_('recurring.description')}</p>
+				{#if invoiceNumber}
+					<p class="source-line">{$_('recurring.source_label')}: <strong>{invoiceNumber}</strong></p>
+				{/if}
+
 				{#if error}
 					<div class="error-message">{error}</div>
 				{/if}
 
 				<div class="form-group">
-					<label for="recipient-email">{$_('email_modal.recipient_email') || 'Recipient Email'}</label>
+					<label for="recurring-frequency">{$_('recurring.frequency')}</label>
+					<select id="recurring-frequency" bind:value={frequency} class="form-input">
+						<option value="weekly">{$_('recurring.frequency_weekly')}</option>
+						<option value="monthly">{$_('recurring.frequency_monthly')}</option>
+						<option value="yearly">{$_('recurring.frequency_yearly')}</option>
+					</select>
+				</div>
+
+				<div class="form-group">
+					<label for="recurring-email">{$_('recurring.recipient_email')}</label>
 					<input
-						id="recipient-email"
+						id="recurring-email"
 						type="email"
-						bind:value={recipientEmail}
-						placeholder={$_('email_modal.recipient_email_placeholder') || 'client@example.com'}
+						bind:value={email}
+						placeholder={$_('recurring.recipient_email_placeholder')}
 						class="form-input"
 					/>
 				</div>
 
 				<div class="form-group">
-					<label for="email-subject">{$_('email_modal.subject') || 'Subject'}</label>
-					<input
-						id="email-subject"
-						type="text"
-						bind:value={subject}
-						placeholder={$_('email_modal.subject_placeholder') || 'Invoice #123'}
-						class="form-input"
-					/>
-				</div>
-
-				<div class="form-group">
-					<label for="email-message">{$_('email_modal.message') || 'Message (optional)'}</label>
-					<textarea
-						id="email-message"
-						bind:value={message}
-						placeholder={$_('email_modal.message_placeholder') || 'Add a personal message...'}
-						class="form-textarea"
-						rows="5"
-					></textarea>
+					<label for="recurring-start">{$_('recurring.start_date')}</label>
+					<input id="recurring-start" type="date" bind:value={startDate} class="form-input" />
 				</div>
 			{/if}
 		</div>
 
 		<footer class="modal-footer">
-			{#if successMessage}
-				<button class="send-button" onclick={onClose}>
-					{$_('email_modal.close') || 'Close'}
-				</button>
+			{#if success}
+				<button class="primary-button" onclick={onClose}>{$_('recurring.close')}</button>
 			{:else}
-				<button class="cancel-button" onclick={onClose} disabled={isSending}>
-					{$_('email_modal.cancel') || 'Cancel'}
+				<button class="cancel-button" onclick={onClose} disabled={isSaving}>
+					{$_('recurring.cancel')}
 				</button>
-				<button
-					class="send-button"
-					onclick={handleSend}
-					disabled={isSending || !recipientEmail}
-				>
-					{#if isSending}
+				<button class="primary-button" onclick={handleCreate} disabled={isSaving || !email}>
+					{#if isSaving}
 						<span class="spinner"></span>
-						{$_('email_modal.sending') || 'Sending...'}
+						{$_('recurring.creating')}
 					{:else}
-						<svg viewBox="0 0 20 20" fill="currentColor">
-							<path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z" />
-							<path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z" />
-						</svg>
-						{$_('email_modal.send') || 'Send Email'}
+						{$_('recurring.create')}
 					{/if}
 				</button>
 			{/if}
@@ -197,16 +183,6 @@
 		justify-content: center;
 		z-index: 100;
 		padding: 1rem;
-		animation: fadeIn 0.15s ease;
-	}
-
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
 	}
 
 	.modal-content {
@@ -214,23 +190,11 @@
 		border: 1px solid var(--color-border-primary);
 		border-radius: var(--radius-lg);
 		width: 100%;
-		max-width: 480px;
+		max-width: 460px;
 		max-height: 90vh;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
-		animation: slideUp 0.2s ease;
-	}
-
-	@keyframes slideUp {
-		from {
-			opacity: 0;
-			transform: translateY(10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
 	}
 
 	.modal-header {
@@ -260,7 +224,6 @@
 		background: transparent;
 		color: var(--color-text-secondary);
 		cursor: pointer;
-		transition: all 0.15s;
 	}
 
 	.close-button:hover {
@@ -279,6 +242,19 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.25rem;
+	}
+
+	.modal-intro {
+		margin: 0;
+		font-size: 0.9375rem;
+		color: var(--color-text-secondary);
+		line-height: 1.5;
+	}
+
+	.source-line {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
 	}
 
 	.error-message {
@@ -302,8 +278,7 @@
 		color: var(--color-text-primary);
 	}
 
-	.form-input,
-	.form-textarea {
+	.form-input {
 		width: 100%;
 		padding: 0.75rem 1rem;
 		font-size: 0.9375rem;
@@ -311,19 +286,11 @@
 		border-radius: var(--radius-md);
 		background: var(--color-bg-primary);
 		color: var(--color-text-primary);
-		transition: border-color 0.15s ease, box-shadow 0.15s ease;
 	}
 
-	.form-input:focus,
-	.form-textarea:focus {
+	.form-input:focus {
 		outline: none;
 		border-color: var(--color-accent-blue);
-	}
-
-	.form-textarea {
-		resize: vertical;
-		min-height: 100px;
-		font-family: inherit;
 	}
 
 	.success-state {
@@ -383,7 +350,6 @@
 		background: var(--color-bg-primary);
 		color: var(--color-text-primary);
 		cursor: pointer;
-		transition: all 0.15s;
 	}
 
 	.cancel-button:hover:not(:disabled) {
@@ -395,7 +361,7 @@
 		cursor: not-allowed;
 	}
 
-	.send-button {
+	.primary-button {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -408,22 +374,16 @@
 		background: #3b82f6;
 		color: white;
 		cursor: pointer;
-		transition: all 0.15s;
-		min-width: 120px;
+		min-width: 130px;
 	}
 
-	.send-button:hover:not(:disabled) {
+	.primary-button:hover:not(:disabled) {
 		background: #2563eb;
 	}
 
-	.send-button:disabled {
+	.primary-button:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
-	}
-
-	.send-button svg {
-		width: 1rem;
-		height: 1rem;
 	}
 
 	.spinner {
@@ -447,19 +407,12 @@
 			border-radius: 0;
 		}
 
-		.modal-header,
-		.modal-body,
-		.modal-footer {
-			padding-left: 1rem;
-			padding-right: 1rem;
-		}
-
 		.modal-footer {
 			flex-direction: column-reverse;
 		}
 
 		.cancel-button,
-		.send-button {
+		.primary-button {
 			width: 100%;
 		}
 	}

@@ -22,6 +22,36 @@ declare global {
 	}
 
 	/**
+	 * Cloudflare Email Sending binding (`send_email` in wrangler.toml).
+	 * Optional so plain `npm run dev` (no bindings) can return 503, mirroring
+	 * BROWSER. Typed against the object-form send() API documented at
+	 * https://developers.cloudflare.com/email-service/ (the installed
+	 * @cloudflare/workers-types predates the object form).
+	 */
+	interface EmailSendAttachment {
+		content: string | ArrayBuffer | ArrayBufferView;
+		filename: string;
+		type?: string;
+		disposition?: 'attachment' | 'inline';
+		contentId?: string;
+	}
+	interface EmailSendMessage {
+		to: string | string[];
+		from: string | { email: string; name?: string };
+		replyTo?: string | string[];
+		cc?: string | string[];
+		bcc?: string | string[];
+		subject: string;
+		html?: string;
+		text?: string;
+		attachments?: EmailSendAttachment[];
+		headers?: Record<string, string>;
+	}
+	interface EmailSendBinding {
+		send(message: EmailSendMessage): Promise<{ messageId?: string } | void>;
+	}
+
+	/**
 	 * Cloudflare Worker environment bindings.
 	 * Secrets should be set via: wrangler secret put <SECRET_NAME>
 	 */
@@ -32,6 +62,8 @@ declare global {
 		BUCKET: R2Bucket;
 		// Browser Rendering for PDF generation
 		BROWSER: Fetcher;
+		// Cloudflare Email Sending (send_email binding); absent in plain dev
+		EMAIL?: EmailSendBinding;
 		// Environment variables (set in wrangler.toml [vars])
 		SUPER_ADMIN_EMAILS: string;
 		// Pro gating feature flag ("true" | "false"); see docs/MONETIZATION.md

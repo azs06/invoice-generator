@@ -3,7 +3,14 @@ import { and, count, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { v4 as uuidv4 } from 'uuid';
 import type { InvoiceData, SavedInvoiceRecord } from '$lib/types';
-import { invoices, linkViews, sharedLinks, subscriptions, userSettings } from './schema';
+import {
+	invoices,
+	linkViews,
+	recurringSchedules,
+	sharedLinks,
+	subscriptions,
+	userSettings
+} from './schema';
 
 const INVOICE_LIMIT = 10;
 const SHARE_LINK_DEFAULT_DAYS = 30;
@@ -585,6 +592,180 @@ export async function recordLinkView(
 			lastViewedAt: now
 		})
 		.where(eq(sharedLinks.id, linkId));
+}
+
+// =====================================================
+// Recurring Schedule Functions (Pro)
+// =====================================================
+
+export interface RecurringScheduleRecord {
+	id: string;
+	sourceInvoiceId: string;
+	sourceInvoiceNumber: string | null;
+	frequency: string;
+	nextRunAt: Date;
+	lastRunAt: Date | null;
+	recipientEmail: string;
+	active: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface CreateRecurringScheduleInput {
+	sourceInvoiceId: string;
+	frequency: string;
+	nextRunAt: Date;
+	recipientEmail: string;
+}
+
+/**
+ * List a user's recurring schedules (newest first), each annotated with the
+ * source invoice's number for display.
+ */
+export async function getRecurringSchedules(
+	db: D1Database,
+	userId: string
+): Promise<RecurringScheduleRecord[]> {
+	const d1 = drizzle(db);
+
+	const rows = await d1
+		.select({
+			id: recurringSchedules.id,
+			sourceInvoiceId: recurringSchedules.sourceInvoiceId,
+			frequency: recurringSchedules.frequency,
+			nextRunAt: recurringSchedules.nextRunAt,
+			lastRunAt: recurringSchedules.lastRunAt,
+			recipientEmail: recurringSchedules.recipientEmail,
+			active: recurringSchedules.active,
+			createdAt: recurringSchedules.createdAt,
+			updatedAt: recurringSchedules.updatedAt,
+			invoiceData: invoices.data
+		})
+		.from(recurringSchedules)
+		.leftJoin(invoices, eq(invoices.id, recurringSchedules.sourceInvoiceId))
+		.where(eq(recurringSchedules.userId, userId))
+		.orderBy(desc(recurringSchedules.createdAt));
+
+	return rows.map((row) => {
+		let sourceInvoiceNumber: string | null = null;
+		if (row.invoiceData) {
+			try {
+				sourceInvoiceNumber =
+					(JSON.parse(row.invoiceData) as InvoiceData).invoiceNumber || null;
+			} catch {
+				sourceInvoiceNumber = null;
+			}
+		}
+		return {
+			id: row.id,
+			sourceInvoiceId: row.sourceInvoiceId,
+			sourceInvoiceNumber,
+			frequency: row.frequency,
+			nextRunAt: row.nextRunAt,
+			lastRunAt: row.lastRunAt ?? null,
+			recipientEmail: row.recipientEmail,
+			active: row.active ?? true,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt
+		};
+	});
+}
+
+/**
+ * Create a recurring schedule. Returns the new id, or null when the source
+ * invoice does not exist or is not owned by the user.
+ */
+export async function createRecurringSchedule(
+	db: D1Database,
+	userId: string,
+	input: CreateRecurringScheduleInput
+): Promise<string | null> {
+	const d1 = drizzle(db);
+
+	// Verify the source invoice belongs to the user.
+	const invoice = await d1
+		.select({ id: invoices.id })
+		.from(invoices)
+		.where(and(eq(invoices.id, input.sourceInvoiceId), eq(invoices.userId, userId)))
+		.get();
+
+	if (!invoice) {
+		return null;
+	}
+
+	const id = uuidv4();
+	const now = new Date();
+	await d1.insert(recurringSchedules).values({
+		id,
+		userId,
+		sourceInvoiceId: input.sourceInvoiceId,
+		frequency: input.frequency,
+		nextRunAt: input.nextRunAt,
+		lastRunAt: null,
+		recipientEmail: input.recipientEmail,
+		active: true,
+		createdAt: now,
+		updatedAt: now
+	});
+
+	return id;
+}
+
+/**
+ * Update mutable fields of a schedule (ownership enforced). Returns false when
+ * no matching schedule exists for the user.
+ */
+export async function updateRecurringSchedule(
+	db: D1Database,
+	userId: string,
+	id: string,
+	patch: { frequency?: string; recipientEmail?: string; active?: boolean; nextRunAt?: Date }
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: recurringSchedules.id })
+		.from(recurringSchedules)
+		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.update(recurringSchedules)
+		.set({ ...patch, updatedAt: new Date() })
+		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)));
+
+	return true;
+}
+
+/**
+ * Delete a schedule (ownership enforced). Returns false when none matched.
+ */
+export async function deleteRecurringSchedule(
+	db: D1Database,
+	userId: string,
+	id: string
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: recurringSchedules.id })
+		.from(recurringSchedules)
+		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.delete(recurringSchedules)
+		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)));
+
+	return true;
 }
 
 // =====================================================

@@ -43,8 +43,7 @@ export const PUT: RequestHandler = async (event) => {
 		return json({ error: 'Invoice ID mismatch' }, { status: 400 });
 	}
 
-	// Free-tier gates: premium templates + cloud invoice quota
-	// (no-ops until MONETIZATION_ENABLED; both grandfather existing data)
+	// Free-tier gates: cloud invoice quota + payment-link (grandfathered; no-op until MONETIZATION_ENABLED)
 	const stored = await getInvoice(db, id, session.user.id);
 	await enforceInvoiceSaveGates(event, db, session.user.id, invoice, stored);
 

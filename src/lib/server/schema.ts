@@ -104,6 +104,24 @@ export const subscriptions = sqliteTable('subscriptions', {
 	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
 });
 
+export const recurringSchedules = sqliteTable('recurring_schedules', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.references(() => user.id),
+	// Cloud invoice id to clone. Plain text (no FK) so deleting the source
+	// invoice never fails on a schedule constraint; the cron deactivates
+	// schedules whose source invoice has gone away.
+	sourceInvoiceId: text('sourceInvoiceId').notNull(),
+	frequency: text('frequency').notNull(), // 'weekly' | 'monthly' | 'yearly'
+	nextRunAt: integer('nextRunAt', { mode: 'timestamp' }).notNull(),
+	lastRunAt: integer('lastRunAt', { mode: 'timestamp' }),
+	recipientEmail: text('recipientEmail').notNull(),
+	active: integer('active', { mode: 'boolean' }).notNull().default(true),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
+});
+
 export const userSettings = sqliteTable('user_settings', {
 	id: text('id').primaryKey(),
 	userId: text('userId')

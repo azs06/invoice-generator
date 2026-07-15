@@ -1,10 +1,83 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import { page } from '$app/stores';
 	import type { PageData } from './$types';
 	import { currencies, type CurrencyCode } from '$lib/stores/currency';
 
 	let { data }: { data: PageData } = $props();
+
+	interface RecurringSchedule {
+		id: string;
+		sourceInvoiceId: string;
+		sourceInvoiceNumber: string | null;
+		frequency: string;
+		nextRunAt: string;
+		lastRunAt: string | null;
+		recipientEmail: string;
+		active: boolean;
+	}
+
+	let recurring = $state<RecurringSchedule[]>([]);
+	let recurringLoading = $state<boolean>(true);
+	let recurringBusyId = $state<string | null>(null);
+
+	const loadRecurring = async (): Promise<void> => {
+		recurringLoading = true;
+		try {
+			const res = await fetch('/api/recurring');
+			if (res.ok) {
+				const body = (await res.json()) as { schedules: RecurringSchedule[] };
+				recurring = body.schedules ?? [];
+			}
+		} catch {
+			// Leave the list empty on failure.
+		} finally {
+			recurringLoading = false;
+		}
+	};
+
+	const toggleRecurring = async (schedule: RecurringSchedule): Promise<void> => {
+		recurringBusyId = schedule.id;
+		try {
+			const res = await fetch(`/api/recurring/${schedule.id}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ active: !schedule.active })
+			});
+			if (res.ok) await loadRecurring();
+		} finally {
+			recurringBusyId = null;
+		}
+	};
+
+	const cancelRecurring = async (schedule: RecurringSchedule): Promise<void> => {
+		if (!confirm($_('recurring.cancel_confirm'))) return;
+		recurringBusyId = schedule.id;
+		try {
+			const res = await fetch(`/api/recurring/${schedule.id}`, { method: 'DELETE' });
+			if (res.ok) await loadRecurring();
+		} finally {
+			recurringBusyId = null;
+		}
+	};
+
+	const frequencyLabel = (frequency: string): string => {
+		if (frequency === 'weekly') return $_('recurring.frequency_weekly');
+		if (frequency === 'yearly') return $_('recurring.frequency_yearly');
+		return $_('recurring.frequency_monthly');
+	};
+
+	const formatDateTime = (value: string | null): string => {
+		if (!value) return $_('recurring.never');
+		const ms = Date.parse(value);
+		if (Number.isNaN(ms)) return $_('recurring.never');
+		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(ms);
+	};
+
+	onMount(() => {
+		loadRecurring();
+	});
 
 	let isPro = $derived($page.data.tier === 'pro');
 	let justUpgraded = $derived($page.url.searchParams.get('upgraded') === '1');
@@ -173,6 +246,71 @@
 						<a class="billing-action" href="/pricing">{$_('settings.billing_view_plans')}</a>
 					{/if}
 				</div>
+			</section>
+
+			<section class="settings-section recurring-section">
+				<div class="section-header">
+					<div class="section-title-row">
+						<span class="section-icon icon-recurring" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M4 12a8 8 0 0 1 13.7-5.6L20 8M20 4v4h-4M20 12a8 8 0 0 1-13.7 5.6L4 16M4 20v-4h4"
+								/>
+							</svg>
+						</span>
+						<h2>{$_('recurring.manage_title')}</h2>
+					</div>
+					<p class="section-description">{$_('recurring.manage_description')}</p>
+				</div>
+
+				{#if recurringLoading}
+					<p class="recurring-empty">{$_('recurring.loading')}</p>
+				{:else if recurring.length === 0}
+					<p class="recurring-empty">{$_('recurring.manage_empty')}</p>
+				{:else}
+					<ul class="recurring-list">
+						{#each recurring as schedule (schedule.id)}
+							<li class="recurring-item" class:paused={!schedule.active}>
+								<div class="recurring-info">
+									<div class="recurring-top">
+										<span class="recurring-number"
+											>{schedule.sourceInvoiceNumber || schedule.sourceInvoiceId.slice(0, 8)}</span
+										>
+										<span class="recurring-freq">{frequencyLabel(schedule.frequency)}</span>
+										{#if !schedule.active}
+											<span class="recurring-paused-badge">{$_('recurring.paused')}</span>
+										{/if}
+									</div>
+									<div class="recurring-meta">
+										<span>{$_('recurring.to_label')}: {schedule.recipientEmail}</span>
+										<span>{$_('recurring.next_run')}: {formatDateTime(schedule.nextRunAt)}</span>
+										<span>{$_('recurring.last_run')}: {formatDateTime(schedule.lastRunAt)}</span>
+									</div>
+								</div>
+								<div class="recurring-actions">
+									<button
+										class="recurring-btn"
+										type="button"
+										onclick={() => toggleRecurring(schedule)}
+										disabled={recurringBusyId === schedule.id}
+									>
+										{schedule.active ? $_('recurring.pause') : $_('recurring.resume')}
+									</button>
+									<button
+										class="recurring-btn danger"
+										type="button"
+										onclick={() => cancelRecurring(schedule)}
+										disabled={recurringBusyId === schedule.id}
+									>
+										{$_('recurring.cancel_schedule')}
+									</button>
+								</div>
+							</li>
+						{/each}
+					</ul>
+				{/if}
 			</section>
 
 			<div class="save-section">
@@ -402,6 +540,124 @@
 
 	.billing-section {
 		grid-column: 1 / -1;
+	}
+
+	.recurring-section {
+		grid-column: 1 / -1;
+	}
+
+	.icon-recurring {
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		color: var(--color-accent-blue);
+	}
+
+	.recurring-empty {
+		font-size: 0.9rem;
+		color: var(--color-text-secondary);
+		margin: 0;
+	}
+
+	.recurring-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.recurring-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+		padding: 0.85rem 1rem;
+		border: 1px solid var(--surface-paper-border);
+		border-radius: var(--radius-md);
+		background: var(--surface-paper);
+	}
+
+	.recurring-item.paused {
+		opacity: 0.7;
+	}
+
+	.recurring-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		min-width: 0;
+	}
+
+	.recurring-top {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.recurring-number {
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.recurring-freq {
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--color-accent-blue);
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		padding: 0.1rem 0.45rem;
+		border-radius: 999px;
+	}
+
+	.recurring-paused-badge {
+		font-size: 0.72rem;
+		font-weight: 600;
+		color: var(--color-text-secondary);
+		background: var(--surface-paper-muted);
+		padding: 0.1rem 0.45rem;
+		border-radius: 999px;
+	}
+
+	.recurring-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem 1rem;
+		font-size: 0.82rem;
+		color: var(--color-text-secondary);
+	}
+
+	.recurring-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-shrink: 0;
+	}
+
+	.recurring-btn {
+		padding: 0.45rem 0.85rem;
+		font-size: 0.82rem;
+		font-weight: 600;
+		border: 1px solid var(--surface-paper-border);
+		border-radius: var(--radius-md);
+		background: var(--surface-paper);
+		color: var(--color-text-primary);
+		cursor: pointer;
+	}
+
+	.recurring-btn:hover:not(:disabled) {
+		background: var(--surface-paper-muted);
+	}
+
+	.recurring-btn.danger {
+		color: #ef4444;
+		border-color: color-mix(in srgb, #ef4444 40%, transparent);
+	}
+
+	.recurring-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.billing-upgraded {

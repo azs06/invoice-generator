@@ -12,14 +12,12 @@ export interface TemplateMetadata {
 	description: string;
 	component: () => SvelteComponentModule;
 	tags: string[];
-	premium: boolean;
 	preview: string;
 }
 
 export interface TemplateOption {
 	id: string;
 	label: string;
-	premium: boolean;
 }
 
 export type TemplateId =
@@ -39,7 +37,6 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Clean and contemporary design with balanced layout',
 		component: () => import('./components/ModernTemplate.svelte'),
 		tags: ['clean', 'contemporary', 'balanced'],
-		premium: false,
 		preview: '/templates/modern-preview.png'
 	},
 	simple: {
@@ -48,7 +45,6 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Clean, minimal black and white design',
 		component: () => import('./components/SimpleTemplate.svelte'),
 		tags: ['simple', 'minimal', 'free'],
-		premium: false,
 		preview: '/templates/simple-preview.png'
 	},
 	standard: {
@@ -57,7 +53,6 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Professional layout with company header',
 		component: () => import('./components/StandardTemplate.svelte'),
 		tags: ['standard', 'professional', 'free'],
-		premium: false,
 		preview: '/templates/standard-preview.png'
 	},
 	classic: {
@@ -66,7 +61,6 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Traditional invoice layout with formal styling',
 		component: () => import('./components/ClassicTemplate.svelte'),
 		tags: ['traditional', 'formal', 'business'],
-		premium: true,
 		preview: '/templates/classic-preview.png'
 	},
 	minimal: {
@@ -75,7 +69,6 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Simple and focused design with essential elements only',
 		component: () => import('./components/MinimalTemplate.svelte'),
 		tags: ['simple', 'clean', 'essential'],
-		premium: true,
 		preview: '/templates/minimal-preview.png'
 	},
 	atlantic: {
@@ -84,7 +77,6 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Editorial serif layout with warm neutral palette',
 		component: () => import('./components/AtlanticTemplate.svelte'),
 		tags: ['serif', 'editorial', 'warm'],
-		premium: true,
 		preview: '/templates/atlantic-preview.png'
 	},
 	compact: {
@@ -93,7 +85,6 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Space-efficient layout with condensed two-column summary',
 		component: () => import('./components/CompactTemplate.svelte'),
 		tags: ['compact', 'dense', 'efficient'],
-		premium: false,
 		preview: '/templates/compact-preview.png'
 	},
 	executive: {
@@ -102,7 +93,6 @@ export const TEMPLATES: Record<TemplateId, TemplateMetadata> = {
 		description: 'Bold corporate design with navy accent and serif headings',
 		component: () => import('./components/ExecutiveTemplate.svelte'),
 		tags: ['corporate', 'bold', 'professional'],
-		premium: false,
 		preview: '/templates/executive-preview.png'
 	}
 };
@@ -122,13 +112,6 @@ export function getAllTemplates(): Record<TemplateId, TemplateMetadata> {
 }
 
 /**
- * Get templates filtered by premium status
- */
-export function getTemplatesByPremium(isPremium: boolean = false): TemplateMetadata[] {
-	return Object.values(TEMPLATES).filter((template) => template.premium === isPremium);
-}
-
-/**
  * Get templates by tag
  */
 export function getTemplatesByTag(tag: string): TemplateMetadata[] {
@@ -141,8 +124,7 @@ export function getTemplatesByTag(tag: string): TemplateMetadata[] {
 export function getTemplateOptions(): TemplateOption[] {
 	return Object.values(TEMPLATES).map((template) => ({
 		id: template.id,
-		label: template.name,
-		premium: template.premium
+		label: template.name
 	}));
 }
 

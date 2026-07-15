@@ -17,7 +17,7 @@ FreeInvoice.info — a SvelteKit 2.x invoice generator using Svelte 5 runes, dep
 - **Client PDF**: html2pdf.js (guest/local fallback, `src/lib/pdfGenerator.ts`)
 - **Local storage**: IndexedDB via `idb-keyval` (`src/lib/localDb.ts`; `src/lib/guestDb.ts` is a deprecated re-export)
 - **i18n**: svelte-i18n, English (`en.json`) + Bengali (`bn.json`) in `src/lib/i18n/`
-- **Deployment**: `@sveltejs/adapter-cloudflare` → Cloudflare Workers, config in `wrangler.toml` (bindings: `DB` = D1, `BUCKET` = R2, `BROWSER` = Browser Rendering, `ASSETS`; secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`; var: `SUPER_ADMIN_EMAILS`)
+- **Deployment**: `@sveltejs/adapter-cloudflare` → Cloudflare Workers, config in `wrangler.toml` (bindings: `DB` = D1, `BUCKET` = R2, `BROWSER` = Browser Rendering, `EMAIL` = Email Sending (`send_email`), `ASSETS`; secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`; var: `SUPER_ADMIN_EMAILS`)
 
 ## Development Commands
 
@@ -54,6 +54,7 @@ npm run test             # Playwright tests (also test:ui, test:headed)
 - `shared_links`: token, expiry, `revoked`, `viewCount`, `lastViewedAt` per invoice
 - `link_views`: per-view log (linkId, viewedAt, ipAddress, userAgent)
 - `user_settings`: `invoicePrefix`, `preferredCurrency` per user
+- `recurring_schedules` (Pro): `sourceInvoiceId` (cloud invoice to clone; plain text, no FK — cron deactivates orphans), `frequency` (`weekly`|`monthly`|`yearly`), `nextRunAt`, `lastRunAt`, `recipientEmail`, `active`, per `userId`. Driven by the Workers Cron trigger (see Deployment).
 
 ### Routes
 
@@ -70,8 +71,9 @@ Pages:
 API endpoints (`src/routes/api/`):
 
 - `api/auth/[...all]` — Better Auth handler
-- `api/invoices` (GET/POST), `api/invoices/[id]` (GET/PUT/DELETE), `api/invoices/[id]/archive`, `api/invoices/[id]/download` (PDF from R2), `api/invoices/[id]/share` (share link management)
+- `api/invoices` (GET/POST), `api/invoices/[id]` (GET/PUT/DELETE), `api/invoices/[id]/archive`, `api/invoices/[id]/download` (PDF from R2), `api/invoices/[id]/share` (share link management), `api/invoices/[id]/email` (POST — send invoice via Cloudflare Email Sending; Pro-gated, rate-limited, attaches R2 PDF if present; returns 503 without the `EMAIL` binding)
 - `api/pdf` — server-side PDF generation (auth required)
+- `api/recurring` (GET list / POST create — Pro-gated create), `api/recurring/[id]` (PUT update / DELETE) — recurring invoice schedules; validates `frequency` + `recipientEmail`
 - `api/user/settings`
 - `api/admin/users`, `api/admin/users/deleted`, `api/admin/users/[id]/{ban,delete,destroy,restore,role}`
 
@@ -82,7 +84,7 @@ API endpoints (`src/routes/api/`):
 
 ### Template System
 
-- Registry: `src/lib/templates/registry.ts` maps 8 template IDs (`modern`, `simple`, `standard`, `classic`, `minimal`, `atlantic`, `compact`, `executive`) to lazily imported Svelte components plus metadata (name, tags, `premium` flag — the flag is currently not enforced anywhere).
+- Registry: `src/lib/templates/registry.ts` maps 8 template IDs (`modern`, `simple`, `standard`, `classic`, `minimal`, `atlantic`, `compact`, `executive`) to lazily imported Svelte components plus metadata (name, tags, preview). All templates are free — a premium flag existed briefly but was removed by decision (2026-07-14); templates are not gated.
 - Template components live in `src/lib/templates/components/`; `migration.ts` handles template ID migrations; see `src/lib/templates/README.md` for authoring notes.
 
 ### Share Links
@@ -118,9 +120,11 @@ Maintain this runes-based approach when modifying components.
 
 ## Deployment
 
-- Cloudflare **Workers** via `@sveltejs/adapter-cloudflare`; worker entry is `.svelte-kit/cloudflare/_worker.js` (see `wrangler.toml`).
+- Cloudflare **Workers** via `@sveltejs/adapter-cloudflare`. The wrangler `main` is a **wrapper worker** (`worker.js`) that re-exports the adapter-generated worker and adds a `scheduled` (Cron) handler. The adapter only emits a `fetch` handler, and it always overwrites its own `main`, so it is pointed at a build-only config (`wrangler.build.toml`, via the `config` option in `svelte.config.js`) that makes it emit to `.svelte-kit/cloudflare/_worker.js` — which `worker.js` then imports. Keep `name`/`compatibility_date`/`[assets]` in sync between `wrangler.toml` and `wrangler.build.toml`.
+- **Cron**: `[triggers] crons = ["0 * * * *"]` (hourly) in `wrangler.toml` runs the recurring-invoices engine (`src/lib/server/recurring.ts` → `runDueSchedules`). That module and its imports are bundled by wrangler/esbuild (not Vite), so they must avoid Vite-only runtime aliases (`$lib`/`$components`/`$app/*` as value imports); `import type` from `$lib` is fine (stripped at build time).
 - Deploy with `npm run deploy`. Secrets are set with `wrangler secret put <NAME>`.
 - The adapter's `platformProxy` gives local access to bindings under `wrangler dev` (`npm run dev:cf`), persisted in `.wrangler/state`.
+- **New D1 migrations** are hand-written SQL in `migrations/` and applied with `wrangler d1 execute invoice-db --local|--remote --file=./migrations/<file>.sql` (see the header comment in each migration).
 
 ## Related Docs
 

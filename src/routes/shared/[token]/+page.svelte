@@ -1,5 +1,6 @@
 <script lang="ts">
 	import InvoicePreviewComponent from '$components/InvoicePreviewComponent.svelte';
+	import { _ } from 'svelte-i18n';
 	import type { InvoiceData } from '$lib/types';
 
 	let { data } = $props();
@@ -7,6 +8,27 @@
 
 	$effect(() => {
 		invoice = data.invoice;
+	});
+
+	/**
+	 * A safe http(s) payment URL to render, or null.
+	 * Only returns http:/https: URLs so javascript:, data:, etc. can never
+	 * become a clickable link on this public page.
+	 */
+	const safePayUrl = $derived.by((): string | null => {
+		const details = invoice?.paymentDetails;
+		if (!details?.enabled || !details.payUrl) {
+			return null;
+		}
+		try {
+			const url = new URL(details.payUrl);
+			if (url.protocol === 'http:' || url.protocol === 'https:') {
+				return url.href;
+			}
+		} catch {
+			return null;
+		}
+		return null;
 	});
 
 	const printInvoice = (): void => {
@@ -87,6 +109,24 @@
 		</header>
 
 		<main class="shared-content">
+			{#if safePayUrl}
+				<section class="pay-invoice" aria-label={$_('payment_details.pay_heading')}>
+					<div class="pay-invoice-text">
+						<h2 class="pay-invoice-heading">{$_('payment_details.pay_heading')}</h2>
+						{#if invoice.paymentDetails?.instructions}
+							<p class="pay-invoice-instructions">{invoice.paymentDetails.instructions}</p>
+						{/if}
+					</div>
+					<a
+						class="pay-invoice-button"
+						href={safePayUrl}
+						target="_blank"
+						rel="noopener noreferrer nofollow"
+					>
+						{$_('payment_details.pay_button')}
+					</a>
+				</section>
+			{/if}
 			<InvoicePreviewComponent {invoice} />
 		</main>
 
@@ -173,6 +213,62 @@
 		width: 100%;
 	}
 
+	.pay-invoice {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding: 1.25rem 1.5rem;
+		border: 1px solid var(--color-border-primary, #e5e7eb);
+		border-radius: 0.75rem;
+		background: var(--color-bg-primary, #fff);
+		box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.06));
+	}
+
+	.pay-invoice-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		min-width: 0;
+	}
+
+	.pay-invoice-heading {
+		margin: 0;
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--color-text-primary, #111827);
+	}
+
+	.pay-invoice-instructions {
+		margin: 0;
+		font-size: 0.875rem;
+		line-height: 1.5;
+		color: var(--color-text-secondary, #6b7280);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.pay-invoice-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		padding: 0.75rem 1.5rem;
+		border-radius: 0.5rem;
+		background: var(--color-accent-blue, #2563eb);
+		color: white;
+		font-size: 0.95rem;
+		font-weight: 600;
+		text-decoration: none;
+		transition: background 0.2s ease;
+	}
+
+	.pay-invoice-button:hover {
+		background: #1d4ed8;
+	}
+
 	.shared-footer {
 		text-align: center;
 		padding: 1.5rem 2rem;
@@ -253,11 +349,17 @@
 		.shared-content {
 			padding: 1rem;
 		}
+
+		.pay-invoice-button {
+			flex: 1;
+			width: 100%;
+		}
 	}
 
 	@media print {
 		.shared-header,
-		.shared-footer {
+		.shared-footer,
+		.pay-invoice {
 			display: none;
 		}
 

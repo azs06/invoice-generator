@@ -19,7 +19,9 @@ export const RATE_LIMITS = {
 	/** Share-link creation writes to D1 - cap per user per day. */
 	shareLinkCreate: { limit: 30, windowSeconds: 24 * 60 * 60 } satisfies RateLimitConfig,
 	/** Invoice saves write to D1 (and R2 for logos) - cap per user per hour. */
-	invoiceSave: { limit: 100, windowSeconds: 60 * 60 } satisfies RateLimitConfig
+	invoiceSave: { limit: 100, windowSeconds: 60 * 60 } satisfies RateLimitConfig,
+	/** Email delivery is metered (Cloudflare Email Sending) - cap per user per day. */
+	emailSend: { limit: 20, windowSeconds: 24 * 60 * 60 } satisfies RateLimitConfig
 } as const;
 
 /**
