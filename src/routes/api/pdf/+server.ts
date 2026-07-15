@@ -43,7 +43,10 @@ export const POST: RequestHandler = async (event) => {
 		RATE_LIMITS.pdfGenerationMonthly
 	);
 	if (!monthlyLimit.allowed) {
-		throw error(429, 'Monthly PDF generation limit reached. Please try again next month.');
+		throw error(
+			429,
+			`Monthly PDF generation limit reached (${RATE_LIMITS.pdfGenerationMonthly.limit}/month fair use). It resets with the next 30-day window.`
+		);
 	}
 
 	const { html, invoiceId, invoiceTo, pageSize, margins } = (await event.request.json()) as {

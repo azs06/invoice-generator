@@ -89,7 +89,7 @@ Rule of thumb: **creation is free, workflow is paid.** Never gate something a us
 | Client-side PDF (html2pdf) | ✅ | ✅ | Done |
 | Templates | All 8 | All 8 | **Decision 2026-07-14: templates are not gated.** They don't carry the Pro pitch (see risks #5); flags and gates removed from code |
 | Cloud save/sync (account) | Last 10 invoices | Unlimited | Storage done; **quota missing** |
-| Server-side PDF (Browser Rendering) | ❌ (or 3/mo teaser) | ✅ | Endpoint done; **gating missing** |
+| Server-side PDF (Browser Rendering) | ❌ (or 3/mo teaser) | ✅ 250/mo fair use (disclosed on pricing page; abuse ceiling per docs/COST_ANALYSIS.md) | Done — gated + hourly & monthly quotas |
 | Share links | 3 active, 7-day expiry | Unlimited, custom expiry, view analytics | Done; **limits missing** |
 | Email invoice to client + reminders | ❌ | ✅ | **Stub — must build** |
 | Recurring invoices | ❌ | ✅ | **Must build** |
