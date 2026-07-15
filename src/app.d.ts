@@ -67,6 +67,12 @@ declare global {
 		AI: Ai;
 		// Cloudflare Email Sending (send_email binding); absent in plain dev
 		EMAIL?: EmailSendBinding;
+		// Workers Analytics Engine - privacy-friendly funnel/conversion events
+		// (analytics_engine_datasets binding in wrangler.toml, dataset
+		// `invoice_events`). Optional so plain `npm run dev` (no bindings) no-ops
+		// via src/lib/server/analytics.ts. `AnalyticsEngineDataset` is a global
+		// from @cloudflare/workers-types.
+		METRICS?: AnalyticsEngineDataset;
 		// Environment variables (set in wrangler.toml [vars])
 		SUPER_ADMIN_EMAILS: string;
 		// Pro gating feature flag ("true" | "false"); see docs/MONETIZATION.md

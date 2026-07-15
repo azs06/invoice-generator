@@ -105,6 +105,50 @@ API endpoints (`src/routes/api/`):
 - `src/lib/theme.ts` — dark mode store; `src/lib/useSelection.svelte.ts` — runes-based selection helper
 - `src/stores/` — invoice, page-settings, and template stores (`invoiceStore.ts`, `pageSettingsStore.ts`, `templateStore.ts`)
 
+### Analytics (funnel/conversion)
+
+Privacy-friendly funnel instrumentation for the monetization plan, split across two systems:
+
+- **Cloudflare Web Analytics** — the page-level beacon already in `src/app.html` (traffic/pageviews only; it cannot record custom events).
+- **Workers Analytics Engine** — custom product events. Binding `METRICS` (`analytics_engine_datasets` in `wrangler.toml` only, not `wrangler.build.toml`), dataset **`invoice_events`**. Typed in `src/app.d.ts` (`METRICS?: AnalyticsEngineDataset`).
+
+The single helper is `src/lib/server/analytics.ts` → `trackEvent(env, name, { plan?, source?, gate? })`. It writes one data point (`blob1`=event name, `blob2`=plan, `blob3`=source, `blob4`=gate; `double1`=1; `index1`=event name). It **fails open**: wrapped in try/catch, no-ops when `METRICS` is absent (plain `npm run dev`), and `writeDataPoint` needs no `await` (flushes in the background — no request delay). It's declared with a local `MetricsBinding` interface so the esbuild-bundled Cron path can import it (relative import, like `email.ts`). Analytics is **not** gated by `MONETIZATION_ENABLED` — it records for everyone (guest/free/pro).
+
+**No PII**: no user ids, emails, IPs, or invoice content ever enter a data point. Per-user questions ("invoices per user", "signup → first invoice") are answered at cohort level from aggregate counts.
+
+Event taxonomy (all `blob1`):
+
+| Event | Where fired | Key dims |
+| --- | --- | --- |
+| `signup` | Better Auth `databaseHooks.user.create.after` (`auth.ts`) | source=user |
+| `invoice_created` | POST `/api/invoices` (creates only, not auto-save updates) | plan |
+| `pdf_generated` | POST `/api/pdf` (Browser Rendering success) | plan |
+| `pdf_downloaded` | GET `/api/invoices/[id]/download` (R2 PDF) | plan |
+| `share_created` | POST `/api/invoices/[id]/share` | plan |
+| `email_sent` | POST `/api/invoices/[id]/email` (source=user); recurring cron (source=cron) | plan, source |
+| `reminder_created` | POST `/api/reminders` | plan |
+| `reminder_sent` | overdue-reminder cron (`reminders.ts`) | source=cron |
+| `recurring_created` | POST `/api/recurring` | plan |
+| `client_created` | POST `/api/clients` | plan |
+| `ai_fill_used` | POST `/api/ai/invoice-from-text` (usable extraction) | plan |
+| `checkout_started` | GET `/api/billing/checkout` (valid plan) | plan, source=billing plan |
+| `gate_blocked` | `entitlements.ts` 402s (`requirePro` + save gates) + share limit | plan=free, gate (route id / gate name) — **highest-signal conversion event** |
+| `guest_invoice_created` | client: local-mode auto-save, deduped per invoice id (`+page.svelte`) | plan=guest, source=web |
+| `guest_pdf_downloaded` | client: guest html2pdf path (`+page.svelte`) | plan=guest, source=web |
+| `signup_prompt_shown` | client: `SignUpPromptModal` shown | plan=guest, source=web |
+| `upgrade_prompt_shown` | client: `UpgradePromptModal` shown | plan, source=web |
+
+Guest/browser events (last 4) fire-and-forget via `src/lib/analytics.ts` (`track`/`trackOnce`, uses `navigator.sendBeacon` with a keepalive-fetch fallback, never throws) → `POST /api/track`, which accepts only that 4-name allowlist, needs no auth, and is lightly throttled by a per-isolate in-memory sliding window keyed by client IP (best-effort; resets on cold start — deliberately no D1 write per beacon).
+
+**Querying**: there is **no** `wrangler` CLI subcommand for this — use the Analytics Engine **SQL HTTP API** (`POST https://api.cloudflare.com/client/v4/accounts/<account_id>/analytics_engine/sql` with a `Bearer` token and the SQL as the request body). Columns are `blob1..blob20`, `double1..double20`, `index1`. Because rows may be sampled, count with `SUM(_sample_interval)` rather than `COUNT(*)`. Example — gate hits by gate over the last day:
+
+```sql
+SELECT blob4 AS gate, SUM(_sample_interval) AS hits
+FROM invoice_events
+WHERE blob1 = 'gate_blocked' AND timestamp > NOW() - INTERVAL '1' DAY
+GROUP BY gate ORDER BY hits DESC
+```
+
 ### Path Aliases
 
 Configured in `svelte.config.js`:

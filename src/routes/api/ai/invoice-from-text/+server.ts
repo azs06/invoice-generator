@@ -9,6 +9,7 @@ import {
 	parseExtraction,
 	sanitizeExtraction
 } from '$lib/server/aiInvoice';
+import { trackEvent } from '$lib/server/analytics';
 import { requirePro } from '$lib/server/entitlements';
 import { RATE_LIMITS, checkRateLimit } from '$lib/server/rateLimit';
 import { requirePlatform } from '$lib/server/session';
@@ -73,6 +74,9 @@ export const POST: RequestHandler = async (event) => {
 	if (!hasContent(extracted)) {
 		throw error(422, 'Could not extract invoice details from that text. Try adding more detail.');
 	}
+
+	// Funnel: AI "invoice from text" produced usable content.
+	trackEvent(env, 'ai_fill_used', { plan: event.locals.tier });
 
 	return json(extracted);
 };

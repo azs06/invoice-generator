@@ -2,6 +2,7 @@ import { error, json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
+import { trackEvent } from '$lib/server/analytics';
 import { EmailSendError, sendInvoiceEmail } from '$lib/server/email';
 import { requirePro } from '$lib/server/entitlements';
 import { RATE_LIMITS, checkRateLimit } from '$lib/server/rateLimit';
@@ -89,6 +90,8 @@ export const POST: RequestHandler = async (event) => {
 			replyTo: session.user.email,
 			origin: event.url.origin
 		});
+		// Funnel: an invoice email was sent from the app (vs cron).
+		trackEvent(env, 'email_sent', { plan: event.locals.tier, source: 'user' });
 		return json({ success: true, attached });
 	} catch (err) {
 		if (err instanceof EmailSendError) {

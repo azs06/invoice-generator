@@ -1,5 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
+import { trackEvent } from '$lib/server/analytics';
 import { createRecurringSchedule, getRecurringSchedules } from '$lib/server/db';
 import { requirePro } from '$lib/server/entitlements';
 import { isFrequency } from '$lib/server/recurring';
@@ -80,6 +81,9 @@ export const POST: RequestHandler = async (event) => {
 	if (!id) {
 		throw error(404, 'Source invoice not found.');
 	}
+
+	// Funnel: a recurring schedule was created.
+	trackEvent(event.platform?.env, 'recurring_created', { plan: event.locals.tier });
 
 	return json({ success: true, id });
 };

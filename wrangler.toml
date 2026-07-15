@@ -34,6 +34,15 @@ binding = "BROWSER"
 [ai]
 binding = "AI"
 
+# Workers Analytics Engine - privacy-friendly funnel/conversion events.
+# Written via env.METRICS.writeDataPoint (src/lib/server/analytics.ts). Free-tier
+# friendly and queryable through the Analytics Engine SQL API. Absent in plain
+# `npm run dev`, where trackEvent() no-ops. Bindings live only here, not in
+# wrangler.build.toml (that config is build-only: name/compat/[assets] sync).
+[[analytics_engine_datasets]]
+binding = "METRICS"
+dataset = "invoice_events"
+
 # Cloudflare Email Sending - invoice emails (POST /api/invoices/[id]/email).
 # Destination is intentionally unrestricted (users email arbitrary clients).
 # Requires one-time onboarding of the sender domain freeinvoice.info via

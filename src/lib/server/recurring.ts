@@ -3,6 +3,7 @@ import { and, eq, lte } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { v4 as uuidv4 } from 'uuid';
 import type { InvoiceData } from '$lib/types';
+import { type MetricsBinding, trackEvent } from './analytics';
 import { type EmailBinding, APP_ORIGIN, sendInvoiceEmail } from './email';
 import { invoices, recurringSchedules, userSettings } from './schema';
 
@@ -28,6 +29,8 @@ export interface CronEnv {
 	DB: D1Database;
 	BUCKET?: R2Bucket;
 	EMAIL?: EmailBinding;
+	/** Analytics Engine binding for funnel events; absent in plain dev. */
+	METRICS?: MetricsBinding;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -248,6 +251,8 @@ async function processSchedule(
 			pdfKey: null,
 			origin: APP_ORIGIN
 		});
+		// Funnel: an invoice email sent by the recurring cron (vs a user send).
+		trackEvent(env, 'email_sent', { source: 'cron' });
 	} catch (err) {
 		console.error(`[recurring] Failed to email invoice ${newId} for schedule ${schedule.id}:`, err);
 	}

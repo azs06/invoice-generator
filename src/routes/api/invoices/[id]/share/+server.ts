@@ -1,4 +1,5 @@
 import { error, json } from '@sveltejs/kit';
+import { trackEvent } from '$lib/server/analytics';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
 import {
 	countActiveShareLinks,
@@ -33,6 +34,10 @@ export const POST: RequestHandler = async (event) => {
 	if (isMonetizationEnabled(event) && event.locals.tier !== 'pro') {
 		const activeLinks = await countActiveShareLinks(db, session.user.id);
 		if (activeLinks >= FREE_LIMITS.activeShareLinks) {
+			trackEvent(event.platform?.env, 'gate_blocked', {
+				plan: 'free',
+				gate: 'active_share_links'
+			});
 			throw error(
 				402,
 				`Free accounts can have up to ${FREE_LIMITS.activeShareLinks} active share links. Upgrade to Pro for unlimited sharing.`
@@ -51,6 +56,9 @@ export const POST: RequestHandler = async (event) => {
 	if (!shareLink) {
 		throw error(500, 'Failed to create share link');
 	}
+
+	// Funnel: a share link was created.
+	trackEvent(event.platform?.env, 'share_created', { plan: event.locals.tier });
 
 	// Build the full share URL
 	const origin = event.url.origin;

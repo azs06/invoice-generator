@@ -3,6 +3,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
+import { trackEvent } from './analytics';
 import { getInvoiceCount } from './db';
 import { subscriptions } from './schema';
 import type { InvoiceData } from '$lib/types';
@@ -60,6 +61,12 @@ export function requirePro(event: RequestEvent): void {
 	if (!isMonetizationEnabled(event)) return;
 
 	if (event.locals.tier !== 'pro') {
+		// Highest-signal conversion event: a free user hit a Pro gate. The gate
+		// name is the SvelteKit route id (low cardinality, no invoice ids).
+		trackEvent(event.platform?.env, 'gate_blocked', {
+			plan: 'free',
+			gate: event.route?.id ?? 'unknown'
+		});
 		throw error(402, 'This feature requires FreeInvoice Pro');
 	}
 }
@@ -93,6 +100,10 @@ export async function enforceInvoiceSaveGates(
 	if (!stored) {
 		const count = await getInvoiceCount(db, userId);
 		if (count >= FREE_LIMITS.cloudInvoices) {
+			trackEvent(event.platform?.env, 'gate_blocked', {
+				plan: 'free',
+				gate: 'cloud_invoice_quota'
+			});
 			throw error(
 				402,
 				`Free accounts can store up to ${FREE_LIMITS.cloudInvoices} invoices in the cloud. Upgrade to Pro for unlimited storage.`
@@ -104,6 +115,10 @@ export async function enforceInvoiceSaveGates(
 	// Grandfather invoices that already had them enabled so auto-save never
 	// locks a free user out of an invoice they previously turned this on for.
 	if (incoming.paymentDetails?.enabled && !stored?.paymentDetails?.enabled) {
+		trackEvent(event.platform?.env, 'gate_blocked', {
+			plan: 'free',
+			gate: 'payment_link'
+		});
 		throw error(
 			402,
 			'“Pay this invoice” payment links require FreeInvoice Pro. Upgrade to add a payment link to your shared invoices.'

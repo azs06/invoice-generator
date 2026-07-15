@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
+	import { track } from '$lib/analytics';
 
 	interface Props {
 		open?: boolean;
@@ -8,6 +9,11 @@
 	}
 
 	let { open = false, message = '', onClose }: Props = $props();
+
+	// Funnel: count each time the upgrade prompt is shown (upgrade intent).
+	$effect(() => {
+		if (open) track('upgrade_prompt_shown');
+	});
 
 	const handleUpgrade = (): void => {
 		window.location.href = '/dashboard/settings';

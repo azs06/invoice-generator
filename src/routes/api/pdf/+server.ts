@@ -1,5 +1,6 @@
 import puppeteer, { type PaperFormat } from '@cloudflare/puppeteer';
 import { error } from '@sveltejs/kit';
+import { trackEvent } from '$lib/server/analytics';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
 import { updateInvoicePdfKey } from '$lib/server/db';
 import { requirePro } from '$lib/server/entitlements';
@@ -139,6 +140,9 @@ export const POST: RequestHandler = async (event) => {
 		const filename = invoiceTo
 			? `invoice-${invoiceTo.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 50)}.pdf`
 			: 'invoice.pdf';
+
+		// Funnel: a server-side (Browser Rendering) PDF was produced.
+		trackEvent(env, 'pdf_generated', { plan: event.locals.tier });
 
 		// Convert Buffer to Uint8Array for Response compatibility
 		return new Response(new Uint8Array(pdfBuffer), {

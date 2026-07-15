@@ -45,6 +45,7 @@
 		SavedInvoiceRecord,
 		ShippingInfo
 	} from '$lib/types';
+	import { track, trackOnce } from '$lib/analytics';
 	import { authClient } from '$lib/auth';
 	import { isInvoiceComplete } from '$lib/invoiceValidation';
 	import {
@@ -715,6 +716,8 @@
 			} else {
 				// Client-side generation for guests (with fixes applied)
 				await generatePdfClientSide(previewRef, currentInvoice, currentPageSettings);
+				// Funnel: a guest downloaded a client-side PDF.
+				track('guest_pdf_downloaded');
 			}
 		} catch (error) {
 			console.error('Failed to export PDF:', error);
@@ -982,6 +985,13 @@
 
 			// Always save to local IndexedDB regardless of auth state
 			saveLocalInvoice(invoice.id, invoice);
+
+			// Funnel: count a guest working on a local invoice once per invoice id
+			// (this auto-save effect runs on every edit; trackOnce dedupes it).
+			// Signed-in users are counted server-side via invoice_created instead.
+			if (!$session.data) {
+				trackOnce('guest_invoice_created', invoice.id);
+			}
 		}
 		if (invoice && invoice.items) {
 			invoice.subTotal = invoice.items.reduce(

@@ -1,4 +1,5 @@
 import { error, json } from '@sveltejs/kit';
+import { trackEvent } from '$lib/server/analytics';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
 import {
 	clearAllInvoices,
@@ -57,6 +58,10 @@ export const POST: RequestHandler = async (event) => {
 			{ error: 'Cloud sync limit reached. Remove a synced invoice to free a slot.' },
 			{ status: 409 }
 		);
+	}
+	// Funnel: count only creates (a brand-new cloud invoice), not auto-save updates.
+	if (!stored) {
+		trackEvent(event.platform?.env, 'invoice_created', { plan: event.locals.tier });
 	}
 	return json({ success: true });
 };

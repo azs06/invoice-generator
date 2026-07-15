@@ -1,6 +1,7 @@
 import { and, desc, eq, gt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import type { InvoiceData } from '$lib/types';
+import { trackEvent } from './analytics';
 import { APP_ORIGIN, sendReminderEmail } from './email';
 import type { CronEnv } from './recurring';
 import { invoices, reminderSettings, sharedLinks } from './schema';
@@ -171,6 +172,9 @@ async function processReminder(
 		shareUrl,
 		origin: APP_ORIGIN
 	});
+
+	// Funnel: an overdue-reminder email was sent by the cron.
+	trackEvent(env, 'reminder_sent', { source: 'cron' });
 
 	// Record the send only after a successful email so a failure is retried on
 	// the next cron tick rather than silently swallowing the reminder.

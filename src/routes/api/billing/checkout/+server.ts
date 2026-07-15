@@ -1,4 +1,5 @@
 import { error, redirect } from '@sveltejs/kit';
+import { trackEvent } from '$lib/server/analytics';
 import { createPolar, isBillingConfigured, isValidPlan, productIdForPlan } from '$lib/server/billing';
 import { requirePlatform, requireSession } from '$lib/server/session';
 import type { RequestHandler } from './$types';
@@ -25,6 +26,10 @@ export const GET: RequestHandler = async (event) => {
 	if (!productId) {
 		throw redirect(303, '/pricing?billing=unavailable');
 	}
+
+	// Funnel: upgrade intent - a valid checkout is being started. `source` carries
+	// the selected billing plan (3 low-cardinality values).
+	trackEvent(env, 'checkout_started', { plan: event.locals.tier, source: plan });
 
 	const polar = createPolar(env);
 

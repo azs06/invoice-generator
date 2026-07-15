@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
+import { trackEvent } from '$lib/server/analytics';
 import { invoices } from '$lib/server/schema';
 import { getBucket, requireDB } from '$lib/server/session';
 import type { RequestHandler } from './$types';
@@ -53,6 +54,9 @@ export const GET: RequestHandler = async (event) => {
 	} catch {
 		// Use default filename if parsing fails
 	}
+
+	// Funnel: a stored (R2) PDF was downloaded.
+	trackEvent(event.platform?.env, 'pdf_downloaded', { plan: event.locals.tier });
 
 	// Stream the PDF back to the client
 	const pdfBody = await pdfObject.arrayBuffer();

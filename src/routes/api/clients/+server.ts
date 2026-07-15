@@ -1,4 +1,5 @@
 import { error, json } from '@sveltejs/kit';
+import { trackEvent } from '$lib/server/analytics';
 import { createClient, getClients } from '$lib/server/db';
 import { requirePro } from '$lib/server/entitlements';
 import { requireDB } from '$lib/server/session';
@@ -64,6 +65,9 @@ export const POST: RequestHandler = async (event) => {
 		address: optionalField(body?.address, MAX_FIELD),
 		notes: optionalField(body?.notes, MAX_FIELD)
 	});
+
+	// Funnel: a saved client was created.
+	trackEvent(event.platform?.env, 'client_created', { plan: event.locals.tier });
 
 	return json({ success: true, id });
 };

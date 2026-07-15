@@ -1,5 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { isValidInvoiceId } from '$lib/invoiceValidation';
+import { trackEvent } from '$lib/server/analytics';
 import { createReminder, getReminders } from '$lib/server/db';
 import { requirePro } from '$lib/server/entitlements';
 import { requireDB } from '$lib/server/session';
@@ -74,6 +75,9 @@ export const POST: RequestHandler = async (event) => {
 	if (result === 'duplicate') {
 		throw error(409, 'A reminder already exists for this invoice.');
 	}
+
+	// Funnel: an overdue reminder config was created.
+	trackEvent(event.platform?.env, 'reminder_created', { plan: event.locals.tier });
 
 	return json({ success: true, id: result });
 };
