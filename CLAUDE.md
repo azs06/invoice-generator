@@ -56,6 +56,7 @@ npm run test             # Playwright tests (also test:ui, test:headed)
 - `user_settings`: `invoicePrefix`, `preferredCurrency` per user
 - `clients` (Pro): saved address-book contacts (`name` required, `email`, `phone`, `address`, `notes`) per `userId`. Fills an invoice's "bill to" from a saved client; create/edit are Pro-gated, reading/using existing clients is not.
 - `recurring_schedules` (Pro): `sourceInvoiceId` (cloud invoice to clone; plain text, no FK — cron deactivates orphans), `frequency` (`weekly`|`monthly`|`yearly`), `nextRunAt`, `lastRunAt`, `recipientEmail`, `active`, per `userId`. Driven by the Workers Cron trigger (see Deployment).
+- `reminder_settings` (Pro): overdue-invoice reminders — `invoiceId` (cloud invoice; plain text, no FK — cron deactivates orphans), `recipientEmail`, `remindAfterDays` (days past due before the first reminder and the re-send cadence), `lastSentAt`, `active`, per `userId` (one config per invoice). Driven by the same Workers Cron trigger (see Deployment).
 
 ### Routes
 
@@ -75,6 +76,7 @@ API endpoints (`src/routes/api/`):
 - `api/invoices` (GET/POST), `api/invoices/[id]` (GET/PUT/DELETE), `api/invoices/[id]/archive`, `api/invoices/[id]/download` (PDF from R2), `api/invoices/[id]/share` (share link management), `api/invoices/[id]/email` (POST — send invoice via Cloudflare Email Sending; Pro-gated, rate-limited, attaches R2 PDF if present; returns 503 without the `EMAIL` binding)
 - `api/pdf` — server-side PDF generation (auth required)
 - `api/recurring` (GET list / POST create — Pro-gated create), `api/recurring/[id]` (PUT update / DELETE) — recurring invoice schedules; validates `frequency` + `recipientEmail`
+- `api/reminders` (GET list / POST create — Pro-gated create), `api/reminders/[id]` (PUT update / DELETE) — overdue-invoice reminders; ownership-checked, validates `recipientEmail` + `remindAfterDays` (1–90), one config per invoice
 - `api/clients` (GET list / POST create — Pro-gated create), `api/clients/[id]` (PUT update / DELETE) — client address book; ownership-checked, validates `name` + optional `email`
 - `api/user/settings`
 - `api/admin/users`, `api/admin/users/deleted`, `api/admin/users/[id]/{ban,delete,destroy,restore,role}`
@@ -123,7 +125,7 @@ Maintain this runes-based approach when modifying components.
 ## Deployment
 
 - Cloudflare **Workers** via `@sveltejs/adapter-cloudflare`. The wrangler `main` is a **wrapper worker** (`worker.js`) that re-exports the adapter-generated worker and adds a `scheduled` (Cron) handler. The adapter only emits a `fetch` handler, and it always overwrites its own `main`, so it is pointed at a build-only config (`wrangler.build.toml`, via the `config` option in `svelte.config.js`) that makes it emit to `.svelte-kit/cloudflare/_worker.js` — which `worker.js` then imports. Keep `name`/`compatibility_date`/`[assets]` in sync between `wrangler.toml` and `wrangler.build.toml`.
-- **Cron**: `[triggers] crons = ["0 * * * *"]` (hourly) in `wrangler.toml` runs the recurring-invoices engine (`src/lib/server/recurring.ts` → `runDueSchedules`). That module and its imports are bundled by wrangler/esbuild (not Vite), so they must avoid Vite-only runtime aliases (`$lib`/`$components`/`$app/*` as value imports); `import type` from `$lib` is fine (stripped at build time).
+- **Cron**: `[triggers] crons = ["0 * * * *"]` (hourly) in `wrangler.toml` runs two engines from `worker.js`'s `scheduled` handler: the recurring-invoices engine (`src/lib/server/recurring.ts` → `runDueSchedules`) and the overdue-reminder engine (`src/lib/server/reminders.ts` → `runDueReminders`, which emails clients via `sendReminderEmail`). Those modules and their imports are bundled by wrangler/esbuild (not Vite), so they must avoid Vite-only runtime aliases (`$lib`/`$components`/`$app/*` as value imports); `import type` from `$lib` is fine (stripped at build time). Like recurring, the reminder engine has no `RequestEvent` so it does no monetization check — it only processes configs users could create through the Pro-gated API.
 - Deploy with `npm run deploy`. Secrets are set with `wrangler secret put <NAME>`.
 - The adapter's `platformProxy` gives local access to bindings under `wrangler dev` (`npm run dev:cf`), persisted in `.wrangler/state`.
 - **New D1 migrations** are hand-written SQL in `migrations/` and applied with `wrangler d1 execute invoice-db --local|--remote --file=./migrations/<file>.sql` (see the header comment in each migration).

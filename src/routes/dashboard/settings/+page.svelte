@@ -76,6 +76,61 @@
 		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(ms);
 	};
 
+	// --- Overdue reminders ---
+	interface Reminder {
+		id: string;
+		invoiceId: string;
+		invoiceNumber: string | null;
+		recipientEmail: string;
+		remindAfterDays: number;
+		lastSentAt: string | null;
+		active: boolean;
+	}
+
+	let reminders = $state<Reminder[]>([]);
+	let remindersLoading = $state<boolean>(true);
+	let reminderBusyId = $state<string | null>(null);
+
+	const loadReminders = async (): Promise<void> => {
+		remindersLoading = true;
+		try {
+			const res = await fetch('/api/reminders');
+			if (res.ok) {
+				const body = (await res.json()) as { reminders: Reminder[] };
+				reminders = body.reminders ?? [];
+			}
+		} catch {
+			// Leave the list empty on failure.
+		} finally {
+			remindersLoading = false;
+		}
+	};
+
+	const toggleReminder = async (reminder: Reminder): Promise<void> => {
+		reminderBusyId = reminder.id;
+		try {
+			const res = await fetch(`/api/reminders/${reminder.id}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ active: !reminder.active })
+			});
+			if (res.ok) await loadReminders();
+		} finally {
+			reminderBusyId = null;
+		}
+	};
+
+	const cancelReminder = async (reminder: Reminder): Promise<void> => {
+		if (!confirm($_('reminders.cancel_confirm'))) return;
+		reminderBusyId = reminder.id;
+		try {
+			const res = await fetch(`/api/reminders/${reminder.id}`, { method: 'DELETE' });
+			if (res.ok) await loadReminders();
+		} finally {
+			reminderBusyId = null;
+		}
+	};
+
 	// --- Client address book ---
 	interface Client {
 		id: string;
@@ -132,6 +187,7 @@
 
 	onMount(() => {
 		loadRecurring();
+		loadReminders();
 		loadClients();
 	});
 
@@ -361,6 +417,74 @@
 										disabled={recurringBusyId === schedule.id}
 									>
 										{$_('recurring.cancel_schedule')}
+									</button>
+								</div>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</section>
+
+			<section class="settings-section reminders-section">
+				<div class="section-header">
+					<div class="section-title-row">
+						<span class="section-icon icon-reminders" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
+								/>
+							</svg>
+						</span>
+						<h2>{$_('reminders.manage_title')}</h2>
+					</div>
+					<p class="section-description">{$_('reminders.manage_description')}</p>
+				</div>
+
+				{#if remindersLoading}
+					<p class="recurring-empty">{$_('reminders.loading')}</p>
+				{:else if reminders.length === 0}
+					<p class="recurring-empty">{$_('reminders.manage_empty')}</p>
+				{:else}
+					<ul class="recurring-list">
+						{#each reminders as reminder (reminder.id)}
+							<li class="recurring-item" class:paused={!reminder.active}>
+								<div class="recurring-info">
+									<div class="recurring-top">
+										<span class="recurring-number"
+											>{reminder.invoiceNumber || reminder.invoiceId.slice(0, 8)}</span
+										>
+										<span class="recurring-freq"
+											>{$_('reminders.days_after_due', {
+												values: { days: reminder.remindAfterDays }
+											})}</span
+										>
+										{#if !reminder.active}
+											<span class="recurring-paused-badge">{$_('reminders.paused')}</span>
+										{/if}
+									</div>
+									<div class="recurring-meta">
+										<span>{$_('reminders.to_label')}: {reminder.recipientEmail}</span>
+										<span>{$_('reminders.last_sent')}: {formatDateTime(reminder.lastSentAt)}</span>
+									</div>
+								</div>
+								<div class="recurring-actions">
+									<button
+										class="recurring-btn"
+										type="button"
+										onclick={() => toggleReminder(reminder)}
+										disabled={reminderBusyId === reminder.id}
+									>
+										{reminder.active ? $_('reminders.pause') : $_('reminders.resume')}
+									</button>
+									<button
+										class="recurring-btn danger"
+										type="button"
+										onclick={() => cancelReminder(reminder)}
+										disabled={reminderBusyId === reminder.id}
+									>
+										{$_('reminders.cancel_schedule')}
 									</button>
 								</div>
 							</li>
@@ -669,11 +793,20 @@
 		grid-column: 1 / -1;
 	}
 
+	.reminders-section {
+		grid-column: 1 / -1;
+	}
+
 	.clients-section {
 		grid-column: 1 / -1;
 	}
 
 	.icon-recurring {
+		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+		color: var(--color-accent-blue);
+	}
+
+	.icon-reminders {
 		background: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
 		color: var(--color-accent-blue);
 	}

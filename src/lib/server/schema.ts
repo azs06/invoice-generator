@@ -122,6 +122,25 @@ export const recurringSchedules = sqliteTable('recurring_schedules', {
 	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
 });
 
+export const reminderSettings = sqliteTable('reminder_settings', {
+	id: text('id').primaryKey(),
+	userId: text('userId')
+		.notNull()
+		.references(() => user.id),
+	// Cloud invoice id to remind on. Plain text (no FK) so deleting the source
+	// invoice never fails on a constraint; the cron deactivates configs whose
+	// invoice has gone away (mirrors recurringSchedules.sourceInvoiceId).
+	invoiceId: text('invoiceId').notNull(),
+	recipientEmail: text('recipientEmail').notNull(),
+	// Days past the invoice due date before the first reminder fires; also the
+	// re-send cadence while the invoice stays overdue and unpaid.
+	remindAfterDays: integer('remindAfterDays').notNull().default(3),
+	lastSentAt: integer('lastSentAt', { mode: 'timestamp' }),
+	active: integer('active', { mode: 'boolean' }).notNull().default(true),
+	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
+});
+
 export const clients = sqliteTable('clients', {
 	id: text('id').primaryKey(),
 	userId: text('userId')

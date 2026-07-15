@@ -181,16 +181,115 @@ export async function sendInvoiceEmail(
 			...(attachment ? { attachments: [attachment] } : {})
 		});
 	} catch (err) {
-		const code = (err as { code?: string })?.code ?? '';
-		console.error('[email] Failed to send invoice email:', err);
-		if (code === 'E_RATE_LIMIT_EXCEEDED' || code === 'E_DAILY_LIMIT_EXCEEDED') {
-			throw new EmailSendError(429, 'Email service is temporarily rate limited. Please try again later.');
-		}
-		if (code === 'E_SENDER_NOT_VERIFIED' || code === 'E_SENDER_DOMAIN_NOT_AVAILABLE') {
-			throw new EmailSendError(503, 'Email sending is not fully configured yet. Please try again later.');
-		}
-		throw new EmailSendError(502, 'Failed to send the email. Please try again.');
+		throw mapSendError(err, 'invoice');
 	}
 
 	return { attached: Boolean(attachment) };
+}
+
+/** Map a Cloudflare Email Sending failure to an {@link EmailSendError}. */
+function mapSendError(err: unknown, kind: 'invoice' | 'reminder'): EmailSendError {
+	const code = (err as { code?: string })?.code ?? '';
+	console.error(`[email] Failed to send ${kind} email:`, err);
+	if (code === 'E_RATE_LIMIT_EXCEEDED' || code === 'E_DAILY_LIMIT_EXCEEDED') {
+		return new EmailSendError(429, 'Email service is temporarily rate limited. Please try again later.');
+	}
+	if (code === 'E_SENDER_NOT_VERIFIED' || code === 'E_SENDER_DOMAIN_NOT_AVAILABLE') {
+		return new EmailSendError(503, 'Email sending is not fully configured yet. Please try again later.');
+	}
+	return new EmailSendError(502, 'Failed to send the email. Please try again.');
+}
+
+export interface SendReminderEmailParams {
+	/** Cloudflare Email Sending binding (env.EMAIL). */
+	email: EmailBinding;
+	/** Persisted invoice data. */
+	invoice: InvoiceData;
+	/** Recipient address (already validated by the caller). */
+	to: string;
+	/**
+	 * Public link the recipient can open (the /shared/<token> page) when an
+	 * active share link exists; omitted for a link-free reminder.
+	 */
+	shareUrl?: string | null;
+	/** Origin for the footer link; defaults to APP_ORIGIN. */
+	origin?: string;
+	/** Reply-To address (e.g. the sending user's email). */
+	replyTo?: string;
+}
+
+/**
+ * Send an overdue-payment reminder for an invoice. Reuses the visual style of
+ * {@link sendInvoiceEmail} but frames the message as a payment reminder and
+ * references the invoice number, outstanding balance, and due date. Links to
+ * the public shared page when one exists (no Browser Rendering, no attachment).
+ * Throws {@link EmailSendError} on failure.
+ */
+export async function sendReminderEmail(params: SendReminderEmailParams): Promise<void> {
+	const { email, invoice, to, shareUrl, replyTo } = params;
+	const origin = params.origin || APP_ORIGIN;
+
+	const invoiceNumber = (invoice.invoiceNumber || '').trim();
+	const invoiceLabel = invoiceNumber ? `Invoice ${invoiceNumber}` : 'your invoice';
+	const senderName = (invoice.invoiceFrom || '').trim();
+	const dueDate = (invoice.dueDate || '').trim();
+
+	const balance = Number(invoice.balanceDue ?? invoice.total ?? 0);
+	const amount = Number.isFinite(balance) ? balance : 0;
+	const amountText = amount.toLocaleString('en-US', {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2
+	});
+
+	const subject = `Reminder: ${invoiceLabel} is overdue`;
+
+	const detailLines = [`Amount due: ${amountText}`];
+	if (dueDate) detailLines.push(`Due date: ${dueDate}`);
+
+	const textLines = [
+		`This is a friendly reminder that ${invoiceLabel} is past its due date.`,
+		detailLines.join('\n')
+	];
+	if (shareUrl) textLines.push(`View the invoice here: ${shareUrl}`);
+	textLines.push(`Sent with FreeInvoice.info`);
+	const textBody = textLines.join('\n\n');
+
+	const htmlBody = `<!doctype html>
+<html>
+	<body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;">
+		<div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+			<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:28px 28px 32px;">
+				<h1 style="margin:0 0 4px;font-size:20px;color:#111827;">Payment reminder</h1>
+				${senderName ? `<p style="margin:0 0 20px;font-size:14px;color:#6b7280;">From ${escapeHtml(senderName)}</p>` : '<div style="height:12px;"></div>'}
+				<p style="margin:0 0 16px;font-size:14px;">This is a friendly reminder that <strong>${escapeHtml(invoiceLabel)}</strong> is past its due date.</p>
+				<table style="margin:0 0 20px;font-size:14px;color:#374151;border-collapse:collapse;">
+					<tr><td style="padding:2px 12px 2px 0;color:#6b7280;">Amount due</td><td style="padding:2px 0;font-weight:600;">${escapeHtml(amountText)}</td></tr>
+					${dueDate ? `<tr><td style="padding:2px 12px 2px 0;color:#6b7280;">Due date</td><td style="padding:2px 0;">${escapeHtml(dueDate)}</td></tr>` : ''}
+				</table>
+				${
+					shareUrl
+						? `<p style="margin:0 0 8px;"><a href="${escapeHtml(shareUrl)}" style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;">View Invoice</a></p>`
+						: ''
+				}
+			</div>
+			<p style="margin:20px 0 0;font-size:12px;color:#9ca3af;text-align:center;">Sent with <a href="${escapeHtml(origin)}" style="color:#6b7280;">FreeInvoice.info</a></p>
+		</div>
+	</body>
+</html>`;
+
+	try {
+		await email.send({
+			to,
+			from: {
+				email: FROM_ADDRESS,
+				name: senderName ? `${senderName} via FreeInvoice` : 'FreeInvoice'
+			},
+			...(replyTo ? { replyTo } : {}),
+			subject,
+			html: htmlBody,
+			text: textBody
+		});
+	} catch (err) {
+		throw mapSendError(err, 'reminder');
+	}
 }

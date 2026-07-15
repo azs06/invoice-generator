@@ -8,6 +8,7 @@ import {
 	invoices,
 	linkViews,
 	recurringSchedules,
+	reminderSettings,
 	sharedLinks,
 	subscriptions,
 	userSettings
@@ -765,6 +766,183 @@ export async function deleteRecurringSchedule(
 	await d1
 		.delete(recurringSchedules)
 		.where(and(eq(recurringSchedules.id, id), eq(recurringSchedules.userId, userId)));
+
+	return true;
+}
+
+// =====================================================
+// Overdue Reminder Functions (Pro)
+// =====================================================
+
+export interface ReminderRecord {
+	id: string;
+	invoiceId: string;
+	invoiceNumber: string | null;
+	recipientEmail: string;
+	remindAfterDays: number;
+	lastSentAt: Date | null;
+	active: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface CreateReminderInput {
+	invoiceId: string;
+	recipientEmail: string;
+	remindAfterDays: number;
+}
+
+/**
+ * List a user's overdue-reminder configs (newest first), each annotated with
+ * the invoice's number for display.
+ */
+export async function getReminders(db: D1Database, userId: string): Promise<ReminderRecord[]> {
+	const d1 = drizzle(db);
+
+	const rows = await d1
+		.select({
+			id: reminderSettings.id,
+			invoiceId: reminderSettings.invoiceId,
+			recipientEmail: reminderSettings.recipientEmail,
+			remindAfterDays: reminderSettings.remindAfterDays,
+			lastSentAt: reminderSettings.lastSentAt,
+			active: reminderSettings.active,
+			createdAt: reminderSettings.createdAt,
+			updatedAt: reminderSettings.updatedAt,
+			invoiceData: invoices.data
+		})
+		.from(reminderSettings)
+		.leftJoin(invoices, eq(invoices.id, reminderSettings.invoiceId))
+		.where(eq(reminderSettings.userId, userId))
+		.orderBy(desc(reminderSettings.createdAt));
+
+	return rows.map((row) => {
+		let invoiceNumber: string | null = null;
+		if (row.invoiceData) {
+			try {
+				invoiceNumber = (JSON.parse(row.invoiceData) as InvoiceData).invoiceNumber || null;
+			} catch {
+				invoiceNumber = null;
+			}
+		}
+		return {
+			id: row.id,
+			invoiceId: row.invoiceId,
+			invoiceNumber,
+			recipientEmail: row.recipientEmail,
+			remindAfterDays: row.remindAfterDays,
+			lastSentAt: row.lastSentAt ?? null,
+			active: row.active ?? true,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt
+		};
+	});
+}
+
+/**
+ * Create a reminder config. Returns the new id, null when the invoice does not
+ * exist or is not owned by the user, or 'duplicate' when a config already
+ * exists for that invoice (one reminder per invoice per user).
+ */
+export async function createReminder(
+	db: D1Database,
+	userId: string,
+	input: CreateReminderInput
+): Promise<string | null | 'duplicate'> {
+	const d1 = drizzle(db);
+
+	// Verify the invoice belongs to the user.
+	const invoice = await d1
+		.select({ id: invoices.id })
+		.from(invoices)
+		.where(and(eq(invoices.id, input.invoiceId), eq(invoices.userId, userId)))
+		.get();
+
+	if (!invoice) {
+		return null;
+	}
+
+	// Enforce one reminder config per invoice per user.
+	const existing = await d1
+		.select({ id: reminderSettings.id })
+		.from(reminderSettings)
+		.where(and(eq(reminderSettings.invoiceId, input.invoiceId), eq(reminderSettings.userId, userId)))
+		.get();
+
+	if (existing) {
+		return 'duplicate';
+	}
+
+	const id = uuidv4();
+	const now = new Date();
+	await d1.insert(reminderSettings).values({
+		id,
+		userId,
+		invoiceId: input.invoiceId,
+		recipientEmail: input.recipientEmail,
+		remindAfterDays: input.remindAfterDays,
+		lastSentAt: null,
+		active: true,
+		createdAt: now,
+		updatedAt: now
+	});
+
+	return id;
+}
+
+/**
+ * Update mutable fields of a reminder config (ownership enforced). Returns
+ * false when no matching config exists for the user.
+ */
+export async function updateReminder(
+	db: D1Database,
+	userId: string,
+	id: string,
+	patch: { recipientEmail?: string; remindAfterDays?: number; active?: boolean }
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: reminderSettings.id })
+		.from(reminderSettings)
+		.where(and(eq(reminderSettings.id, id), eq(reminderSettings.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.update(reminderSettings)
+		.set({ ...patch, updatedAt: new Date() })
+		.where(and(eq(reminderSettings.id, id), eq(reminderSettings.userId, userId)));
+
+	return true;
+}
+
+/**
+ * Delete a reminder config (ownership enforced). Returns false when none matched.
+ */
+export async function deleteReminder(
+	db: D1Database,
+	userId: string,
+	id: string
+): Promise<boolean> {
+	const d1 = drizzle(db);
+
+	const existing = await d1
+		.select({ id: reminderSettings.id })
+		.from(reminderSettings)
+		.where(and(eq(reminderSettings.id, id), eq(reminderSettings.userId, userId)))
+		.get();
+
+	if (!existing) {
+		return false;
+	}
+
+	await d1
+		.delete(reminderSettings)
+		.where(and(eq(reminderSettings.id, id), eq(reminderSettings.userId, userId)));
 
 	return true;
 }

@@ -13,12 +13,14 @@
 // value import, $app/*, $components). See src/lib/server/recurring.ts.
 import worker from './.svelte-kit/cloudflare/_worker.js';
 import { runDueSchedules } from './src/lib/server/recurring';
+import { runDueReminders } from './src/lib/server/reminders';
 
 export default {
 	...worker,
 	/**
-	 * Cron trigger handler (see wrangler.toml [triggers]). Runs hourly, finds
-	 * due recurring schedules, and generates + emails the next invoice for each.
+	 * Cron trigger handler (see wrangler.toml [triggers]). Runs hourly:
+	 * generates + emails due recurring invoices, then emails overdue-invoice
+	 * reminders. Each engine is independent so one failing never blocks the other.
 	 * @param {ScheduledController} _event
 	 * @param {import('./src/lib/server/recurring').CronEnv} env
 	 * @param {ExecutionContext} ctx
@@ -27,6 +29,11 @@ export default {
 		ctx.waitUntil(
 			runDueSchedules(env).catch((err) => {
 				console.error('[cron] runDueSchedules crashed:', err);
+			})
+		);
+		ctx.waitUntil(
+			runDueReminders(env).catch((err) => {
+				console.error('[cron] runDueReminders crashed:', err);
 			})
 		);
 	}
